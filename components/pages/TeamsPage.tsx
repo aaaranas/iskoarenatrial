@@ -13,6 +13,13 @@ interface TeamsPageProps {
 
 const emptyForm = { name: "", teamId: "", college: "", sport: "", position: "", jersey: "", photoDataUrl: "" };
 
+const COLLEGE_META: Record<string, { emoji: string; meta: string; color: string }> = {
+  "COS Scions":    { emoji: "🎯", meta: "College of Science",                   color: "#1d4ed8" },
+  "SOM Tycoons":   { emoji: "💼", meta: "School of Management",                 color: "#047857" },
+  "CSS Stallions": { emoji: "🐴", meta: "College of Social Sciences",           color: "#7c3aed" },
+  "CCAD Phoenix":  { emoji: "🔥", meta: "College of Architecture & Design",     color: "#b45309" },
+};
+
 export default function TeamsPage({ players, onAddPlayer, onDeletePlayer, onDeleteAllPlayers, onImportPlayers }: TeamsPageProps) {
   const [form, setForm] = useState({ ...emptyForm });
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -28,6 +35,11 @@ export default function TeamsPage({ players, onAddPlayer, onDeletePlayer, onDele
   const [dragging, setDragging] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
+
+  // Gallery state
+  const [galleryCollege, setGalleryCollege] = useState<string | null>(null);
+  const [gallerySport, setGallerySport]     = useState<string | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
   const inputCls = "w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#A91D3A] focus:ring-2 focus:ring-[#A91D3A]/10 bg-white text-black";
   const labelCls = "block text-sm font-medium text-black mb-2";
@@ -67,6 +79,17 @@ export default function TeamsPage({ players, onAddPlayer, onDeletePlayer, onDele
   const totalPages = Math.max(1, Math.ceil(filteredSorted.length / perPage));
   const pageItems = filteredSorted.slice((page - 1) * perPage, page * perPage);
 
+  // Gallery derived data
+  const sportsForCollege = useMemo(() => {
+    if (!galleryCollege) return [];
+    return [...new Set(players.filter((p) => p.college === galleryCollege).map((p) => p.sport))].filter(Boolean).sort();
+  }, [players, galleryCollege]);
+
+  const galleryPlayers = useMemo(() => {
+    if (!galleryCollege || !gallerySport) return [];
+    return players.filter((p) => p.college === galleryCollege && p.sport === gallerySport);
+  }, [players, galleryCollege, gallerySport]);
+
   const handlePhotoFile = useCallback((file: File) => {
     resizeImageFile(file, 600, (dataUrl) => {
       setPhotoPreview(dataUrl);
@@ -90,58 +113,31 @@ export default function TeamsPage({ players, onAddPlayer, onDeletePlayer, onDele
     if (photoRef.current) photoRef.current.value = "";
   };
 
-    const handleImport = (e: React.ChangeEvent<HTMLInputElement>, defaultTeamId: string = '0') => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const text = ev.target!.result as string;
-    const rows = text.split(/\r?\n/).filter(Boolean);
-    const headers = rows.shift()!.split(",");
-
-    const imported = rows
-      .map((r) => {
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>, defaultTeamId: string = "0") => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target!.result as string;
+      const rows = text.split(/\r?\n/).filter(Boolean);
+      const headers = rows.shift()!.split(",");
+      const imported = rows.map((r) => {
         const cols = r.split(",");
         const obj: Record<string, string> = {};
-        headers.forEach((h, i) => {
-          obj[h.trim()] = cols[i]?.replace(/^"|"$/g, "") || "";
-        });
-
-        // return object matching Omit<Player, "id" | "createdAt">
-        return {
-          teamId: defaultTeamId,                // required field
-          name: obj.name || "",
-          college: obj.college || "",
-          sport: obj.sport || "",
-          position: obj.position || "",
-          jersey: parseInt(obj.jersey) || 0,    // safe numeric conversion
-          photo: obj.photo || null,
-        };
-      })
-      .filter((p) => p.name); // skip empty names
-
-    onImportPlayers(imported);
+        headers.forEach((h, i) => { obj[h.trim()] = cols[i]?.replace(/^"|"$/g, "") || ""; });
+        return { teamId: defaultTeamId, name: obj.name || "", college: obj.college || "", sport: obj.sport || "", position: obj.position || "", jersey: parseInt(obj.jersey) || 0, photo: obj.photo || null };
+      }).filter((p) => p.name);
+      onImportPlayers(imported);
+    };
+    reader.readAsText(file);
+    if (importRef.current) importRef.current.value = "";
   };
-
-  reader.readAsText(file);
-
-  if (importRef.current) importRef.current.value = "";
-};
 
   const handleExport = () => {
     const headers = ["id","name","college","sport","position","jersey","createdAt"];
     exportCSV(
       headers,
-      players.map((p) =>
-        headers.map((h) => {
-          const row: Record<string, unknown> = {
-            id: p.id, name: p.name, college: p.college,
-            sport: p.sport, position: p.position, jersey: p.jersey, createdAt: p.createdAt,
-          };
-          return csvEscape(row[h]);
-        })
-      ),
+      players.map((p) => headers.map((h) => { const row: Record<string, unknown> = { id: p.id, name: p.name, college: p.college, sport: p.sport, position: p.position, jersey: p.jersey, createdAt: p.createdAt }; return csvEscape(row[h]); })),
       "players.csv"
     );
   };
@@ -152,12 +148,22 @@ export default function TeamsPage({ players, onAddPlayer, onDeletePlayer, onDele
     setPage(1);
   };
 
-  const thCls = (key: string) =>
-    `px-3 py-3 text-left text-[#A91D3A] font-semibold text-xs uppercase tracking-wide cursor-pointer select-none`;
+  const thCls = (key: string) => `px-3 py-3 text-left text-[#A91D3A] font-semibold text-xs uppercase tracking-wide cursor-pointer select-none`;
+
+  const selectCollege = (key: string) => {
+    setGalleryCollege(key);
+    setGallerySport(null);
+    setSelectedPlayer(null);
+  };
+
+  const selectSport = (sport: string) => {
+    setGallerySport(sport);
+    setSelectedPlayer(null);
+  };
 
   return (
     <div>
-      {/* Add Player Form */}
+      {/* ── Add Player Form ── */}
       <div className="bg-white drop-shadow-2xl rounded-xl p-6 shadow-md border border-gray-200 mb-6">
         <h3 className="text-[#A91D3A] text-lg font-semibold mb-5">Add New Player</h3>
         {formError && <div className="mb-4 text-red-600 text-sm font-medium bg-red-50 px-4 py-2 rounded-md">{formError}</div>}
@@ -220,7 +226,184 @@ export default function TeamsPage({ players, onAddPlayer, onDeletePlayer, onDele
         </form>
       </div>
 
-      {/* Search & Filter */}
+      {/* ── Player Gallery ── */}
+      <div className="bg-white drop-shadow-2xl rounded-xl p-6 shadow-md border border-gray-200 mb-6">
+        <h3 className="text-[#A91D3A] text-lg font-semibold mb-1">Player Gallery</h3>
+        <p className="text-sm text-gray-400 mb-5">Select a college, then a sport to view the roster.</p>
+
+        {/* College Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+          {COLLEGES.map((key) => {
+            const info = COLLEGE_META[key] ?? { emoji: "🏫", meta: key, color: "#A91D3A" };
+            const count = players.filter((p) => p.college === key).length;
+            const active = galleryCollege === key;
+            return (
+              <button
+                key={key}
+                onClick={() => selectCollege(key)}
+                className={`relative text-left rounded-xl p-4 border-2 transition-all duration-200 hover:-translate-y-1 focus:outline-none ${
+                  active
+                    ? "bg-[#A91D3A] border-[#A91D3A] text-white shadow-lg shadow-[#A91D3A]/30"
+                    : "bg-white border-gray-200 hover:border-[#A91D3A] hover:shadow-md text-gray-800"
+                }`}
+              >
+                <span className={`absolute top-3 right-3 text-xs font-bold px-2 py-0.5 rounded-full ${active ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"}`}>
+                  {count}
+                </span>
+                <div className="text-2xl mb-2">{info.emoji}</div>
+                <div className="font-bold text-sm leading-tight mb-0.5">{key}</div>
+                <div className={`text-xs ${active ? "text-white/70" : "text-gray-400"}`}>{info.meta}</div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Sport Pills */}
+        {galleryCollege && (
+          <div className="mb-5 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="text-xs font-bold tracking-widest uppercase text-gray-400 mb-2">Select Sport</div>
+            {sportsForCollege.length === 0 ? (
+              <p className="text-sm text-gray-400 italic">No players registered for {galleryCollege} yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {sportsForCollege.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => selectSport(s)}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-150 ${
+                      gallerySport === s
+                        ? "bg-[#A91D3A] border-[#A91D3A] text-white shadow-md shadow-[#A91D3A]/25"
+                        : "bg-white border-gray-200 text-gray-600 hover:border-[#A91D3A] hover:text-[#A91D3A]"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Gallery Grid */}
+        {!galleryCollege && (
+          <div className="border-2 border-dashed border-gray-200 rounded-xl py-12 text-center text-gray-400">
+            <div className="text-4xl mb-3">👥</div>
+            <p className="text-sm">Select a college above to browse its player roster.</p>
+          </div>
+        )}
+
+        {galleryCollege && !gallerySport && sportsForCollege.length > 0 && (
+          <div className="border-2 border-dashed border-gray-200 rounded-xl py-12 text-center text-gray-400">
+            <div className="text-4xl mb-3">🏅</div>
+            <p className="text-sm">Pick a sport to see the players for <strong className="text-gray-600">{COLLEGE_META[galleryCollege]?.emoji} {galleryCollege}</strong>.</p>
+          </div>
+        )}
+
+        {galleryCollege && gallerySport && (
+          <div>
+            {/* Gallery Header */}
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{COLLEGE_META[galleryCollege]?.emoji}</span>
+                <span className="font-bold text-gray-800">{galleryCollege}</span>
+                <span className="text-gray-400">—</span>
+                <span className="font-semibold text-[#A91D3A]">{gallerySport}</span>
+              </div>
+              <span className="text-xs font-semibold bg-gray-100 text-gray-500 px-3 py-1 rounded-full">
+                {galleryPlayers.length} player{galleryPlayers.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            {galleryPlayers.length === 0 ? (
+              <div className="text-center py-12 text-gray-400">
+                <div className="text-4xl mb-3">🏋️</div>
+                <p className="text-sm">No players registered for this sport yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {galleryPlayers.map((player, i) => (
+                  <button
+                    key={player.id}
+                    onClick={() => setSelectedPlayer(selectedPlayer?.id === player.id ? null : player)}
+                    style={{ animationDelay: `${i * 40}ms` }}
+                    className={`group relative text-left rounded-xl border-2 overflow-hidden transition-all duration-200 hover:-translate-y-1 focus:outline-none animate-in fade-in slide-in-from-bottom-2 ${
+                      selectedPlayer?.id === player.id
+                        ? "border-[#A91D3A] shadow-lg shadow-[#A91D3A]/20"
+                        : "border-gray-200 hover:border-[#A91D3A] hover:shadow-md"
+                    }`}
+                  >
+                    {/* Photo */}
+                    <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                      {player.photo ? (
+                        <img src={player.photo} alt={player.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-4xl text-gray-300">👤</div>
+                      )}
+                    </div>
+
+                    {/* Jersey Badge */}
+                    <div className={`absolute top-2 right-2 text-xs font-black px-2 py-0.5 rounded-md shadow transition-all duration-200 ${
+                      selectedPlayer?.id === player.id ? "bg-[#A91D3A] text-white" : "bg-[#F5C518] text-[#7a1228] group-hover:bg-[#A91D3A] group-hover:text-white"
+                    }`}>
+                      #{player.jersey != null ? player.jersey : "—"}
+                    </div>
+
+                    {/* Info */}
+                    <div className="p-2.5">
+                      <div className="font-semibold text-xs text-gray-800 truncate leading-tight mb-0.5">{player.name}</div>
+                      <div className="text-xs text-gray-400 truncate flex items-center gap-1">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#A91D3A] shrink-0" />
+                        {player.position || "—"}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Player Detail Card (expands on click) */}
+            {selectedPlayer && (
+              <div className="mt-5 bg-[#fdf8f8] border border-[#E8CDD1] rounded-xl p-5 flex gap-5 items-start animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
+                  {selectedPlayer.photo
+                    ? <img src={selectedPlayer.photo} alt={selectedPlayer.name} className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center text-3xl text-gray-300">👤</div>
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 flex-wrap">
+                    <div>
+                      <div className="font-bold text-gray-900 text-base">{selectedPlayer.name}</div>
+                      <div className="text-sm text-gray-500">{selectedPlayer.college} · {selectedPlayer.sport}</div>
+                    </div>
+                    <button onClick={() => setSelectedPlayer(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    {[
+                      { label: "Position", value: selectedPlayer.position },
+                      { label: "Jersey",   value: `#${selectedPlayer.jersey}` },
+                      { label: "Team",     value: selectedPlayer.college },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs">
+                        <div className="text-gray-400 mb-0.5">{label}</div>
+                        <div className="font-semibold text-gray-800">{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setDeleteModal({ open: true, id: selectedPlayer.id, all: false }); setSelectedPlayer(null); }}
+                  className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md text-xs font-semibold shrink-0"
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Search & Filter ── */}
       <div className="bg-white rounded-xl drop-shadow-2xl p-6 shadow-md border border-gray-200 mb-6">
         <h3 className="text-[#A91D3A] text-lg font-semibold mb-4">Search Players</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -247,9 +430,9 @@ export default function TeamsPage({ players, onAddPlayer, onDeletePlayer, onDele
         </div>
       </div>
 
-      {/* Players Table */}
+      {/* ── Players Table ── */}
       <div className="bg-white rounded-xl drop-shadow-2xl p-6 shadow-md border border-gray-200">
-        <h3 className="text-[#A91D3A] text-lg font-semibold mb-4">Teams & Players</h3>
+        <h3 className="text-[#A91D3A] text-lg font-semibold mb-4">All Players</h3>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex gap-3 items-center">
             <button onClick={handleExport} className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-xs font-semibold transition-all">Export Players CSV</button>
@@ -308,7 +491,34 @@ export default function TeamsPage({ players, onAddPlayer, onDeletePlayer, onDele
         )}
       </div>
 
+      {/* ── Delete Modal ── */}
+      {deleteModal.open && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              {deleteModal.all ? "Remove All Players" : "Delete Player"}
+            </h3>
+            <p className="text-sm text-gray-500 mb-5">
+              {deleteModal.all
+                ? "Are you sure you want to remove ALL players? This cannot be undone."
+                : "Are you sure you want to delete this player?"}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setDeleteModal({ open: false, id: null, all: false })} className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md text-sm font-semibold">Cancel</button>
+              <button
+                onClick={() => {
+                  if (deleteModal.all) onDeleteAllPlayers();
+                  else if (deleteModal.id) onDeletePlayer(Number(deleteModal.id));
+                  setDeleteModal({ open: false, id: null, all: false });
+                }}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-semibold"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

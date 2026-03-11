@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 const members = [
     {
-        name: 'Andre Milan Aranas',
+        name: 'Andre Milan Arañas',
         role: 'Developer',
         avatar: '/andre.jpg',
         link: '#',
