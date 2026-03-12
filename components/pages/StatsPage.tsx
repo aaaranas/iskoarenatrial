@@ -700,7 +700,7 @@ function SportStatCard({
   const teamStats   = stats.filter(s => s.type === "Team");
   const playerStats = stats.filter(s => s.type === "Player");
 
-  const getPlayer = (id: number | null) => id != null ? players.find(p => p.id === id) : null;
+  const getPlayer = (id: number | null): Player | null => id != null ? (players.find(p => p.id === id) ?? null) : null;
 
   // Group player stats by player
   const byPlayer = useMemo(() => {
