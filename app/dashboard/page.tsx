@@ -52,11 +52,13 @@ export default function Page() {
     setPlayers((prev) => prev.map((p) => p.id === id ? { ...p, eligibilityStatus: status } : p));
   };
 
-  // ── Match handlers ──
   const handleAddMatch = (m: Omit<Match, "id" | "createdAt">) => {
     setMatches((prev) => [...prev, { ...m, id: Date.now(), createdAt: new Date().toISOString() }]);
   };
   const handleDeleteMatch = (id: number) => setMatches((prev) => prev.filter((m) => m.id !== id));
+  const handleUpdateMatch = (id: number, patch: Partial<Match>) => {
+    setMatches((prev) => prev.map((m) => m.id === id ? { ...m, ...patch } : m));
+  };
 
   // ── Result handlers ──
   const handleRecordResult = (matchId: string, teamA: string, teamB: string, scoreA: number, scoreB: number, sport: string) => {
@@ -103,7 +105,7 @@ export default function Page() {
       case "dashboard":
         return <DashboardPage matches={matches} players={players} results={results} teams={[]} onNavigate={setCurrentPage} />;
       case "matches":
-        return <MatchesPage matches={matches} onAddMatch={handleAddMatch} onDeleteMatch={handleDeleteMatch} />;
+        return <MatchesPage matches={matches} onAddMatch={handleAddMatch} onDeleteMatch={handleDeleteMatch} onUpdateMatch={handleUpdateMatch} />;
       case "results":
         return <ResultsPage matches={matches} results={results} onRecordResult={handleRecordResult} />;
       case "stats":

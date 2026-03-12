@@ -63,12 +63,15 @@ export default function IskoArena() {
     toast({ title: "Success", description: "Match added." });
   };
 
-    // Example: MatchesPage handler
-const handleDeleteMatch = (id: number) => {
-  // coerce number to string for DataManager
-  DataManager.delete("matches", String(id));
-  refresh();
-};
+  const handleDeleteMatch = (id: number) => {
+    DataManager.delete("matches", String(id));
+    refresh();
+  };
+
+  const handleUpdateMatch = (id: number, patch: Partial<Match>) => {
+    DataManager.update("matches", String(id), patch);
+    refresh();
+  };
 
   const handleAddStat = (stat: any) => {
     DataManager.add("stats", stat);
