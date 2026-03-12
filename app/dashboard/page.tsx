@@ -69,16 +69,17 @@ export default function Page() {
   };
 
   // ── Media handlers ──
-  const handleAddMedia = (m: Omit<MediaItem, "id" | "createdAt">) => {  // fixed: was Omit<Media, ...>
+  const handleAddMedia = (m: Omit<MediaItem, "id" | "createdAt">) => {
     setMedia((prev) => [...prev, { ...m, id: Date.now(), createdAt: new Date().toISOString() }]);
   };
 
   // ── Stat handlers ──
+  // Note: Stat.id is string in the type definition, so we cast Date.now() to string
   const handleAddStat = (s: Omit<Stat, "id" | "createdAt">) => {
-    setStats((prev) => [...prev, { ...s, id: Date.now(), createdAt: new Date().toISOString() }]);
+    setStats((prev) => [...prev, { ...s, id: String(Date.now()), createdAt: new Date().toISOString() }]);
   };
-  const handleDeleteStat = (id: number) => setStats((prev) => prev.filter((s) => s.id !== id));
-  const handleUpdateStat = (id: number, updated: Omit<Stat, "id" | "createdAt">) => {
+  const handleDeleteStat = (id: string) => setStats((prev) => prev.filter((s) => s.id !== id));
+  const handleUpdateStat = (id: string, updated: Omit<Stat, "id" | "createdAt">) => {
     setStats((prev) => prev.map((s) => s.id === id ? { ...s, ...updated } : s));
   };
 
