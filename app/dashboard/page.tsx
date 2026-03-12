@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import type { PageName, Player, Match, Result, Notification, Media, Stat } from "@/types";
+import type { PageName, Player, Match, Result, Notification, MediaItem, Stat } from "@/types";
 
 // Page Components
 import DashboardPage from "@/components/pages/DashboardPage";
@@ -32,12 +32,12 @@ export default function Page() {
   const adminName = "Administrator";
 
   // ── Shared Data State ──
-  const [players, setPlayers]           = useState<Player[]>([]);
-  const [matches, setMatches]           = useState<Match[]>([]);
-  const [results, setResults]           = useState<Result[]>([]);
+  const [players, setPlayers]             = useState<Player[]>([]);
+  const [matches, setMatches]             = useState<Match[]>([]);
+  const [results, setResults]             = useState<Result[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [media, setMedia]               = useState<Media[]>([]);
-  const [stats, setStats]               = useState<Stat[]>([]);
+  const [media, setMedia]                 = useState<MediaItem[]>([]);
+  const [stats, setStats]                 = useState<Stat[]>([]);
 
   // ── Player handlers ──
   const handleAddPlayer = (p: Omit<Player, "id" | "createdAt">) => {
@@ -47,6 +47,9 @@ export default function Page() {
   const handleDeleteAllPlayers = () => setPlayers([]);
   const handleImportPlayers = (imported: Omit<Player, "id" | "createdAt">[]) => {
     setPlayers((prev) => [...prev, ...imported.map((p) => ({ ...p, id: Date.now() + Math.random(), createdAt: new Date().toISOString() }))]);
+  };
+  const handleUpdatePlayerStatus = (id: number, status: "in_review" | "eligible" | "ineligible") => {
+    setPlayers((prev) => prev.map((p) => p.id === id ? { ...p, eligibilityStatus: status } : p));
   };
 
   // ── Match handlers ──
@@ -66,7 +69,7 @@ export default function Page() {
   };
 
   // ── Media handlers ──
-  const handleAddMedia = (m: Omit<Media, "id" | "createdAt">) => {
+  const handleAddMedia = (m: Omit<MediaItem, "id" | "createdAt">) => {  // fixed: was Omit<Media, ...>
     setMedia((prev) => [...prev, { ...m, id: Date.now(), createdAt: new Date().toISOString() }]);
   };
 
@@ -95,7 +98,16 @@ export default function Page() {
       case "media":
         return <MediaPage media={media} matches={matches} onAddMedia={handleAddMedia} />;
       case "teams":
-        return <TeamsPage players={players} onAddPlayer={handleAddPlayer} onDeletePlayer={handleDeletePlayer} onDeleteAllPlayers={handleDeleteAllPlayers} onImportPlayers={handleImportPlayers} />;
+        return (
+          <TeamsPage
+            players={players}
+            onAddPlayer={handleAddPlayer}
+            onDeletePlayer={handleDeletePlayer}
+            onDeleteAllPlayers={handleDeleteAllPlayers}
+            onImportPlayers={handleImportPlayers}
+            onUpdatePlayerStatus={handleUpdatePlayerStatus}
+          />
+        );
       case "archives":
         return <ArchivesPage results={results} media={media} />;
       case "notifications":
