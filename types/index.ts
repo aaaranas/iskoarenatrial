@@ -7,15 +7,37 @@ export interface Admin {
 }
 
 export interface Match {
-  id: string;
-  sport: string;
-  teamA: string;
-  teamB: string;
+  id: number;
+  league: string;
+  leagueLogo: string;
+  country: string;
+  status: string;
+  statusType: "live" | "finished" | "upcoming";
   date: string;
   time: string;
-  venue: string;
-  status: string;
-  createdAt: string;
+  homeTeam: string;
+  homeTeamShort: string;
+  awayTeam: string;
+  awayTeamShort: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  minute: string | null;
+  homeScorers: string[];
+  awayScorers: string[];
+}
+
+// src/types/match-ui.ts
+export interface MatchUI {
+  id: number;
+  league: string;
+  homeTeam: string;
+  homeTeamShort: string;
+  awayTeam: string;
+  awayTeamShort: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  status: "LIVE" | "FT" | "UPCOMING";
+  time: string;
 }
 
 export interface Result {
