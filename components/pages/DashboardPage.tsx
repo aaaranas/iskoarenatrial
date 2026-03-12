@@ -30,29 +30,25 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-/**
- * Types
- */
-export interface Match { id: string; sport: string; teamA: string; teamB: string; date: string; time: string; }
-export interface Result { matchId: string; scoreA: number; scoreB: number; winnerId: string; }
-export interface Player { id: string; name: string; teamId: string; }
-export interface Team { id: string; name: string; org: string; }
+// ── Import from central types (removed local interface definitions) ──
+import type { Match, Result, Player, Team, PageName } from "@/types";
 
 interface DashboardPageProps {
   matches: Match[];
   results: Result[];
   players: Player[];
   teams: Team[];
+  onNavigate?: (page: PageName) => void;
 }
 
-export default function DashboardPage({ matches, results, players, teams }: DashboardPageProps) {
+export default function DashboardPage({ matches, results, players, teams, onNavigate }: DashboardPageProps) {
   const now = new Date();
 
   // Logic: Matches happening within a 2-hour window
   const ongoingMatches = matches.filter((match) => {
     const matchDateTime = new Date(`${match.date}T${match.time}`);
     const timeDiff = now.getTime() - matchDateTime.getTime();
-    const hasResult = results.some((r) => r.matchId === match.id);
+    const hasResult = results.some((r) => r.matchId === String(match.id));
     return timeDiff > 0 && timeDiff < 2 * 60 * 60 * 1000 && !hasResult;
   });
 
@@ -105,7 +101,12 @@ export default function DashboardPage({ matches, results, players, teams }: Dash
             <CardTitle className="text-lg font-semibold tracking-tight">Recent Matches</CardTitle>
             <CardDescription className="text-xs">Real-time status updates from the field.</CardDescription>
           </div>
-          <Button variant="outline" size="sm" className="h-8 text-xs font-medium">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs font-medium"
+            onClick={() => onNavigate?.("matches")}
+          >
             View Schedule <ChevronRight className="ml-1 size-3.5" />
           </Button>
         </CardHeader>
@@ -120,33 +121,41 @@ export default function DashboardPage({ matches, results, players, teams }: Dash
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recentMatches.map((match) => {
-                const hasResult = results.some((r) => r.matchId === match.id);
-                const isLive = ongoingMatches.some((m) => m.id === match.id);
-                return (
-                  <TableRow key={match.id} className="group cursor-default border-b last:border-0 hover:bg-muted/10 transition-colors">
-                    <TableCell className="pl-6 font-semibold text-xs tracking-tight">{match.sport}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{match.teamA}</span>
-                        <span className="text-[10px] text-muted-foreground italic">vs</span>
-                        <span className="text-sm font-medium">{match.teamB}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">{match.date}</span>
-                        <span className="text-[10px] text-muted-foreground">{match.time}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right pr-6">
-                      <Badge variant={isLive ? "default" : hasResult ? "secondary" : "outline"} className="rounded-md font-semibold text-[9px] px-2 py-0 h-5 uppercase tracking-widest border-border/50">
-                        {isLive ? "Live" : hasResult ? "Finished" : "Upcoming"}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {recentMatches.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground italic text-sm py-10">
+                    No matches scheduled yet.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                recentMatches.map((match) => {
+                  const hasResult = results.some((r) => r.matchId === String(match.id));
+                  const isLive = ongoingMatches.some((m) => m.id === match.id);
+                  return (
+                    <TableRow key={match.id} className="group cursor-default border-b last:border-0 hover:bg-muted/10 transition-colors">
+                      <TableCell className="pl-6 font-semibold text-xs tracking-tight">{match.sport}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{match.teamA}</span>
+                          <span className="text-[10px] text-muted-foreground italic">vs</span>
+                          <span className="text-sm font-medium">{match.teamB}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium">{match.date}</span>
+                          <span className="text-[10px] text-muted-foreground">{match.time}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right pr-6">
+                        <Badge variant={isLive ? "default" : hasResult ? "secondary" : "outline"} className="rounded-md font-semibold text-[9px] px-2 py-0 h-5 uppercase tracking-widest border-border/50">
+                          {isLive ? "Live" : hasResult ? "Finished" : "Upcoming"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
         </CardContent>
