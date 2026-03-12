@@ -7,7 +7,7 @@ export interface Admin {
 }
 
 export interface Match {
-  id: string;
+  id: number;
   sport: string;
   teamA: string;
   teamB: string;
