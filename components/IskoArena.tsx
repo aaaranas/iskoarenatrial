@@ -16,7 +16,7 @@ import NotificationsPage from "@/components/pages/NotificationsPage";
 import ArchivesPage from "@/components/pages/ArchivesPage";
 
 // Shadcn Sidebar Components
-import { AppSidebar } from "@/components/app-sidebar"; // This is the new component we created
+import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 
@@ -58,44 +58,36 @@ export default function IskoArena() {
     });
   };
 
-  // ---- Handlers (Matches, Results, etc.) ----
   const handleAddMatch = (match: Omit<Match, "id" | "createdAt">) => {
     DataManager.add("matches", match);
     refresh();
     toast({ title: "Success", description: "Match added.", variant: "success" });
   };
 
-    // Example: MatchesPage handler
-const handleDeleteMatch = (id: number) => {
-  // coerce number to string for DataManager
-  DataManager.delete("matches", String(id));
-  refresh();
-};
+  const handleDeleteMatch = (id: number) => {
+    DataManager.delete("matches", String(id));
+    refresh();
+  };
 
-// StatsPage handlers
-const handleAddStat = (stat: any) => {
-  DataManager.add("stats", stat);
-  refresh();
-};
+  const handleAddStat = (stat: any) => {
+    DataManager.add("stats", stat);
+    refresh();
+  };
 
-const handleUpdateStat = (id: string, stat: any) => {
-  DataManager.update("stats", String(id), stat); // coerce number → string
-  refresh();
-};
+  const handleUpdateStat = (id: string, stat: any) => {
+    DataManager.update("stats", String(id), stat);
+    refresh();
+  };
 
-const handleDeleteStat = (id: string) => {
-  DataManager.delete("stats", String(id)); // coerce number → string
-  refresh();
-};
+  const handleDeleteStat = (id: string) => {
+    DataManager.delete("stats", String(id));
+    refresh();
+  };
 
-
-// TeamsPage handler
-const handleDeletePlayer = (id: number) => {
-  DataManager.delete("players", String(id));
-  refresh();
-};
-
-  // ... (Other handlers remain the same as your original file)
+  const handleDeletePlayer = (id: number) => {
+    DataManager.delete("players", String(id));
+    refresh();
+  };
 
   if (!currentAdmin) {
     return (
@@ -121,24 +113,28 @@ const handleDeletePlayer = (id: number) => {
           refresh();
         }} />;
       case "stats":
-	    <StatsPage
-      stats={data.stats}
-      players={data.players}
-      onAddStat={handleAddStat}
-      onUpdateStat={handleUpdateStat}
-      onDeleteStat={handleDeleteStat}
-      onLoadDemoStats={() => { refresh(); }}
-    />
+        return (  // ✅ was missing return
+          <StatsPage
+            stats={data.stats}
+            players={data.players}
+            onAddStat={handleAddStat}
+            onUpdateStat={handleUpdateStat}
+            onDeleteStat={handleDeleteStat}
+            onLoadDemoStats={() => { refresh(); }}
+          />
+        );
       case "media":
         return <MediaPage matches={data.matches} media={data.media} onUploadMedia={(m) => { DataManager.add("media", m); refresh(); }} />;
       case "teams":
-	    <TeamsPage
-  players={data.players}
-  onAddPlayer={(p) => { DataManager.add("players", p); refresh(); }}
-  onDeletePlayer={handleDeletePlayer}   // numeric ID in, string for DataManager
-  onDeleteAllPlayers={() => { data.players = []; DataManager.saveData(data); refresh(); }}
-  onImportPlayers={(ps) => { ps.forEach(p => DataManager.add("players", p)); refresh(); }}
-/>
+        return (  // ✅ was missing return
+          <TeamsPage
+            players={data.players}
+            onAddPlayer={(p) => { DataManager.add("players", p); refresh(); }}
+            onDeletePlayer={handleDeletePlayer}
+            onDeleteAllPlayers={() => { data.players = []; DataManager.saveData(data); refresh(); }}
+            onImportPlayers={(ps) => { ps.forEach(p => DataManager.add("players", p)); refresh(); }}
+          />
+        );
       case "notifications":
         return <NotificationsPage notifications={data.notifications} onSend={(n) => { DataManager.add("notifications", n); refresh(); }} />;
       case "archives":
@@ -150,22 +146,20 @@ const handleDeletePlayer = (id: number) => {
 
   return (
     <SidebarProvider>
-      {/* New Shadcn UI Sidebar */}
       <AppSidebar 
-	variant="sidebar"
+        variant="sidebar"
         currentPage={currentPage} 
         onNavigate={setCurrentPage} 
         onLogout={handleLogout} 
         adminName={currentAdmin.fullName} 
       />
 
-      {/* Main Content Area using Inset Variant */}
       <SidebarInset className="bg-background">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 sticky top-0 bg-background/80 backdrop-blur-md z-20">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <div className="flex-1">
-            <h1 className="text-sm font-semibold tracking-tight capitalize">{currentPage}</h1>
+            <h1 className="text-3xl font-bold tracking-wide capitalize">{currentPage}</h1>
           </div>
         </header>
 
