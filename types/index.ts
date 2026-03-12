@@ -32,15 +32,16 @@ export interface Result {
 }
 
 export interface Player {
-  id: string;
+  id: number;
+  createdAt: string;
   name: string;
   teamId: string;
   college: string;
   sport: string;
   position: string;
   jersey: number;
-  photo?: string | null;
-  createdAt: string;
+  photo: string | null;
+  eligibilityStatus?: "in_review" | "eligible" | "ineligible"; // ← add this
 }
 
 export interface Team {
@@ -103,4 +104,3 @@ export type PageName =
   | "notifications"
   | "archives";
 
-  eligibilityStatus?: "in_review" | "eligible" | "ineligible";
