@@ -130,7 +130,6 @@ export default function IskoArena() {
             onAddStat={handleAddStat}
             onUpdateStat={handleUpdateStat}
             onDeleteStat={handleDeleteStat}
-            onLoadDemoStats={() => { refresh(); }}
           />
         );
       case "media":

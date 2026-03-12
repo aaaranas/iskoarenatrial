@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import type { Stat, Player } from "@/types";
-import { COLLEGES, TEAMS, exportCSV, csvEscape } from "@/lib/dataManager";
+import { COLLEGES, exportCSV, csvEscape } from "@/lib/dataManager";
 import {
   AlertCircle, BarChart3, ChevronDown, ChevronUp, ClipboardList,
   Download, Pencil, Plus, Search, Trash2, Users, X, User,
@@ -407,9 +407,12 @@ const SPORT_ICONS: Record<string, string> = {
   "Esports - Cosplay": "🎭", "Esports - Tetris": "🟦",
 };
 
-const TEAM_EMOJI: Record<string, string> = Object.fromEntries(
-  TEAMS.map((t) => [t.value, t.label.split(" ")[0]])
-);
+const TEAM_EMOJI: Record<string, string> = {
+  "COS Scions":    "🎯",
+  "SOM Tycoons":   "💼",
+  "CSS Stallions": "🐴",
+  "CCAD Phoenix":  "🔥",
+};
 
 const SPORTS_WITH_STATS = Object.keys(SPORT_STAT_FIELDS).sort();
 
