@@ -133,7 +133,7 @@ export default function IskoArena() {
           />
         );
       case "media":
-        return <MediaPage matches={data.matches} media={data.media} onUploadMedia={(m) => { DataManager.add("media", m); refresh(); }} />;
+        return <MediaPage matches={data.matches} media={data.media} onAddMedia={(m) => { DataManager.add("media", m); refresh(); }} />;
       case "teams":
         return (
           <TeamsPage
