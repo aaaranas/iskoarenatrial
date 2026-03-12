@@ -43,7 +43,7 @@ export default function MediaPage({ matches, media, onAddMedia, onUploadMedia }:
     const [matchId, sport] = matchVal ? matchVal.split("|") : ["", ""];
     const mediaItem = {
       title,
-      type: preview.isVideo ? "video" : "image",
+      type: (preview.isVideo ? "video" : "image") as "video" | "image",
       data: preview.src,
       fileName: preview.name,
       matchId: matchId ? parseInt(matchId) : null,
