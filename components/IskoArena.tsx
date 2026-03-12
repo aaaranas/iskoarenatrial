@@ -63,10 +63,12 @@ export default function IskoArena() {
     toast({ title: "Success", description: "Match added." });
   };
 
-  const handleDeleteMatch = (id: number) => {
-    DataManager.delete("matches", String(id));
-    refresh();
-  };
+    // Example: MatchesPage handler
+const handleDeleteMatch = (id: number) => {
+  // coerce number to string for DataManager
+  DataManager.delete("matches", String(id));
+  refresh();
+};
 
   const handleAddStat = (stat: any) => {
     DataManager.add("stats", stat);
@@ -110,7 +112,7 @@ export default function IskoArena() {
       case "dashboard":
         return <DashboardPage matches={data.matches} results={data.results} players={data.players} teams={data.teams} />;
       case "matches":
-        return <MatchesPage matches={data.matches} onAddMatch={handleAddMatch} onDeleteMatch={handleDeleteMatch} />;
+        return <MatchesPage matches={data.matches} onAddMatch={handleAddMatch} onDeleteMatch={handleDeleteMatch} onUpdateMatch={handleUpdateMatch} />;
       case "results":
         return <ResultsPage matches={data.matches} results={data.results} onRecordResult={(mId, tA, tB, sA, sB, sp) => {
           const winner = sA > sB ? tA : sB > sA ? tB : "Draw";
