@@ -102,3 +102,5 @@ export type PageName =
   | "teams"
   | "notifications"
   | "archives";
+
+  eligibilityStatus?: "in_review" | "eligible" | "ineligible";

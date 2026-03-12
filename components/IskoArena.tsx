@@ -88,6 +88,12 @@ export default function IskoArena() {
     refresh();
   };
 
+  // ── Eligibility status handler ──────────────────────────────────────────────
+  const handleUpdatePlayerStatus = (id: number, status: "in_review" | "eligible" | "ineligible") => {
+    DataManager.update("players", String(id), { eligibilityStatus: status });
+    refresh();
+  };
+
   if (!currentAdmin) {
     return (
       <>
@@ -132,6 +138,7 @@ export default function IskoArena() {
             onDeletePlayer={handleDeletePlayer}
             onDeleteAllPlayers={() => { data.players = []; DataManager.saveData(data); refresh(); }}
             onImportPlayers={(ps) => { ps.forEach(p => DataManager.add("players", p)); refresh(); }}
+            onUpdatePlayerStatus={handleUpdatePlayerStatus}
           />
         );
       case "notifications":
