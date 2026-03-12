@@ -59,8 +59,20 @@ export default function Page() {
   const handleDeleteMatch = (id: number) => setMatches((prev) => prev.filter((m) => m.id !== id));
 
   // ── Result handlers ──
-  const handleAddResult = (r: Omit<Result, "id" | "createdAt">) => {
-    setResults((prev) => [...prev, { ...r, id: Date.now(), createdAt: new Date().toISOString() }]);
+  const handleRecordResult = (matchId: string, teamA: string, teamB: string, scoreA: number, scoreB: number, sport: string) => {
+    const winner = scoreA > scoreB ? teamA : scoreB > scoreA ? teamB : "Draw";
+    setResults((prev) => [...prev, {
+      id: Date.now(),
+      matchId,
+      teamA,
+      teamB,
+      scoreA,
+      scoreB,
+      winner,
+      sport,
+      winnerId: "",
+      createdAt: new Date().toISOString(),
+    }]);
   };
 
   // ── Notification handlers ──
@@ -74,7 +86,7 @@ export default function Page() {
   };
 
   // ── Stat handlers ──
-  // Note: Stat.id is string in the type definition, so we cast Date.now() to string
+  // Stat.id is string in the type definition, so we cast Date.now() to string
   const handleAddStat = (s: Omit<Stat, "id" | "createdAt">) => {
     setStats((prev) => [...prev, { ...s, id: String(Date.now()), createdAt: new Date().toISOString() }]);
   };
@@ -93,7 +105,7 @@ export default function Page() {
       case "matches":
         return <MatchesPage matches={matches} onAddMatch={handleAddMatch} onDeleteMatch={handleDeleteMatch} />;
       case "results":
-        return <ResultsPage matches={matches} results={results} onAddResult={handleAddResult} />;
+        return <ResultsPage matches={matches} results={results} onRecordResult={handleRecordResult} />;
       case "stats":
         return <StatsPage stats={stats} players={players} onAddStat={handleAddStat} onDeleteStat={handleDeleteStat} onUpdateStat={handleUpdateStat} />;
       case "media":
@@ -114,7 +126,7 @@ export default function Page() {
       case "notifications":
         return <NotificationsPage notifications={notifications} onSend={handleSendNotification} />;
       default:
-        return <DashboardPage matches={matches} players={players} results={results} onNavigate={setCurrentPage} />;
+        return <DashboardPage matches={matches} players={players} results={results} teams={[]} onNavigate={setCurrentPage} />;
     }
   };
 
