@@ -89,7 +89,7 @@ export default function Page() {
   const renderPage = () => {
     switch (currentPage) {
       case "dashboard":
-        return <DashboardPage matches={matches} players={players} results={results} onNavigate={setCurrentPage} />;
+        return <DashboardPage matches={matches} players={players} results={results} teams={[]} onNavigate={setCurrentPage} />;
       case "matches":
         return <MatchesPage matches={matches} onAddMatch={handleAddMatch} onDeleteMatch={handleDeleteMatch} />;
       case "results":
