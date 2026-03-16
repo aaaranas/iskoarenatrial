@@ -51,8 +51,7 @@ export function AppSidebar({
   const navItems = [
     { page: "dashboard" as PageName, label: "Dashboard", icon: LayoutDashboard },
     { page: "matches" as PageName, label: "Matches", icon: Trophy },
-    { page: "results" as PageName, label: "Results", icon: FileText },
-    { page: "stats" as PageName, label: "Statistics", icon: BarChart3 },
+    { page: "stats" as PageName, label: "Leaderboards", icon: BarChart3 },
   ];
 
   const manageItems = [
