@@ -8,11 +8,9 @@ import type { Admin, AppData, Match, Result, Player, Stat, MediaItem, Notificati
 import LandingPage from "@/components/pages/LandingPage"; 
 import DashboardPage from "@/components/pages/DashboardPage";
 import MatchesPage from "@/components/pages/MatchesPage";
-import ResultsPage from "@/components/pages/ResultsPage";
 import StatsPage from "@/components/pages/StatsPage";
 import MediaPage from "@/components/pages/MediaPage";
 import TeamsPage from "@/components/pages/TeamsPage";
-import NotificationsPage from "@/components/pages/NotificationsPage";
 import ArchivesPage from "@/components/pages/ArchivesPage";
 
 // Shadcn Sidebar Components
@@ -114,14 +112,8 @@ const handleDeletePlayer = (id: number) => {
         return <DashboardPage matches={data.matches} results={data.results} players={data.players} teams={data.teams} />;
       case "matches":
         return <MatchesPage matches={data.matches} onAddMatch={handleAddMatch} onDeleteMatch={handleDeleteMatch} />;
-      case "results":
-        return <ResultsPage matches={data.matches} results={data.results} onRecordResult={(mId, tA, tB, sA, sB, sp) => {
-          const winner = sA > sB ? tA : sB > sA ? tB : "Draw";
-          DataManager.add("results", { matchId: mId, teamA: tA, teamB: tB, scoreA: sA, scoreB: sB, winner, sport: sp });
-          refresh();
-        }} />;
       case "stats":
-	    <StatsPage
+	 return <StatsPage
       stats={data.stats}
       players={data.players}
       onAddStat={handleAddStat}
@@ -132,7 +124,7 @@ const handleDeletePlayer = (id: number) => {
       case "media":
         return <MediaPage matches={data.matches} media={data.media} onUploadMedia={(m) => { DataManager.add("media", m); refresh(); }} />;
       case "teams":
-	    <TeamsPage
+	return <TeamsPage
   players={data.players}
   onAddPlayer={(p) => { DataManager.add("players", p); refresh(); }}
   onDeletePlayer={handleDeletePlayer}   // numeric ID in, string for DataManager

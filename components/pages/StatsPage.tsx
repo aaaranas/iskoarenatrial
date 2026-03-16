@@ -1,249 +1,103 @@
 "use client";
-import React, { useState, useMemo } from "react";
-import type { Stat, Player } from "@/types";
-import { SPORTS, COLLEGES, DataManager, csvEscape, exportCSV } from "@/lib/dataManager";
+import React, { useState } from "react";
+import { Podium } from "../leaderboards/Podium";
+import { LeaderboardTable } from "../leaderboards/LeaderboardTable";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown, Calendar } from "lucide-react";
 
-interface StatsPageProps {
-  stats: Stat[];
-  players: Player[];
-  onAddStat: (stat: Omit<Stat, "id" | "createdAt">) => void;
-  onUpdateStat: (id: string, stat: Partial<Stat>) => void;
-  onDeleteStat: (id: string) => void;
-  onLoadDemoStats: () => void;
-}
-
-const statSports = [
-  "Badminton","Basketball Men","Basketball Women","Cheerdance","Chess","Dancesports",
-  "Esports - Mobile Legends: Bang Bang","Esports - DOTA 2","Esports - Valorant",
-  "Frisbee","Soccer","Softball","Table Tennis","Volleyball Men","Volleyball Women","Petanque",
+const performers = [
+  { id: "2", name: "Scions", points: "2,000 pts", prize: "100,000", rank: 1, value: 50000 },
+  { id: "1", name: "Pheonix", points: "2,000 pts", prize: "50,000", rank: 2, value: 10000 },
+  { id: "3", name: "Tycoons", points: "2,000 pts", prize: "20,000", rank: 3, value: 9000 },
 ];
 
-const emptyForm = { type: "" as "Player" | "Team" | "", sport: "", college: "", playerId: "", statName: "", statValue: "" };
+const mock_players = [
+  { rank: 4, name: "Henrietta O'Connell", username: "@henrietta", avatar: "", followers: "12,241", points: "2,114,424", reward: 1000 },
+  { rank: 5, name: "Darrel Bins", username: "@darrel", avatar: "", followers: "11,800", points: "2,010,200", reward: 900 },
+  { rank: 6, name: "Sally Kovacek", username: "@sally", avatar: "", followers: "10,001", points: "1,980,122", reward: 800 },
+  { rank: 7, name: "Henrietta O'Connell", username: "@henrietta", avatar: "", followers: "12,241", points: "2,114,424", reward: 1000 },
+  { rank: 8, name: "Darrel Bins", username: "@darrel", avatar: "", followers: "11,800", points: "2,010,200", reward: 900 },
+  { rank: 9, name: "Sally Kovacek", username: "@sally", avatar: "", followers: "10,001", points: "1,980,122", reward: 800 },
+  { rank: 10, name: "Henrietta O'Connell", username: "@henrietta", avatar: "", followers: "12,241", points: "2,114,424", reward: 1000 },
+  { rank: 11, name: "Darrel Bins", username: "@darrel", avatar: "", followers: "11,800", points: "2,010,200", reward: 900 },
+  { rank: 12, name: "Sally Kovacek", username: "@sally", avatar: "", followers: "10,001", points: "1,980,122", reward: 800 },
+  { rank: 13, name: "Henrietta O'Connell", username: "@henrietta", avatar: "", followers: "12,241", points: "2,114,424", reward: 1000 },
+  { rank: 14, name: "Darrel Bins", username: "@darrel", avatar: "", followers: "11,800", points: "2,010,200", reward: 900 },
+  { rank: 15, name: "Sally Kovacek", username: "@sally", avatar: "", followers: "10,001", points: "1,980,122", reward: 800 },
+  { rank: 16, name: "Henrietta O'Connell", username: "@henrietta", avatar: "", followers: "12,241", points: "2,114,424", reward: 1000 },
+  { rank: 17, name: "Darrel Bins", username: "@darrel", avatar: "", followers: "11,800", points: "2,010,200", reward: 900 },
+  { rank: 18, name: "Sally Kovacek", username: "@sally", avatar: "", followers: "10,001", points: "1,980,122", reward: 800 },
+];
 
-export default function StatsPage({ stats, players, onAddStat, onUpdateStat, onDeleteStat, onLoadDemoStats }: StatsPageProps) {
-  const [form, setForm] = useState({ ...emptyForm });
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteModal, setDeleteModal] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
-  const [search, setSearch] = useState("");
-  const [filterCollege, setFilterCollege] = useState("");
-  const [filterSport, setFilterSport] = useState("");
-  const [sortKey, setSortKey] = useState("createdAt");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+const mock_teams = [
+  { rank: 1, name: "Alpha Squad", username: "@alpha", avatar: "", followers: "82,000", points: "9,120,400", reward: 5000 },
+  { rank: 2, name: "Nova Guild", username: "@nova", avatar: "", followers: "75,110", points: "8,001,210", reward: 4000 },
+  { rank: 3, name: "Orion League", username: "@orion", avatar: "", followers: "70,221", points: "7,880,000", reward: 3000 },
 
-  const inputCls = "w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#A91D3A] focus:ring-2 focus:ring-[#A91D3A]/10 bg-white text-black";
-  const labelCls = "block text-sm font-medium text-black mb-2";
+  { rank: 4, name: "Alpha Squad", username: "@alpha", avatar: "", followers: "82,000", points: "9,120,400", reward: 5000 },
+  { rank: 5, name: "Nova Guild", username: "@nova", avatar: "", followers: "75,110", points: "8,001,210", reward: 4000 },
+  { rank: 6, name: "Orion League", username: "@orion", avatar: "", followers: "70,221", points: "7,880,000", reward: 3000 },
+  { rank: 7, name: "Alpha Squad", username: "@alpha", avatar: "", followers: "82,000", points: "9,120,400", reward: 5000 },
+  { rank: 8, name: "Nova Guild", username: "@nova", avatar: "", followers: "75,110", points: "8,001,210", reward: 4000 },
+  { rank: 9, name: "Orion League", username: "@orion", avatar: "", followers: "70,221", points: "7,880,000", reward: 3000 },
+  { rank: 10, name: "Alpha Squad", username: "@alpha", avatar: "", followers: "82,000", points: "9,120,400", reward: 5000 },
+  { rank: 11, name: "Nova Guild", username: "@nova", avatar: "", followers: "75,110", points: "8,001,210", reward: 4000 },
+  { rank: 12, name: "Orion League", username: "@orion", avatar: "", followers: "70,221", points: "7,880,000", reward: 3000 },
+];
 
-  const filteredPlayers = useMemo(() =>
-    players.filter((p) => (!form.college || p.college === form.college) && (!form.sport || p.sport === form.sport)),
-    [players, form.college, form.sport]
-  );
 
-  const filteredStats = useMemo(() => {
-    const q = search.toLowerCase();
-    return stats
-      .filter((s) => {
-		const player = s.playerId != null ? players.find((p) => p.id === String(s.playerId)) : null;
-        return (
-          (!q || s.statName.toLowerCase().includes(q) || (player?.name.toLowerCase().includes(q) ?? false) || s.college.toLowerCase().includes(q)) &&
-          (!filterCollege || s.college === filterCollege) &&
-          (!filterSport || s.sport === filterSport)
-        );
-      })
-      .sort((a, b) => {
-        const dir = sortDir === "asc" ? 1 : -1;
-        const getVal = (obj: Stat): string | number => {
-          switch (sortKey) {
-            case "type": return obj.type;
-            case "sport": return obj.sport;
-            case "college": return obj.college;
-            case "statName": return obj.statName;
-            case "statValue": return String(obj.statValue);
-            case "createdAt": return obj.createdAt;
-            default: return "";
-          }
-        };
-        const va = getVal(a);
-        const vb = getVal(b);
-        if (sortKey === "createdAt") return (new Date(String(va)).getTime() - new Date(String(vb)).getTime()) * dir;
-        return String(va).localeCompare(String(vb)) * dir;
-      });
-  }, [stats, players, search, filterCollege, filterSport, sortKey, sortDir]);
-
-  const handleSort = (key: string) => {
-    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else { setSortKey(key); setSortDir("asc"); }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.type || !form.sport || !form.college || !form.statName || !form.statValue) {
-      alert("Please fill in all required stat fields"); return;
-    }
-    const stat = {
-      type: form.type as "Player" | "Team",
-      sport: form.sport,
-      college: form.college,
-      playerId: form.type === "Player" && form.playerId ? parseInt(form.playerId) : null,
-      statName: form.statName,
-      statValue: form.statValue,
-    };
-    if (editingId) { onUpdateStat(editingId, stat); setEditingId(null); }
-    else onAddStat(stat);
-    setForm({ ...emptyForm });
-  };
-
-  const handleEdit = (s: Stat) => {
-    setEditingId(s.id);
-    setForm({ type: s.type, sport: s.sport, college: s.college, playerId: s.playerId ? String(s.playerId) : "", statName: s.statName, statValue: String(s.statValue) });
-  };
-
-  const handleExport = () => {
-    const headers = ["id","type","sport","college","playerId","statName","statValue","createdAt"];
-    exportCSV(
-      headers,
-      stats.map((s) =>
-        headers.map((h) => {
-          const row: Record<string, unknown> = {
-            id: s.id, type: s.type, sport: s.sport, college: s.college,
-            playerId: s.playerId, statName: s.statName, statValue: s.statValue, createdAt: s.createdAt,
-          };
-          return csvEscape(row[h]);
-        })
-      ),
-      "stats.csv"
-    );
-  };
-
-  const thCls = (key: string) =>
-    `px-3 py-3 text-left text-[#A91D3A] font-semibold text-xs uppercase tracking-wide cursor-pointer select-none ${sortKey === key ? "opacity-100" : "opacity-70 hover:opacity-100"}`;
-
+export default function LeaderboardPage() {
+  const [timeframe, setTimeframe] = useState("Weekly");
   return (
-    <div>
-      {/* Add Stat Form */}
-      <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200 mb-6">
-        <h3 className="text-[#A91D3A] text-lg font-semibold mb-5">Add / Edit Stat</h3>
-        <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
-            <div>
-              <label className={labelCls}>Type *</label>
-              <select className={inputCls} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as "Player" | "Team" | "" })} required>
-                <option value="">Select Type</option>
-                <option value="Player">Player</option>
-                <option value="Team">Team</option>
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>Sport *</label>
-              <select className={inputCls} value={form.sport} onChange={(e) => setForm({ ...form, sport: e.target.value })} required>
-                <option value="">Select Sport</option>
-                {statSports.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>College / Team *</label>
-              <select className={inputCls} value={form.college} onChange={(e) => setForm({ ...form, college: e.target.value })} required>
-                <option value="">Select College</option>
-                {COLLEGES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
-            {form.type === "Player" && (
-              <div>
-                <label className={labelCls}>Player *</label>
-                <select className={inputCls} value={form.playerId} onChange={(e) => setForm({ ...form, playerId: e.target.value })}>
-                  <option value="">Select Player</option>
-                  {filteredPlayers.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.jersey})</option>)}
-                </select>
-              </div>
-            )}
-            <div>
-              <label className={labelCls}>Stat Name *</label>
-              <input type="text" className={inputCls} placeholder="e.g., Points, Assists" value={form.statName} onChange={(e) => setForm({ ...form, statName: e.target.value })} required />
-            </div>
-            <div>
-              <label className={labelCls}>Value *</label>
-              <input type="text" className={inputCls} placeholder="e.g., 12" value={form.statValue} onChange={(e) => setForm({ ...form, statValue: e.target.value })} required />
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <button type="submit" className="px-5 py-2 bg-[#A91D3A] hover:bg-[#8B1528] text-white rounded-md text-sm font-semibold transition-all">
-              {editingId ? "Update Stat" : "Add Stat"}
-            </button>
-            <button type="button" onClick={onLoadDemoStats} className="px-5 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-sm font-semibold transition-all">
-              Load Demo Stats
-            </button>
-            {editingId && (
-              <button type="button" onClick={() => { setEditingId(null); setForm({ ...emptyForm }); }} className="px-5 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded-md text-sm font-semibold transition-all">
-                Cancel
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
-
-      {/* Stats Table */}
-      <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-        <h3 className="text-[#A91D3A] text-lg font-semibold mb-4">All Stats</h3>
-        <div className="flex flex-wrap gap-3 mb-4">
-          <input type="text" placeholder="Search stats..." className={`${inputCls} max-w-[220px]`} value={search} onChange={(e) => setSearch(e.target.value)} />
-          <select className={`${inputCls} max-w-[180px]`} value={filterCollege} onChange={(e) => setFilterCollege(e.target.value)}>
-            <option value="">All Colleges</option>
-            {COLLEGES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <select className={`${inputCls} max-w-[180px]`} value={filterSport} onChange={(e) => setFilterSport(e.target.value)}>
-            <option value="">All Sports</option>
-            {statSports.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <button onClick={handleExport} className="ml-auto px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-xs font-semibold transition-all">
-            Export Stats CSV
-          </button>
+    <div className="bg-[#0A0A0A] p-8 text-white min-h-screen">
+	 
+	
+      {/* STICKY PREMIUM HEADER */}
+      <header className="sticky top-0 z-50 -mx-8 -mt-8 mb-8 bg-zinc-950/80 backdrop-blur-xl px-8 py-6">
+        <div className="max-w-[1600px] mx-auto flex justify-between items-center">
+          <h1 className="text-4xl font-black flex items-center gap-6 tracking-tight text-white">
+      {/* Increased height to 12 (48px) and width to 2 (8px) */}
+      <div className="w-2 h-12 bg-[#A91D3A] rounded-full shadow-[0_0_25px_rgba(169,29,58,0.7)]" /> 
+      LEADERBOARDS
+    </h1>
+		    {/* Compact Pill Dropdown */}
+<DropdownMenu>
+  <DropdownMenuTrigger className="flex items-center gap-1.5 bg-[#1A1A1A] hover:bg-[#252525] border border-gray-800 px-4 py-1.5 rounded-full text-[12px] font-medium transition-all focus:outline-none focus:ring-1 focus:ring-[#A91D3A]">
+    <Calendar className="w-3.5 h-3.5 text-[#C5A059]" />
+    {timeframe}
+    <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
+  </DropdownMenuTrigger>
+  
+  <DropdownMenuContent 
+    className="bg-[#1A1A1A] border border-gray-800 text-white w-32 rounded-xl shadow-xl p-1"
+    align="end"
+  >
+    <DropdownMenuItem 
+      onClick={() => setTimeframe("Weekly")} 
+      className="cursor-pointer text-xs rounded-lg hover:bg-[#A91D3A] focus:bg-[#A91D3A] transition-colors"
+    >
+      Weekly
+    </DropdownMenuItem>
+    <DropdownMenuItem 
+      onClick={() => setTimeframe("Monthly")} 
+      className="cursor-pointer text-xs rounded-lg hover:bg-[#A91D3A] focus:bg-[#A91D3A] transition-colors"
+    >
+      Monthly
+    </DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-[#E8CDD1]">
-                {[["type","Type"],["sport","Sport"],["college","Team"],["player","Player"],["statName","Stat"],["statValue","Value"],["createdAt","Date"]].map(([k,l]) => (
-                  <th key={k} className={thCls(k)} onClick={() => handleSort(k)}>
-                    {l} {sortKey === k ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                  </th>
-                ))}
-                <th className="px-3 py-3 text-left text-[#A91D3A] font-semibold text-xs uppercase tracking-wide">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredStats.length === 0 ? (
-                <tr><td colSpan={8} className="text-center text-gray-400 italic py-10">No stats match the filters.</td></tr>
-              ) : (
-                filteredStats.map((s) => {
-					const player = s.playerId != null
-  ? players.find((p) => String(p.id) === String(s.playerId))
-  : null;
-                  return (
-                    <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                      <td className="px-3 py-3 text-sm">{s.type}</td>
-                      <td className="px-3 py-3 text-sm">{s.sport}</td>
-                      <td className="px-3 py-3 text-sm">{s.college}</td>
-                      <td className="px-3 py-3 text-sm">{player?.name || ""}</td>
-                      <td className="px-3 py-3 text-sm">{s.statName}</td>
-                      <td className="px-3 py-3 text-sm">{s.statValue}</td>
-                      <td className="px-3 py-3 text-sm">{new Date(s.createdAt).toLocaleString()}</td>
-                      <td className="px-3 py-3">
-                        <div className="flex gap-2">
-                          <button onClick={() => handleEdit(s)} className="px-3 py-1 bg-[#A91D3A] hover:bg-[#8B1528] text-white rounded text-xs font-semibold">Edit</button>
-                          <button onClick={() => setDeleteModal({ open: true, id: s.id })} className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold">Delete</button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      </header>
+    
+      {/* 1. Podium Section */}
+      <Podium performers={performers} /> 
+      <LeaderboardTable players={mock_players} teams={mock_teams}/>
 
     </div>
   );
 }
-
