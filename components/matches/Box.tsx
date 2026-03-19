@@ -33,7 +33,7 @@ export const Box = ({ matches }: { matches: Match[] }) => {
       className="bg-zinc-950 min-h-screen text-zinc-100 p-8 w-full overflow-x-hidden"
     >
       {/* 1. STICKY PREMIUM HEADER */}
-      <motion.header className="sticky top-0 z-50 -mx-8 -mt-14 mb-24 bg-zinc-950/80 backdrop-blur-xl px-8">
+      <motion.header variants={itemVariants} className="sticky top-0 z-50 -mx-8 -mt-14 mb-24 bg-zinc-950/80 backdrop-blur-xl px-8">
         <div className="max-w-[1600px] mx-auto flex justify-between items-center">
           <h1 className="text-5xl font-black flex items-center gap-6 italic tracking-tight text-white">
       {/* Increased height to 12 (48px) and width to 2 (8px) */}
@@ -66,12 +66,12 @@ export const Box = ({ matches }: { matches: Match[] }) => {
    
 	    {/* 3. YOUR MANAGED MATCHES (Admin Only) */}
 <section className="mb-20 mt-8">
-  <div className="flex items-center gap-4 mb-12 px-1.5">
-    <h2 className="text-4xl font-black uppercase tracking-widest text-[#C5A059]">
+  <motion.div variants={itemVariants} className="flex items-center gap-4 mb-12 px-1.5">
+    <h2 className="text-2xl font-black uppercase tracking-widest text-[#C5A059]">
       Your Matches
     </h2>
     <div className="h-px flex-1 bg-gradient-to-r from-[#C5A059]/30 to-transparent" />
-  </div>
+  </motion.div>
 
   {myMatches.length > 0 ? (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -89,12 +89,12 @@ export const Box = ({ matches }: { matches: Match[] }) => {
   )}
 </section>
 
-  <div className="flex items-center gap-4 mb-8 px-1.5">
-    <h2 className="text-4xl font-black uppercase tracking-widest text-[#C5A059]">
+  <motion.div variants={itemVariants} className="flex items-center gap-4 mb-8 px-1.5">
+    <h2 className="text-2xl font-black uppercase tracking-widest text-[#C5A059]">
       Global Matches
     </h2>
     <div className="h-px flex-1 bg-gradient-to-r from-[#C5A059]/30 to-transparent" />
-  </div>
+  </motion.div>
 
       {/* 3. MATCH GRID */}
       <motion.main className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -148,11 +148,11 @@ export const Box = ({ matches }: { matches: Match[] }) => {
           className="w-56 bg-[#111] border border-white/10 p-2 rounded-2xl shadow-2xl backdrop-blur-xl z-[101]"
         >
           <div className="flex flex-col gap-1">
-            <button className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-xs font-bold uppercase tracking-widest text-zinc-300">
+            <button className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-xs text-zinc-300">
               <Calendar className="w-4 h-4 text-[#C5A059]" /> Schedule Match
             </button>
             <div className="h-px bg-white/5 mx-2" />
-            <button className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-xs font-bold uppercase tracking-widest text-zinc-300">
+            <button className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-xs text-zinc-300">
               <Zap className="w-4 h-4 text-[#A91D3A]" /> Quick Match
             </button>
           </div>
