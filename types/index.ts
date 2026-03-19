@@ -22,6 +22,7 @@ export interface Match {
   homeScore: number | null;
   awayScore: number | null;
   minute: string | null;
+  isOwner?: boolean;
   homeScorers: string[];
   awayScorers: string[];
 }

@@ -95,6 +95,9 @@ plugins: [
     addUtilities({
       ".transform-style-3d": {
         "transform-style": "preserve-3d",
+      ".clip-x": {
+          'overflow-x': 'hidden',
+        },
       },
       ".perspective-1000": {
         perspective: "1000px",
