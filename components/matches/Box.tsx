@@ -44,7 +44,7 @@ export const Box = ({ matches }: BoxProps) => {
         className="sticky top-0 z-50 -mx-8 -mt-8 mb-8 bg-zinc-950/80 backdrop-blur-xl px-8 py-6 "
       >
         <div className="max-w-[1600px] mx-auto flex justify-between items-center">
-          <h1 className="text-4xl font-black flex items-center gap-6 tracking-tight text-white">
+          <h1 className="text-5xl italic font-black flex items-center gap-6 tracking-tight text-white">
             <div className="w-2 h-12 bg-[#A91D3A] rounded-full shadow-[0_0_25px_rgba(169,29,58,0.7)]" /> 
             LIVE & SCHEDULED GAMES
           </h1>
