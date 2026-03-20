@@ -1,165 +1,178 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { MatchCard } from "./MatchCard";
 import { Match } from "@/types";
 import { Plus, Calendar, Zap, Search, ChevronDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 export const Box = ({ matches }: { matches: Match[] }) => {
   const [search, setSearch] = useState("");
-    // Global matches (everyone can see)
-  const globalMatches = matches.filter(m => m.statusType !== "live");
-  
-  // Your matches (Matches where isOwner is true)
-  const myMatches = matches.filter(m => m.isOwner);
   const [isOpen, setIsOpen] = useState(false);
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } }
-  };
+
+  // Scroll Animation Logic
+  const { scrollY } = useScroll();
+  const bgOpacity = useTransform(scrollY, [0, 400], [1, 0]);
+  const contentY = useTransform(scrollY, [0, 400], [0, -50]); // Slight parallax
+
+  const myMatches = matches.filter((m) => m.isOwner);
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
   };
 
   return (
-    <motion.div 
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-      className="bg-zinc-950 min-h-screen text-zinc-100 p-8 w-full overflow-x-hidden"
-    >
-      {/* 1. STICKY PREMIUM HEADER */}
-      <motion.header variants={itemVariants} className="sticky top-0 z-50 -mx-8 -mt-14 mb-24 bg-zinc-950/80 backdrop-blur-xl px-8">
-        <div className="max-w-[1600px] mx-auto flex justify-between items-center">
-          <h1 className="text-5xl font-black flex items-center gap-6 italic tracking-tight text-white">
-      {/* Increased height to 12 (48px) and width to 2 (8px) */}
-      <div className="w-2 h-12 bg-[#A91D3A] rounded-full shadow-[0_0_25px_rgba(169,29,58,0.7)]" /> 
-	LIVE & SCHEDULED GAMES
-    </h1>
-    </div>
-    </motion.header>
-
-
-      {/* 2. FILTER & SEARCH BAR */}
-      <motion.div variants={itemVariants} className="max-w-[1600px] mx-auto mb-10 flex gap-3">
-        <div className="relative flex-[1]">
-          <Search className="absolute left-4 top-3 w-4 h-4 text-zinc-500" />
-          <input 
-            type="text" 
-            placeholder="Search by team, league, or venue..." 
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 bg-[#111] border border-white/5 rounded-full pl-11 pr-4 text-xs font-semibold focus:outline-none focus:border-[#A91D3A] transition-all"
-          />
-        </div>
-        {["Sport", "Status"].map((placeholder) => (
-          <button key={placeholder} className="flex items-center justify-between w-[120px] h-10 bg-[#111] border border-white/5 rounded-full px-5 text-xs font-bold text-zinc-400 hover:border-[#A91D3A] transition-all">
-            {placeholder}
-            <ChevronDown className="w-3 h-3" />
-          </button>
-        ))}
+    <div className="relative bg-[#050505] min-h-screen text-zinc-100 w-full overflow-x-hidden">
+      
+      {/* 1. LETTERBOXD STYLE BACKDROP */}
+      <motion.div 
+        style={{ opacity: bgOpacity }}
+        className="absolute top-0 left-0 w-full h-[70vh] z-0 pointer-events-none"
+      >
+        {/* The Hero Image - Desaturated for that classic film look */}
+        <div 
+          className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1533928298208-27ff66555d8d?q=80&w=2070&auto=format&fit=crop')] 
+          bg-cover bg-center grayscale-[0.4] brightness-[0.6]"
+        />
+        
+        {/* THE VIGNETTE (Edges Darkening) */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-[#050505] opacity-80" />
+        
+        {/* THE BOTTOM FADE (Blending into page) */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#050505]/40 to-[#050505]" />
       </motion.div>
-   
-	    {/* 3. YOUR MANAGED MATCHES (Admin Only) */}
-<section className="mb-20 mt-8">
-  <motion.div variants={itemVariants} className="flex items-center gap-4 mb-12 px-1.5">
-    <h2 className="text-2xl font-black uppercase tracking-widest text-[#C5A059]">
-      Your Matches
-    </h2>
-    <div className="h-px flex-1 bg-gradient-to-r from-[#C5A059]/30 to-transparent" />
-  </motion.div>
 
-  {myMatches.length > 0 ? (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {myMatches.map((match) => (
-        <motion.div key={match.id} variants={itemVariants}>
-          <MatchCard match={match} />
-        </motion.div>
+      {/* 2. MAIN CONTENT WRAPPER */}
+      <div className="relative z-10 pt-[35vh]"> {/* Pushes content down to show hero image */}
+        
+	{/* 3. FILTER, ADMIN ACTION & SEARCH BAR */}
+<motion.div 
+  variants={itemVariants} 
+  className="max-w-[1600px] mx-auto mb-12 px-6 flex items-center justify-between gap-10"
+>
+  {/* LEFT SIDE: Navigation Filters (Gray/Simple Theme) */}
+  <div className="flex items-center gap-8">
+    
+    {/* PRIMARY DROPDOWNS (Division, Phase, Venue) */}
+    <div className="flex items-center gap-6 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+      <div className="group flex items-center gap-2 cursor-pointer hover:text-zinc-200 transition-colors">
+        <span>Category</span>
+        <ChevronDown className="w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+      </div>
+      <div className="group flex items-center gap-2 cursor-pointer hover:text-zinc-200 transition-colors">
+        <span>Location</span>
+        <ChevronDown className="w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+      </div>
+      <div className="group flex items-center gap-2 cursor-pointer hover:text-zinc-200 transition-colors">
+        <span>College</span>
+        <ChevronDown className="w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+      </div>
+    </div>
+
+    {/* SUBTLE DIVIDER */}
+    <div className="h-4 w-px bg-white/10" />
+
+    {/* SECONDARY FILTERS (Sport & Department) */}
+    <div className="flex items-center gap-6">
+      {["Sport", "Status"].map((label) => (
+        <button 
+          key={label} 
+          className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500 hover:text-white transition-all"
+        >
+          {label}
+        </button>
       ))}
     </div>
-  ) : (
-    <div className="bg-[#111] border border-dashed border-white/10 rounded-3xl p-12 text-center text-zinc-500">
-      <p className="text-sm font-bold uppercase tracking-widest">No matches managed yet</p>
-      <p className="text-[10px] mt-2">Create a new match to get started.</p>
+  </div>
+
+  {/* RIGHT SIDE: Admin Action + Search */}
+  <div className="flex items-center gap-4 shrink-0">
+    
+    {/* ADMIN "ADD MATCH" BUTTON - Forced to one line */}
+    <button className="flex items-center gap-2 px-5 h-9 bg-[#C5A059]/5 border border-[#C5A059]/20 hover:border-[#C5A059]/60 hover:bg-[#C5A059]/10 rounded-md transition-all group whitespace-nowrap">
+      <Plus className="w-3.5 h-3.5 text-[#C5A059]" />
+      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#C5A059]">
+        Add Match
+      </span>
+    </button>
+
+    {/* VERTICAL DIVIDER */}
+    <div className="h-4 w-px bg-white/10 mx-1" />
+
+    {/* SEARCH BAR */}
+    <div className="relative w-[280px]">
+      <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-600" />
+      <input
+        type="text"
+        placeholder="SEARCH REPOSITORY..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-full h-9 bg-zinc-900/40 border border-white/5 rounded-md pl-10 pr-4 text-[10px] font-bold tracking-[0.15em] focus:outline-none focus:border-[#A91D3A]/50 transition-all uppercase placeholder:text-zinc-700"
+      />
     </div>
-  )}
-</section>
+  </div>
+</motion.div>
 
-  <motion.div variants={itemVariants} className="flex items-center gap-4 mb-8 px-1.5">
-    <h2 className="text-2xl font-black uppercase tracking-widest text-[#C5A059]">
-      Global Matches
-    </h2>
-    <div className="h-px flex-1 bg-gradient-to-r from-[#C5A059]/30 to-transparent" />
-  </motion.div>
 
-      {/* 3. MATCH GRID */}
-      <motion.main className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {matches.map((match) => (
-          <motion.div key={match.id} variants={itemVariants}>
-            <MatchCard match={match} />
-          </motion.div>
-        ))}
-      </motion.main>
 
-      {/* 4. FOOTER */}
-      <motion.footer variants={itemVariants} className="mt-20 mb-8 flex justify-between items-center max-w-[1600px] mx-auto px-8">
-        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">PAGE 1 OF 5</p>
-        <div className="flex gap-2">
-          <button className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-zinc-400 hover:bg-white/10 transition-all active:scale-95">Previous</button>
-          <div className="flex gap-1 items-center px-1">
-            {[1, 2, 3].map((num) => (
-              <span key={num} className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all cursor-pointer ${num === 1 ? 'bg-[#A91D3A] text-white shadow-lg shadow-[#A91D3A]/20' : 'bg-white/5 text-zinc-500 hover:bg-white/10'}`}>{num}</span>
+
+        {/* 4. TITLE SECTION */}
+        <section className="max-w-[1600px] mx-auto px-6 mb-16">
+           <motion.h1 
+             initial={{ opacity: 0, x: -20 }}
+             animate={{ opacity: 1, x: 0 }}
+             className="text-4xl font-black tracking-tight text-white mb-4"
+           >
+             The Match Compendium
+           </motion.h1>
+           <p className="text-zinc-400 max-w-2xl text-sm leading-relaxed">
+	   A live-updated catalog of the intramural landscape. Featuring every active entry and future showdown across all campus divisions. This list records every match from the opening whistle to the final buzzer. See the <span className="text-zinc-200 underline underline-offset-4 decoration-zinc-700 hover:text-[#C5A059] cursor-pointer transition-all">standings</span> for a bird’s-eye view of the season.
+           </p>
+        </section>
+
+        {/* 5. MATCH SECTIONS (Standardized alignment) */}
+        <section className="mb-24 max-w-[1600px] mx-auto px-6">
+          <div className="flex items-center gap-6 mb-8">
+            <h2 className="text-sm font-black uppercase tracking-[0.3em] text-[#C5A059]">Managed Matches</h2>
+            <div className="h-px flex-1 bg-white/5" />
+          </div>
+          
+          <Carousel opts={{ align: "start" }} className="w-full">
+            <CarouselContent className="-ml-6">
+              {myMatches.map((match) => (
+                <CarouselItem key={match.id} className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                   <MatchCard match={match} />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+        </section>
+
+        {/* 6. GLOBAL GRID */}
+        <section className="max-w-[1600px] mx-auto px-6 pb-20">
+          <div className="flex items-center gap-6 mb-8">
+            <h2 className="text-sm font-black uppercase tracking-[0.3em] text-zinc-500">All Matches</h2>
+            <div className="h-px flex-1 bg-white/5" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {matches.map((match) => (
+              <MatchCard key={match.id} match={match} />
             ))}
           </div>
-          <button className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-zinc-400 hover:bg-white/10 transition-all active:scale-95">Next</button>
-        </div>
-      </motion.footer>
-
-      {/* 5. FLOATING ACTION BUTTON */}
-      <div className="fixed bottom-10 right-10 z-[100]">
-		<Popover onOpenChange={(open) => setIsOpen(open)}>
-        <PopoverTrigger asChild>
-          {/* Circular Button with Glow & Border */}
-          <button className="relative group w-16 h-16 rounded-full bg-[#0A0A0A] flex items-center justify-center transition-all hover:scale-110 active:scale-95">
-            {/* The Border Glow Ring */}
-            <div className="absolute inset-0 rounded-full bg-[#C5A059] p-[1.5px] transition-all group-hover:blur-sm">
-              <div className="h-full w-full rounded-full bg-[#0A0A0A]" />
-            </div>
-            
-            {/* Rotating Plus Icon */}
-            <motion.div 
-              animate={{ rotate: isOpen ? 45 : 0 }} 
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-            >
-              <Plus className="w-6 h-6 text-white relative z-10" />
-            </motion.div>
-          </button>
-        </PopoverTrigger>
-
-        {/* Popover Content (Displaying to the Left) */}
-        <PopoverContent 
-          side="left" 
-          align="end" 
-          sideOffset={20} 
-          className="w-56 bg-[#111] border border-white/10 p-2 rounded-2xl shadow-2xl backdrop-blur-xl z-[101]"
-        >
-          <div className="flex flex-col gap-1">
-            <button className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-xs text-zinc-300">
-              <Calendar className="w-4 h-4 text-[#C5A059]" /> Schedule Match
-            </button>
-            <div className="h-px bg-white/5 mx-2" />
-            <button className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-xs text-zinc-300">
-              <Zap className="w-4 h-4 text-[#A91D3A]" /> Quick Match
-            </button>
-          </div>
-        </PopoverContent>
-      </Popover>
+        </section>
       </div>
-    </motion.div>
+
+      {/* FLOATING ACTION BUTTON - (Same as before) */}
+    </div>
   );
 };
 

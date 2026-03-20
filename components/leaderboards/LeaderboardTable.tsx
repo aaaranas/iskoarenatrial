@@ -18,24 +18,6 @@ export function LeaderboardTable({ players = [], teams = [] }: any) {
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 pb-12">
-      {/* Premium Toggle */}
-      <div className="flex justify-center mb-8">
-        <div className="bg-[#0A0A0A] p-1 rounded-full border border-gray-800/50 inline-flex shadow-xl">
-          {(["players", "teams"] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => setMode(m)}
-              className={`px-4 py-1.5 text-xs tracking-[0.2em] rounded-full transition-all duration-300 ${
-                mode === m
-                  ? "bg-[#A91D3A] text-white shadow-[0_4px_12px_rgba(169,29,58,0.3)]"
-                  : "text-gray-600 hover:text-gray-300"
-              }`}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Borderless Premium Wrapper */}
       <div className="relative rounded-3xl bg-[#0E0E0E] shadow-2xl overflow-hidden">
