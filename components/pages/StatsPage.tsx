@@ -109,9 +109,9 @@ export default function LeaderboardPage() {
                  <p className="text-xl font-medium italic text-zinc-400 border-l-2 border-[#C5A059] pl-8 leading-relaxed">
                    "The arena only recognizes performance as its universal currency."
                  </p>
-                 <p className="text-[10px] leading-loose text-zinc-500 uppercase tracking-[0.25em]">
+                 <p className="text-[12px] leading-loose text-zinc-500 tracking-[0.25em]">
                    Quantifying campus dominance across every bracket. 
-                   An archive of departmental legacy and individual brilliance.
+                   An archive of collegiate legacy and individual brilliance.
                  </p>
                </div>
                
