@@ -135,8 +135,7 @@ export const Box = ({ matches }: { matches: Match[] }) => {
              The Match Compendium
            </motion.h1>
            <p className="text-zinc-400 max-w-2xl text-sm leading-relaxed">
-             Curated by the community. This list ranks competitive matches by intensity, 
-             venue atmosphere, and historic significance. See <span className="text-zinc-200 underline underline-offset-4 decoration-zinc-700 hover:text-[#C5A059] cursor-pointer transition-all">all leagues</span> that have entered the circuit.
+	   A live-updated catalog of the intramural landscape. Featuring every active entry and future showdown across all campus divisions. This list records every match from the opening whistle to the final buzzer. See the <span className="text-zinc-200 underline underline-offset-4 decoration-zinc-700 hover:text-[#C5A059] cursor-pointer transition-all">standings</span> for a bird’s-eye view of the season.
            </p>
         </section>
 
