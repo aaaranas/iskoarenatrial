@@ -109,7 +109,7 @@ export default function LeaderboardPage() {
                  <p className="text-xl font-medium italic text-zinc-400 border-l-2 border-[#C5A059] pl-8 leading-relaxed">
                    "The arena only recognizes performance as its universal currency."
                  </p>
-                 <p className="text-[12px] leading-loose text-zinc-500 tracking-[0.25em]">
+                 <p className="text-[12px]  text-zinc-500 tracking-[0.25em]">
                    Quantifying campus dominance across every bracket. 
                    An archive of collegiate legacy and individual brilliance.
                  </p>
@@ -135,7 +135,7 @@ export default function LeaderboardPage() {
                 className="w-full h-full object-cover grayscale brightness-75 hover:grayscale-0 transition-all duration-1000" 
               />
               <div className="absolute -bottom-6 -left-8 bg-[#C5A059] text-black px-5 py-3 text-[10px] font-black uppercase italic tracking-widest shadow-2xl">
-                MVP SELECT / SEASON 24
+		FEATURED ATHLETES / ISKOLARO 2026
               </div>
             </motion.div>
 
@@ -209,7 +209,7 @@ export default function LeaderboardPage() {
                <div className="lg:col-span-3 pb-16">
                   <h3 className="text-7xl font-black uppercase italic tracking-tighter leading-[0.85] mb-10">Elite <br /> Tier</h3>
                   <div className="space-y-6">
-                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest leading-loose">
+                     <p className="text-[12px]  tracking-[0.25em] text-zinc-600 ">
                         Historical quantification of peak performance within the current seasonal cycle.
                      </p>
                      <button className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.4em] text-[#C5A059] group">
