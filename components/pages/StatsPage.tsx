@@ -74,7 +74,6 @@ export default function LeaderboardPage() {
         <div className="absolute inset-0 opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
         
         {/* Moving Scanline Animation */}
-        <div className="absolute top-0 left-0 w-full h-[1px] bg-white/[0.03] animate-[scanline_12s_linear_infinite]" />
       </div>
 
       {/* 2. BACKGROUND MASK */}
