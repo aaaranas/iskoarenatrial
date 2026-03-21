@@ -151,7 +151,7 @@ export default function LeaderboardPage() {
                 className="w-full h-full object-cover grayscale brightness-50 hover:grayscale-0 transition-all duration-1000" 
               />
               <div className="absolute -top-6 -right-8 bg-[#A91D3A] text-white px-5 py-3 text-[10px] font-black uppercase italic tracking-widest shadow-2xl">
-                CHALLENGER / VOL 03
+                CHALLENGER 
               </div>
             </motion.div>
           </div>
@@ -161,11 +161,11 @@ export default function LeaderboardPage() {
         <div className="flex flex-col lg:flex-row items-center justify-between py-12 border-y border-white/5 mb-40 sticky top-0 bg-[#050505]/95 backdrop-blur-2xl z-30">
            <div className="flex items-center gap-16">
               <div className="group cursor-pointer">
-                 <span className="text-xs font-black text-[#C5A059] tracking-[0.5em] uppercase block mb-1">01. Podium</span>
+                 <span className="text-xs font-black text-[#C5A059] tracking-[0.5em] uppercase block mb-1">01. Leaderboard</span>
                  <div className="h-[1px] w-full bg-[#C5A059]/30 group-hover:bg-[#A91D3A] transition-all duration-500" />
               </div>
               <div className="group cursor-pointer">
-                 <span className="text-xs font-black text-zinc-700 tracking-[0.5em] uppercase block mb-1 group-hover:text-zinc-500 transition-colors">02. Registry</span>
+                 <span className="text-xs font-black text-zinc-700 tracking-[0.5em] uppercase block mb-1 group-hover:text-zinc-500 transition-colors">02. Standings</span>
                  <div className="h-[1px] w-full bg-zinc-900 group-hover:bg-zinc-700 transition-all duration-500" />
               </div>
            </div>
@@ -212,7 +212,7 @@ export default function LeaderboardPage() {
                         Historical quantification of peak performance within the current seasonal cycle.
                      </p>
                      <button className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.4em] text-[#C5A059] group">
-                       Methodology <ArrowRight className="w-4 h-4 group-hover:translate-x-3 transition-transform duration-500" />
+                       View More <ArrowRight className="w-4 h-4 group-hover:translate-x-3 transition-transform duration-500" />
                      </button>
                   </div>
                </div>
@@ -236,13 +236,13 @@ export default function LeaderboardPage() {
           <section>
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12 mb-20">
                <div className="flex gap-12">
-                  <h3 className="text-9xl font-black uppercase italic tracking-tighter">Registry</h3>
+                  <h3 className="text-9xl font-black uppercase italic tracking-tighter">Standings</h3>
                </div>
 
                <div className="flex bg-[#0A0A0A] p-1.5 border border-white/5 shadow-inner">
                   <button 
                     onClick={() => setViewMode("players")} 
-                    className={`px-14 py-4 text-[11px] font-black uppercase tracking-widest transition-all duration-500 ${viewMode === "players" ? "bg-[#A91D3A] text-white" : "text-zinc-600 hover:text-white"}`}
+                    className={`px-14 py-1 text-[11px] font-black uppercase tracking-widest transition-all duration-500 ${viewMode === "players" ? "bg-[#A91D3A] text-white" : "text-zinc-600 hover:text-white"}`}
                   >
                     Players
                   </button>
