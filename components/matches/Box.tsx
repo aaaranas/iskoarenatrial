@@ -40,7 +40,7 @@ export const Box = ({ matches }: { matches: Match[] }) => {
       >
         {/* The Hero Image - Desaturated for that classic film look */}
         <div 
-          className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1533928298208-27ff66555d8d?q=80&w=2070&auto=format&fit=crop')] 
+          className="absolute inset-0 bg-[url('/iskolarobadminton.jpg')] 
           bg-cover bg-center grayscale-[0.4] brightness-[0.6]"
         />
         

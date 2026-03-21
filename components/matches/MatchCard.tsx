@@ -8,10 +8,11 @@ export const MatchCard = ({ match }: { match: Match }) => {
 
   // Array of sports images to simulate variety if no specific image is provided
   const fallbackImages = [
-    "https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=800", // Basketball
-    "https://images.unsplash.com/photo-1518063319789-7217e6706b04?q=80&w=800", // Soccer
-    "https://images.unsplash.com/photo-1593787467001-e3945515099a?q=80&w=800", // Volleyball
-    "https://images.unsplash.com/photo-1511204539483-e3c274b1979a?q=80&w=800", // Tennis
+    "/iskolarobaseball.jpg",
+    "/iskolarofrisbee.jpg",
+    "/iskolarosocer.jpg",
+    "/iskolarofrisbee2.jpg",
+    "/iskolarovolley.jpg"
   ];
 
   const cardImage = match.imageUrl || fallbackImages[match.id % fallbackImages.length];
