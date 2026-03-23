@@ -5,41 +5,49 @@ import { LogoIcon } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { X } from "lucide-react"; // Import a close icon
+import { X, Loader2 } from "lucide-react";
 
 interface LoginPageProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (username: string, password: string) => { success: boolean; message?: string };
+    // Updated signature: email instead of username, and returns a Promise
+    onSubmit: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
     onToggleSignup: () => void;
 }
 
 export default function LoginPage({ isOpen, onClose, onSubmit, onToggleSignup }: LoginPageProps) {
-    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     if (!isOpen) return null;
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        setIsLoading(true);
 
-        const result = onSubmit(username, password);
-        if (!result.success) {
-            setError(result.message || "Invalid credentials");
+        try {
+            const result = await onSubmit(email, password);
+            if (!result.success) {
+                setError(result.message || "Invalid credentials");
+            }
+        } catch (err) {
+            setError("An unexpected authentication error occurred.");
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
-        // Overlay Backdrop
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <section className="relative w-full max-w-sm animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <section className="relative w-full max-w-sm animate-in fade-in zoom-in duration-300">
                 
-                {/* Close Button */}
                 <button 
+                    type="button"
                     onClick={onClose}
-                    className="absolute right-4 top-4 text-zinc-400 hover:text-white transition-colors"
+                    className="absolute right-4 top-4 text-zinc-500 hover:text-white transition-colors z-10"
                 >
                     <X className="h-5 w-5" />
                 </button>
@@ -49,19 +57,19 @@ export default function LoginPage({ isOpen, onClose, onSubmit, onToggleSignup }:
                     className="bg-zinc-950 m-auto h-fit w-full rounded-xl border border-zinc-800 p-0.5 shadow-2xl"
                 >
                     <div className="p-8 pb-6">
-                        <div>
-                            <LogoIcon />
-                            <h1 className="mb-1 mt-4 text-xl font-semibold text-white">Sign In to IskoArena</h1>
-                            <p className="text-sm text-zinc-400">Welcome back! Sign in to continue</p>
+                        <div className="mb-8 text-center">
+                            <div className="flex justify-center"><LogoIcon /></div>
+                            <h1 className="mb-1 mt-4 text-xl font-black uppercase tracking-[0.2em] text-white">Access Granted</h1>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 italic">Personnel Identification Required</p>
                         </div>
 
-                        {/* Social Logins (Optional UI kept for Tailark style) */}
+                        {/* Social Logins (Cinematic Style) */}
                         <div className="mt-6 grid grid-cols-2 gap-3">
-                            <Button type="button" variant="outline" className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-white">
+                            <Button type="button" variant="outline" className="border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800 text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
                                 <GoogleIcon />
                                 <span>Google</span>
                             </Button>
-                            <Button type="button" variant="outline" className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-white">
+                            <Button type="button" variant="outline" className="border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800 text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
                                 <MicrosoftIcon />
                                 <span>Microsoft</span>
                             </Button>
@@ -70,39 +78,38 @@ export default function LoginPage({ isOpen, onClose, onSubmit, onToggleSignup }:
                         <hr className="my-6 border-dashed border-zinc-800" />
 
                         {error && (
-                            <div className="mb-4 p-2 text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded">
+                            <div className="mb-6 p-3 text-[10px] font-bold uppercase tracking-widest text-red-400 bg-red-400/5 border border-red-400/20 rounded-sm animate-in slide-in-from-top-2">
                                 {error}
                             </div>
                         )}
 
                         <div className="space-y-6">
                             <div className="space-y-2">
-                                <Label htmlFor="username" className="block text-sm text-zinc-300">
-                                    Username
+                                <Label htmlFor="email" className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">
+                                    Email Address
                                 </Label>
                                 <Input
-                                    type="text"
+                                    type="email"
                                     required
-                                    id="username"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    className="bg-zinc-900 border-zinc-800 text-white focus:ring-maroon-500"
+                                    id="email"
+                                    placeholder="PERSONNEL@UNIVERSITY.EDU"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="bg-zinc-900/40 border-zinc-800 text-white focus-visible:ring-[#C5A059]/30 h-10 uppercase text-[11px] tracking-widest font-bold placeholder:text-zinc-800"
                                 />
                             </div>
 
-                            <div className="space-y-0.5">
+                            <div className="space-y-1">
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="pwd" className="text-sm text-zinc-300">
+                                    <Label htmlFor="pwd" className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">
                                         Password
                                     </Label>
-                                    <Button
+                                    <button
                                         type="button"
-                                        variant="link"
-                                        size="sm"
-                                        className="text-zinc-500 hover:text-zinc-300 h-auto p-0"
+                                        className="text-[8px] font-bold uppercase tracking-widest text-zinc-600 hover:text-[#C5A059] transition-colors"
                                     >
-                                        Forgot Password?
-                                    </Button>
+                                        Forgot?
+                                    </button>
                                 </div>
                                 <Input
                                     type="password"
@@ -110,27 +117,34 @@ export default function LoginPage({ isOpen, onClose, onSubmit, onToggleSignup }:
                                     id="pwd"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="bg-zinc-900 border-zinc-800 text-white"
+                                    className="bg-zinc-900/40 border-zinc-800 text-white focus-visible:ring-[#C5A059]/30 h-10"
                                 />
                             </div>
 
-                            <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200">
-                                Sign In
+                            <Button 
+                                type="submit" 
+                                disabled={isLoading}
+                                className="w-full bg-[#C5A059] text-black font-black uppercase tracking-[0.3em] text-[11px] hover:bg-[#D4B475] h-12 transition-all mt-2 shadow-[0_0_20px_rgba(197,160,89,0.1)]"
+                            >
+                                {isLoading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin text-black" />
+                                ) : (
+                                    "Authorize"
+                                )}
                             </Button>
                         </div>
                     </div>
 
-                    <div className="bg-zinc-900/50 rounded-b-xl border-t border-zinc-800 p-4">
-                        <p className="text-zinc-400 text-center text-sm">
-                            Don't have an account?
-                            <Button
+                    <div className="bg-zinc-900/20 rounded-b-xl border-t border-zinc-800/50 p-4">
+                        <p className="text-zinc-600 text-center text-[10px] font-bold uppercase tracking-widest">
+                            NEW PERSONNEL?
+                            <button
                                 type="button"
-                                variant="link"
-                                className="px-2 text-white hover:text-zinc-300"
+                                className="ml-2 text-white hover:text-[#C5A059] transition-colors font-black"
                                 onClick={onToggleSignup}
                             >
-                                Create account
-                            </Button>
+                                INITIALIZE
+                            </button>
                         </p>
                     </div>
                 </form>
@@ -139,7 +153,7 @@ export default function LoginPage({ isOpen, onClose, onSubmit, onToggleSignup }:
     );
 }
 
-// Extracted SVG icons to keep the main component clean
+// Icons (Kept same as provided)
 function GoogleIcon() {
     return (
         <svg xmlns="http://www.w3.org/2000/svg" width="0.98em" height="1em" viewBox="0 0 256 262" className="mr-2">

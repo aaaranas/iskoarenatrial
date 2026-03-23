@@ -9,8 +9,6 @@ import {
   BarChart3,
   Image as ImageIcon,
   Users,
-  Sword,
-  Bell,
   Archive,
   LogOut,
   User,
@@ -44,21 +42,6 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   adminName: string;
 }
 
-// 1. Update your menu items to include the actual URL paths
-const navMain = [
-  { label: "Dashboard", icon: LayoutDashboard, url: "/dashboard" },
-  { label: "Matches", icon: Sword, url: "/dashboard/matches" },
-  { label: "Leaderboards", icon: BarChart3, url: "/dashboard/leaderboards" },
-];
-
-const manageItems = [
-  { label: "Media", icon: ImageIcon, url: "/dashboard/media" },
-  { label: "Teams", icon: Users, url: "/dashboard/teams" },
-  { label: "Notifications", icon: Bell, url: "/dashboard/notifications" },
-  { label: "Archives", icon: Archive, url: "/dashboard/archives" },
-
-];
-
 export function AppSidebar({ 
   currentPage, 
   onNavigate, 
@@ -67,6 +50,18 @@ export function AppSidebar({
   ...props 
 }: AppSidebarProps) {
 
+  const navItems = [
+    { page: "dashboard" as PageName, label: "Dashboard", icon: LayoutDashboard },
+    { page: "matches" as PageName, label: "Matches", icon: Trophy },
+    { page: "stats" as PageName, label: "Leaderboards", icon: BarChart3 },
+  ];
+
+  const manageItems = [
+    { page: "media" as PageName, url: "/dashboard", label: "Media Hub", icon: ImageIcon },
+    { page: "teams" as PageName, url: "/teams", label: "Teams & Orgs", icon: Users },
+    { page: "archives" as PageName, url: "/archives", label: "Archives", icon: Archive },
+  ];
+  
   const pathname = usePathname();
 
   return (
@@ -99,27 +94,21 @@ export function AppSidebar({
           <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Overview</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navMain.map((item) => (
-                <SidebarMenuItem key={item.label}>
-				    <SidebarMenuButton 
-                  asChild 
-                  tooltip={item.label}
-                  isActive={pathname === item.url}
-                  className={cn(
-                    "transition-all hover:bg-zinc-900",
-                    pathname === item.url && "bg-zinc-900 text-[#C5A059] font-bold"
-                  )}
-                >
-                  <Link href={item.url}>
-                    <item.icon className={cn(
-                      "w-4 h-4",
-                      pathname === item.url ? "text-[#C5A059]" : "text-zinc-500"
-                    )} />
-                    <span className="text-[11px] uppercase tracking-wider">
-                      {item.label}
-                    </span>
-                  </Link>
-		 </SidebarMenuButton>
+              {navItems.map((item) => (
+                <SidebarMenuItem key={item.page}>
+                  <SidebarMenuButton 
+                    tooltip={item.label}
+                    isActive={pathname === item.url}
+                    onClick={() => onNavigate(item.page)}
+                    className={cn(
+                      "transition-all",
+                      currentPage === item.page && "bg-secondary font-medium"
+                    )}
+                  >
+                    <item.icon className={cn("size-4", currentPage === item.page ? "text-foreground" : "text-muted-foreground")} />
+                    <span>{item.label}</span>
+                    {currentPage === item.page && <ChevronRight className="ml-auto size-3 opacity-50 group-data-[collapsible=icon]:hidden" />}
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -132,27 +121,15 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               {manageItems.map((item) => (
-                <SidebarMenuItem key={item.label}>
-				    <SidebarMenuButton 
-                  asChild 
-                  tooltip={item.label}
-                  isActive={pathname === item.url}
-                  className={cn(
-                    "transition-all hover:bg-zinc-900",
-                    pathname === item.url && "bg-zinc-900 text-[#C5A059] font-bold"
-                  )}
-                >
-                  <Link href={item.url}>
-                    <item.icon className={cn(
-                      "w-4 h-4",
-                      pathname === item.url ? "text-[#C5A059]" : "text-zinc-500"
-                    )} />
-                    <span className="text-[11px] uppercase tracking-wider">
-                      {item.label}
-                    </span>
-                  </Link>
-                </SidebarMenuButton>
-
+                <SidebarMenuItem key={item.page}>
+                  <SidebarMenuButton 
+                    tooltip={item.label}
+                    isActive={currentPage === item.page}
+                    onClick={() => onNavigate(item.page)}
+                  >
+                    <item.icon className={cn("size-4", currentPage === item.page ? "text-foreground" : "text-muted-foreground")} />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
