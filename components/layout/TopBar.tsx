@@ -1,23 +1,16 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import type { PageName } from "@/types";
-import { Bell, Search, Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Bell, Search, Settings, LayoutDashboard, Trophy, BarChart2, Users, Film, ChevronDown, User, Briefcase, LogOut } from "lucide-react";
 
 interface TopBarProps {
   currentPage: PageName;
   adminName: string;
+  adminEmail?: string;
 }
 
-const titleMap: Record<PageName, string> = {
+const titleMap: Record<string, string> = {
   dashboard: "Dashboard Overview",
   matches: "Match Management",
   stats: "Analytics & Statistics",
@@ -28,83 +21,124 @@ const titleMap: Record<PageName, string> = {
   archives: "Data Archives",
 };
 
-export default function TopBar({ currentPage, adminName }: TopBarProps) {
+const navItems = [
+  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { key: "matches", label: "Matches", icon: Trophy },
+  { key: "stats", label: "Analytics", icon: BarChart2 },
+  { key: "teams", label: "Teams", icon: Users },
+  { key: "media", label: "Media", icon: Film },
+];
+
+export default function TopBar({ currentPage, adminName, adminEmail = "admin@iskolaro.edu.ph" }: TopBarProps) {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
   return (
-    // Set delayDuration={0} for instant testing
-    <TooltipProvider delayDuration={200}>
-      <header className="sticky top-0 z-40 w-full bg-white/70 backdrop-blur-xl border-b border-white/40 px-8 py-4 flex justify-between items-center shadow-sm">
-        
-        <div className="flex flex-col">
-          <h1 className="text-[#800000] text-2xl font-black tracking-tight">
-            {titleMap[currentPage]}
-          </h1>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
-		Iskolaro Portal
-          </p>
-        </div>
+    <header className="sticky top-0 z-40 w-full bg-white border-b border-slate-200/60 px-7 h-16 flex items-center justify-between font-sans">
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-full border border-slate-200/50">
-            
-            {/* SEARCH TOOLTIP */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-white transition-all">
-                  <Search className="w-4 h-4 text-slate-500" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p>Search Records</p>
-              </TooltipContent>
-            </Tooltip>
+      {/* LEFT — Page title */}
+      <div className="flex flex-col gap-0.5">
+        <h1 className="text-[#800000] text-[15px] font-semibold tracking-tight leading-none">
+          {titleMap[currentPage] ?? "Iskolaro Portal"}
+        </h1>
+        <p className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.18em] font-mono">
+          Iskolaro Portal
+        </p>
+      </div>
 
-            {/* SETTINGS TOOLTIP */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-white transition-all">
-                  <Settings className="w-4 h-4 text-slate-500" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p>System Settings</p>
-              </TooltipContent>
-            </Tooltip>
+      {/* CENTER — Nav pills */}
+      <nav className="flex items-center gap-1 bg-slate-100 border border-slate-200/60 rounded-full px-1.5 py-1">
+        {navItems.map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all duration-150
+              ${currentPage === key
+                ? "bg-[#800000] text-white shadow-sm"
+                : "text-slate-500 hover:bg-white hover:text-slate-800"
+              }`}
+          >
+            <Icon size={13} />
+            {label}
+          </button>
+        ))}
+      </nav>
 
-            {/* NOTIFICATIONS TOOLTIP */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="relative group">
-                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-white transition-all">
-                    <Bell className="w-4 h-4 text-slate-500" />
-                  </Button>
-                  <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-600 border-2 border-white" />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p>Recent Alerts</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
+      {/* RIGHT — Actions + Profile */}
+      <div className="flex items-center gap-2">
 
-          <div className="h-8 w-[1px] bg-slate-200 mx-2" />
+        {/* Icon buttons */}
+        {[
+          { icon: Search, title: "Search" },
+          { icon: Bell, title: "Notifications", badge: true },
+          { icon: Settings, title: "Settings" },
+        ].map(({ icon: Icon, title, badge }) => (
+          <button
+            key={title}
+            title={title}
+            className="relative w-9 h-9 rounded-full border border-slate-200/60 flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-all"
+          >
+            <Icon size={15} />
+            {badge && (
+              <span className="absolute top-[7px] right-[7px] w-[7px] h-[7px] rounded-full bg-red-500 border-[1.5px] border-white" />
+            )}
+          </button>
+        ))}
 
-          <div className="flex items-center gap-3 pl-2 group cursor-pointer">
-            <div className="flex flex-col text-right hidden lg:flex">
-              <span className="text-sm font-black text-slate-900 leading-none">
-                {adminName}
-              </span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase mt-1">
-                Admin Officer
-              </span>
+        {/* Divider */}
+        <div className="w-px h-7 bg-slate-200 mx-1" />
+
+        {/* Profile chip */}
+        <div className="relative">
+          <button
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="flex items-center gap-2.5 pl-1.5 pr-3 py-1.5 rounded-full border border-slate-200/60 hover:bg-slate-100 transition-all"
+          >
+            <div className="w-8 h-8 rounded-full bg-[#f8d7da] flex items-center justify-center text-[11px] font-bold text-[#800000] tracking-wide">
+              {adminName.substring(0, 2).toUpperCase()}
             </div>
-            <Avatar className="h-10 w-10 border-2 border-white shadow-md">
-              <AvatarFallback className="bg-[#f8d7da] text-[#800000] font-black text-xs">
-                {adminName.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-          </div>
+            <div className="flex flex-col text-left gap-px hidden lg:flex">
+              <span className="text-[13px] font-semibold text-slate-900 leading-none">{adminName}</span>
+              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider font-mono">Admin Officer</span>
+            </div>
+            <ChevronDown size={12} className="text-slate-400 ml-0.5" />
+          </button>
+
+          {/* Dropdown */}
+          {dropdownOpen && (
+            <div className="absolute top-[calc(100%+8px)] right-0 w-52 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 z-50">
+              <div className="px-3 py-2.5 border-b border-slate-100 mb-1">
+                <p className="text-[14px] font-semibold text-slate-900">{adminName}</p>
+                <p className="text-[12px] text-slate-500 mt-0.5">{adminEmail}</p>
+              </div>
+
+              {[
+                { icon: User, label: "My Profile" },
+                { icon: Briefcase, label: "Account Settings" },
+                { icon: Bell, label: "Notifications", badge: 3 },
+              ].map(({ icon: Icon, label, badge }) => (
+                <button
+                  key={label}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                >
+                  <Icon size={14} />
+                  {label}
+                  {badge && (
+                    <span className="ml-auto bg-red-50 text-red-700 text-[11px] font-semibold px-2 py-0.5 rounded-full">
+                      {badge}
+                    </span>
+                  )}
+                </button>
+              ))}
+
+              <div className="h-px bg-slate-100 my-1" />
+
+              <button className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-700 hover:bg-red-50 transition-colors">
+                <LogOut size={14} />
+                Sign Out
+              </button>
+            </div>
+          )}
         </div>
-      </header>
-    </TooltipProvider>
+      </div>
+    </header>
   );
 }

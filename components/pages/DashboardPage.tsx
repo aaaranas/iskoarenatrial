@@ -8,9 +8,10 @@ import {
   User, 
   Calendar, 
   ChevronRight,
+  Clock,
+  MapPin,
 } from "lucide-react";
 
-// UI Components
 import { 
   Card, 
   CardContent, 
@@ -30,10 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-/**
- * Types
- */
-export interface Match { id: string; sport: string; teamA: string; teamB: string; date: string; time: string; }
+export interface Match { id: string; sport: string; teamA: string; teamB: string; date: string; time: string; venue?: string; }
 export interface Result { matchId: string; scoreA: number; scoreB: number; winnerId: string; }
 export interface Player { id: string; name: string; teamId: string; }
 export interface Team { id: string; name: string; org: string; }
@@ -48,7 +46,6 @@ interface DashboardPageProps {
 export default function DashboardPage({ matches, results, players, teams }: DashboardPageProps) {
   const now = new Date();
 
-  // Logic: Matches happening within a 2-hour window
   const ongoingMatches = matches.filter((match) => {
     const matchDateTime = new Date(`${match.date}T${match.time}`);
     const timeDiff = now.getTime() - matchDateTime.getTime();
@@ -57,6 +54,42 @@ export default function DashboardPage({ matches, results, players, teams }: Dash
   });
 
   const recentMatches = [...matches].slice(-5).reverse();
+
+  // Upcoming matches: future date/time, no result yet, not live
+  const upcomingMatches = matches
+    .filter((match) => {
+      const matchDateTime = new Date(`${match.date}T${match.time}`);
+      const hasResult = results.some((r) => r.matchId === match.id);
+      const isLive = ongoingMatches.some((m) => m.id === match.id);
+      return matchDateTime > now && !hasResult && !isLive;
+    })
+    .sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())
+    .slice(0, 6);
+
+  // Group upcoming by date
+  const groupedUpcoming = upcomingMatches.reduce<Record<string, Match[]>>((acc, match) => {
+    if (!acc[match.date]) acc[match.date] = [];
+    acc[match.date].push(match);
+    return acc;
+  }, {});
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+
+    if (date.toDateString() === today.toDateString()) return "Today";
+    if (date.toDateString() === tomorrow.toDateString()) return "Tomorrow";
+    return date.toLocaleDateString("en-PH", { weekday: "short", month: "short", day: "numeric" });
+  };
+
+  const formatTime = (timeStr: string) => {
+    const [h, m] = timeStr.split(":").map(Number);
+    const period = h >= 12 ? "PM" : "AM";
+    const hour = h % 12 || 12;
+    return `${hour}:${m.toString().padStart(2, "0")} ${period}`;
+  };
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6 animate-in fade-in slide-in-from-bottom-2 duration-700">
@@ -98,7 +131,98 @@ export default function DashboardPage({ matches, results, players, teams }: Dash
         ))}
       </div>
 
-      {/* Main Table Card */}
+      {/* Upcoming Matches Summary */}
+      <Card className="shadow-sm border-border overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+          <div className="space-y-1">
+            <CardTitle className="text-lg font-semibold tracking-tight">Upcoming Matches</CardTitle>
+            <CardDescription className="text-xs">
+              Next {upcomingMatches.length} scheduled fixtures across all sports.
+            </CardDescription>
+          </div>
+          <Button variant="outline" size="sm" className="h-8 text-xs font-medium">
+            Full Schedule <ChevronRight className="ml-1 size-3.5" />
+          </Button>
+        </CardHeader>
+        <CardContent className="p-0">
+          {upcomingMatches.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+              <Calendar className="size-8 mb-3 opacity-30" />
+              <p className="text-sm font-medium">No upcoming matches scheduled</p>
+              <p className="text-xs mt-1 opacity-60">Check back later for new fixtures.</p>
+            </div>
+          ) : (
+            Object.entries(groupedUpcoming).map(([date, dayMatches], groupIdx) => (
+              <div key={date}>
+                {/* Date group header */}
+                <div className="flex items-center gap-3 px-6 py-2.5 bg-muted/20 border-b border-border/50">
+                  <Calendar className="size-3.5 text-muted-foreground" />
+                  <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    {formatDate(date)}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground/60">
+                    — {new Date(date).toLocaleDateString("en-PH", { month: "long", day: "numeric", year: "numeric" })}
+                  </span>
+                  <Badge variant="outline" className="ml-auto text-[9px] h-4 px-1.5 font-semibold rounded-sm border-border/50">
+                    {dayMatches.length} {dayMatches.length === 1 ? "match" : "matches"}
+                  </Badge>
+                </div>
+
+                {/* Matches under this date */}
+                {dayMatches.map((match, idx) => (
+                  <div
+                    key={match.id}
+                    className={cn(
+                      "flex items-center gap-4 px-6 py-4 hover:bg-muted/10 transition-colors",
+                      idx < dayMatches.length - 1 && "border-b border-border/40"
+                    )}
+                  >
+                    {/* Sport badge */}
+                    <div className="w-24 shrink-0">
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] font-bold uppercase tracking-wider px-2 h-5 border-border/50 text-muted-foreground w-full justify-center truncate"
+                      >
+                        {match.sport}
+                      </Badge>
+                    </div>
+
+                    {/* Matchup */}
+                    <div className="flex flex-1 items-center justify-center gap-3 min-w-0">
+                      <span className="text-sm font-semibold text-right flex-1 truncate">{match.teamA}</span>
+                      <div className="flex flex-col items-center shrink-0">
+                        <span className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-widest leading-none">vs</span>
+                      </div>
+                      <span className="text-sm font-semibold text-left flex-1 truncate">{match.teamB}</span>
+                    </div>
+
+                    {/* Time & Venue */}
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <div className="flex items-center gap-1.5 text-[12px] font-semibold text-foreground">
+                        <Clock className="size-3 text-muted-foreground" />
+                        {formatTime(match.time)}
+                      </div>
+                      {match.venue && (
+                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                          <MapPin className="size-2.5" />
+                          {match.venue}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Spacer between groups except last */}
+                {groupIdx < Object.keys(groupedUpcoming).length - 1 && (
+                  <div className="h-px bg-border" />
+                )}
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Recent Matches Table */}
       <Card className="shadow-sm border-border overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
           <div className="space-y-1">
