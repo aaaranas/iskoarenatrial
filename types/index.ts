@@ -1,20 +1,27 @@
+import { Database } from "./supabase";
+
+// --- Helper Types from Supabase ---
+export type DbRow<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row'];
+export type AdminRole = Database['public']['Enums']['admin_role'];
+
 export interface Admin {
-  id: number;
-  username: string;
-  password: string;
-  fullName: string;
+  id: string; // Changed from number to string (UUID)
+  email: string; // Supabase uses email as identifier
+  role: AdminRole;
+  fullName: string; // Maps to full_name
+  collegeAffiliation?: string | null;
   createdAt: string;
 }
 
 export interface Match {
-  id: number;
-  league: string;
+  id: string; // Changed from number to string (UUID)
+  league: string; // Derived from Sport Name
   leagueLogo: string;
   country: string;
-  status: string;
+  status: string; // e.g., "LIVE", "UPCOMING", "FT"
   statusType: "live" | "finished" | "upcoming";
-  date: string;
-  time: string;
+  date: string; // Formatted match_date
+  time: string; // Formatted match_date
   homeTeam: string;
   homeTeamShort: string;
   awayTeam: string;
@@ -22,14 +29,13 @@ export interface Match {
   homeScore: number | null;
   awayScore: number | null;
   minute: string | null;
-  isOwner?: boolean;
+  isOwner?: boolean; // UI logic: true if created_by === current_user.id
   homeScorers: string[];
   awayScorers: string[];
 }
 
-// src/types/match-ui.ts
 export interface MatchUI {
-  id: number;
+  id: string; // Changed from number to string (UUID)
   league: string;
   homeTeam: string;
   homeTeamShort: string;
@@ -42,8 +48,8 @@ export interface MatchUI {
 }
 
 export interface Result {
-  id: number;
-  winnerId: string;
+  id: string; // Changed from number to string (UUID)
+  winnerId: string | null;
   matchId: string;
   teamA: string;
   teamB: string;
@@ -55,50 +61,52 @@ export interface Result {
 }
 
 export interface Player {
-  id: string;
+  id: string; // UUID
   name: string;
   teamId: string;
   college: string;
   sport: string;
   position: string;
-  jersey: number;
+  jersey: number; // jersey_number in DB
   photo?: string | null;
   createdAt: string;
 }
 
 export interface Team {
-  id: string;
-  org: string;
+  id: string; // UUID
+  org: string; // usually 'college' in DB
   name: string;
+  shortName: string; // short_name in DB
   primarySport: string;
+  logoUrl?: string | null;
   createdAt: string;
 }
 
 export interface Stat {
-  id: string;
+  id: string; // UUID
   type: "Player" | "Team";
   sport: string;
   college: string;
-  playerId: number | null;
+  playerId: string | null; // Changed from number to string (UUID)
   statName: string;
   statValue: string | number;
   createdAt: string;
 }
 
 export interface MediaItem {
-  id: number;
+  id: string; // UUID
   title: string;
   type: "image" | "video";
-  data: string;
+  url: string; // Maps to 'data' or public URL
   fileName: string;
-  matchId: number | null;
+  matchId: string | null; // Changed from number to string (UUID)
   sport: string;
   size: string;
   createdAt: string;
 }
 
 export interface Notification {
-  id: number;
+  id: string; // UUID
   message: string;
   type: string;
   sport: string;

@@ -1,5 +1,6 @@
 import { DM_Sans, Space_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { TRPCProvider } from "@/components/providers/trpc-provider";
 import './globals.css';
 
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
@@ -24,8 +25,10 @@ export default function RootLayout({ children }: RootLayoutProps) {
             enableSystem
             disableTransitionOnChange
           > 
-	{children}
-	  </ThemeProvider>
+	  <TRPCProvider>
+	   {children}
+	  </TRPCProvider> 
+	 </ThemeProvider>
       </body>
     </html>
   );
