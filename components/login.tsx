@@ -59,17 +59,16 @@ export default function LoginPage({ isOpen, onClose, onSubmit, onToggleSignup }:
                     <div className="p-8 pb-6">
                         <div className="mb-8 text-center">
                             <div className="flex justify-center"><LogoIcon /></div>
-                            <h1 className="mb-1 mt-4 text-xl font-black uppercase tracking-[0.2em] text-white">Access Granted</h1>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 italic">Personnel Identification Required</p>
+                            <h1 className="mb-1 mt-4 text-xl font-black uppercase tracking-[0.2em] text-white">Sign In</h1>
                         </div>
 
                         {/* Social Logins (Cinematic Style) */}
                         <div className="mt-6 grid grid-cols-2 gap-3">
-                            <Button type="button" variant="outline" className="border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800 text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
+                            <Button type="button" variant="outline" className="border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800 text-zinc-400 text-[14px] font-bold ">
                                 <GoogleIcon />
                                 <span>Google</span>
                             </Button>
-                            <Button type="button" variant="outline" className="border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800 text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
+                            <Button type="button" variant="outline" className="border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800 text-zinc-400 text-[14px] font-bold ">
                                 <MicrosoftIcon />
                                 <span>Microsoft</span>
                             </Button>
@@ -92,10 +91,10 @@ export default function LoginPage({ isOpen, onClose, onSubmit, onToggleSignup }:
                                     type="email"
                                     required
                                     id="email"
-                                    placeholder="PERSONNEL@UNIVERSITY.EDU"
+                                    placeholder="personnel@up.edu.ph"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="bg-zinc-900/40 border-zinc-800 text-white focus-visible:ring-[#C5A059]/30 h-10 uppercase text-[11px] tracking-widest font-bold placeholder:text-zinc-800"
+                                    className="bg-zinc-900/40 border-zinc-800 text-white focus-visible:ring-[#C5A059]/30 h-10  text-[11px]   placeholder:text-zinc-800"
                                 />
                             </div>
 
@@ -124,26 +123,26 @@ export default function LoginPage({ isOpen, onClose, onSubmit, onToggleSignup }:
                             <Button 
                                 type="submit" 
                                 disabled={isLoading}
-                                className="w-full bg-[#C5A059] text-black font-black uppercase tracking-[0.3em] text-[11px] hover:bg-[#D4B475] h-12 transition-all mt-2 shadow-[0_0_20px_rgba(197,160,89,0.1)]"
+                                className="w-full bg-[#C5A059] text-black font-black   uppercase text-[11px] hover:bg-[#D4B475] h-12 transition-all mt-2 shadow-[0_0_20px_rgba(197,160,89,0.1)]"
                             >
                                 {isLoading ? (
                                     <Loader2 className="h-4 w-4 animate-spin text-black" />
                                 ) : (
-                                    "Authorize"
+                                    "Log In"
                                 )}
                             </Button>
                         </div>
                     </div>
 
                     <div className="bg-zinc-900/20 rounded-b-xl border-t border-zinc-800/50 p-4">
-                        <p className="text-zinc-600 text-center text-[10px] font-bold uppercase tracking-widest">
-                            NEW PERSONNEL?
+                        <p className="text-zinc-600 text-center text-[12px] ">
+                            No Account Yet?
                             <button
                                 type="button"
                                 className="ml-2 text-white hover:text-[#C5A059] transition-colors font-black"
                                 onClick={onToggleSignup}
                             >
-                                INITIALIZE
+                                Sign Up
                             </button>
                         </p>
                     </div>

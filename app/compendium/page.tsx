@@ -9,7 +9,6 @@ export const metadata: Metadata = {
 
 export default function CompendiumPage() {
   return (
-    // No "use client" here. This is a Server Component.
     <main className="bg-[#050505] min-h-screen">
       <Box />
     </main>

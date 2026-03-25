@@ -73,7 +73,6 @@ export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }:
                         <div className="mb-8">
                             <LogoIcon />
                             <h1 className="mb-1 mt-4 text-xl font-black uppercase tracking-[0.15em] text-white">Initialize Account</h1>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Join the IskoArena Compendium</p>
                         </div>
 
                         {status && (
@@ -89,17 +88,17 @@ export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }:
                                 <div className="space-y-2">
                                     <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Firstname</Label>
                                     <Input
-                                        type="text" required placeholder="JUAN"
+                                        type="text" required placeholder="Juan"
                                         value={firstName} onChange={(e) => setFirstName(e.target.value)}
-                                        className="bg-zinc-900/40 border-zinc-800 text-white h-10 uppercase text-[11px] tracking-widest font-bold"
+                                        className="bg-zinc-900/40 border-zinc-800 text-white h-10  text-[11px] "
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Lastname</Label>
                                     <Input
-                                        type="text" required placeholder="DELA CRUZ"
+                                        type="text" required placeholder="Dela Cruz"
                                         value={lastName} onChange={(e) => setLastName(e.target.value)}
-                                        className="bg-zinc-900/40 border-zinc-800 text-white h-10 uppercase text-[11px] tracking-widest font-bold"
+                                        className="bg-zinc-900/40 border-zinc-800 text-white h-10  text-[11px] "
                                     />
                                 </div>
                             </div>
@@ -107,9 +106,9 @@ export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }:
                             <div className="space-y-2">
                                 <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Email Address</Label>
                                 <Input
-                                    type="email" required placeholder="ENTRY@UNIVERSITY.EDU.PH"
+                                    type="email" required placeholder="personnel@up.edu.ph"
                                     value={email} onChange={(e) => setEmail(e.target.value)}
-                                    className="bg-zinc-900/40 border-zinc-800 text-white h-10 uppercase text-[11px] tracking-widest font-bold"
+                                    className="bg-zinc-900/40 border-zinc-800 text-white h-10  text-[11px] "
                                 />
                             </div>
 
@@ -120,7 +119,7 @@ export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }:
                                     defaultValue="moderator" 
                                     onValueChange={(val) => setRole(val)}
                                 >
-                                    <SelectTrigger className="bg-zinc-900/40 border-zinc-800 text-white text-[11px] font-bold tracking-widest uppercase h-10">
+                                    <SelectTrigger className="bg-zinc-900/40 border-zinc-800 text-white text-[13px]  h-10">
                                         <SelectValue placeholder="SELECT ROLE" />
                                     </SelectTrigger>
                                     
@@ -155,7 +154,7 @@ export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }:
 
                             <Button 
                                 type="submit" disabled={isLoading}
-                                className="w-full bg-[#C5A059] text-black font-black uppercase tracking-[0.3em] text-[11px] hover:bg-[#D4B475] h-12 transition-all mt-4"
+                                className="w-full bg-[#C5A059] text-black font-black uppercase tracking-[0.3em] text-[12px] hover:bg-[#D4B475] h-12 transition-all mt-4"
                             >
                                 {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Account"}
                             </Button>
@@ -163,14 +162,14 @@ export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }:
                     </div>
 
                     <div className="bg-zinc-900/20 rounded-b-xl border-t border-zinc-800/50 p-4">
-                        <p className="text-zinc-600 text-center text-[10px] font-bold uppercase tracking-widest">
-                            ALREADY REGISTERED?
+                        <p className="text-zinc-600 text-center text-[12px] ">
+                             Already Registered?
                             <button
                                 type="button"
                                 className="ml-2 text-white hover:text-[#C5A059] transition-colors"
                                 onClick={onToggleLogin}
                             >
-                                SIGN IN
+                                Sign In 
                             </button>
                         </p>
                     </div>

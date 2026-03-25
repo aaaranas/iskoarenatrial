@@ -84,7 +84,7 @@ export const Box = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="text-[10px] font-black uppercase tracking-[0.5em] text-[#C5A059] animate-pulse">
+        <div className="text-lg font-black  tracking-[0.2em] text-[#C5A059] animate-pulse">
           Initializing Compendium...
         </div>
       </div>
