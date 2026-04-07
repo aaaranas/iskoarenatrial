@@ -291,6 +291,84 @@ function AddTeamModal({
   );
 }
  
+// ── Delete Team Modal ─────────────────────────────────────────────────────────
+function DeleteTeamModal({
+  college,
+  onClose,
+  onConfirm,
+}: {
+  college: College;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="bg-[#111] border border-gray-800 rounded-3xl p-8 w-full max-w-sm shadow-2xl">
+        {/* Icon */}
+        <div className="flex justify-center mb-5">
+          <div className="w-14 h-14 rounded-2xl bg-[#A91D3A]/10 border border-[#A91D3A]/20 flex items-center justify-center text-2xl">
+            🗑
+          </div>
+        </div>
+ 
+        {/* Text */}
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-black text-white tracking-tight mb-2">Delete Team</h2>
+          <p className="text-white/40 text-sm leading-relaxed">
+            Are you sure you want to delete{" "}
+            <span className="text-white font-semibold">{college.name}</span>?
+            <br />
+            This action cannot be undone.
+          </p>
+        </div>
+ 
+        {/* College summary pill */}
+        <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-[#A91D3A]/20 flex items-center justify-center text-xs font-black text-[#A91D3A]">
+            {college.name.charAt(0)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-sm font-semibold truncate">{college.name}</p>
+            <p className="text-white/30 text-[11px]">
+              Est. {college.established} · {college.activeTeams} teams
+            </p>
+          </div>
+          <span
+            className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${
+              college.status === "Active"
+                ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/10"
+                : college.status === "Pending"
+                ? "text-yellow-400 border-yellow-400/30 bg-yellow-400/10"
+                : "text-white/30 border-white/10 bg-white/5"
+            }`}
+          >
+            {college.status}
+          </span>
+        </div>
+ 
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2 rounded-lg border border-white/10 text-white/50 text-sm font-semibold hover:border-white/30 hover:text-white transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              onConfirm();
+              onClose();
+            }}
+            className="flex-1 py-2 rounded-lg bg-[#A91D3A] hover:bg-[#c4223f] text-white text-sm font-semibold transition-all shadow-[0_0_16px_rgba(169,29,58,0.4)]"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+ 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function TeamsPage() {
   const [search, setSearch] = useState("");
@@ -299,6 +377,7 @@ export default function TeamsPage() {
   const [colleges, setColleges] = useState<College[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<College | null>(null);
  
   useEffect(() => {
     setIsLoading(true);
@@ -311,6 +390,10 @@ export default function TeamsPage() {
  
   const handleAddCollege = (college: College) => {
     setColleges((prev) => [...prev, college]);
+  };
+ 
+  const handleDeleteCollege = (college: College) => {
+    setColleges((prev) => prev.filter((c) => c.name !== college.name));
   };
  
   const filteredColleges = useMemo(() => {
@@ -337,6 +420,14 @@ export default function TeamsPage() {
           colleges={colleges}
           onClose={() => setShowModal(false)}
           onAdd={handleAddCollege}
+        />
+      )}
+ 
+      {deleteTarget && (
+        <DeleteTeamModal
+          college={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={() => handleDeleteCollege(deleteTarget)}
         />
       )}
  
@@ -423,7 +514,7 @@ export default function TeamsPage() {
           <>
             {filteredColleges.length > 0 ? (
               <>
-                <CollegeTable colleges={paginatedColleges} />
+                <CollegeTable colleges={paginatedColleges} onDelete={(college) => setDeleteTarget(college)} />
  
                 {totalPages > 1 && (
                   <div className="flex items-center justify-between pt-2">
