@@ -1,839 +1,482 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import { useState } from "react";
 import {
+  Grid3X3,
+  Film,
+  Plus,
+  Star,
   Play,
+  Image as ImageIcon,
   Heart,
   MessageCircle,
-  Bookmark,
   Share2,
-  Plus,
-  X,
-  Upload,
-  Film,
-  Image as ImageIcon,
-  Star,
+  Bookmark,
   MoreHorizontal,
-  Grid3X3,
-  Clapperboard,
-  Sparkles,
-  ChevronLeft,
-  ChevronRight,
+  Trophy,
+  Flame,
+  Users,
+  Camera,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
-import type { MediaItem, Match } from "@/types";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+// ─── Filler Data ────────────────────────────────────────────────────────────
 
-interface MediaPageProps {
-  matches: Match[];
-  media: MediaItem[];
-  onAddMedia: (item: Omit<MediaItem, "id" | "createdAt">) => void;
-}
-
-type MediaCategory = "highlights" | "posts" | "reels";
-
-// ---------------------------------------------------------------------------
-// Mock / seed data helpers (used when media array is empty for visual demo)
-// ---------------------------------------------------------------------------
-
-const PLACEHOLDER_GRADIENTS = [
-  "from-[#A91D3A] to-[#C5A059]",
-  "from-[#1a1a2e] to-[#A91D3A]",
-  "from-[#C5A059] to-[#8B6914]",
-  "from-[#0f2027] to-[#203a43]",
-  "from-[#A91D3A] to-[#8B1528]",
-  "from-[#C5A059] to-[#A91D3A]",
-  "from-[#1a1a2e] to-[#C5A059]",
-  "from-[#2c3e50] to-[#A91D3A]",
-  "from-[#0f2027] to-[#C5A059]",
+const HIGHLIGHTS = [
+  { id: "new", label: "NEW", isNew: true },
+  { id: 1, label: "BASKETBALL", color: "from-red-700 to-rose-500" },
+  { id: 2, label: "VOLLEYBALL", color: "from-purple-800 to-violet-600" },
+  { id: 3, label: "SWIMMING", color: "from-yellow-700 to-amber-500" },
+  { id: 4, label: "TRACK", color: "from-teal-700 to-emerald-500" },
+  { id: 5, label: "OPENING", color: "from-red-600 to-orange-500" },
+  { id: 6, label: "AWARDS", color: "from-yellow-600 to-amber-400" },
+  { id: 7, label: "CLOSING", color: "from-stone-700 to-stone-500" },
+  { id: 8, label: "BEHIND THE SCENES", color: "from-purple-700 to-pink-600" },
 ];
 
-function PlaceholderThumb({
-  index,
-  isReel = false,
-}: {
-  index: number;
-  isReel?: boolean;
-}) {
-  const grad = PLACEHOLDER_GRADIENTS[index % PLACEHOLDER_GRADIENTS.length];
-  return (
-    <div
-      className={cn(
-        "w-full h-full bg-gradient-to-br flex items-center justify-center",
-        grad
-      )}
-    >
-      {isReel ? (
-        <Clapperboard className="size-8 text-white/40" />
-      ) : (
-        <ImageIcon className="size-8 text-white/40" />
-      )}
-    </div>
-  );
-}
+const POSTS = [
+  {
+    id: 1,
+    type: "post",
+    sport: "Basketball",
+    event: "Finals Night",
+    caption: "🏀 What a game! Team A clinches the championship in overtime thriller. Full recap on the highlights reel!",
+    likes: 214,
+    comments: 38,
+    time: "2h",
+    bgClass: "from-red-900 via-red-700 to-rose-600",
+    icon: Trophy,
+    tag: "FINALS",
+  },
+  {
+    id: 2,
+    type: "post",
+    sport: "Volleyball",
+    event: "Semi-Finals",
+    caption: "🏐 Incredible rally from Team C in the semi-finals. The crowd went absolutely wild in the 5th set!",
+    likes: 189,
+    comments: 24,
+    time: "5h",
+    bgClass: "from-purple-900 via-purple-700 to-violet-600",
+    icon: Flame,
+    tag: "SEMI-FINALS",
+  },
+  {
+    id: 3,
+    type: "post",
+    sport: "Swimming",
+    event: "100m Freestyle",
+    caption: "🏊 New school record broken! 100m freestyle final ends with a jaw-dropping finish. Congrats to our champion!",
+    likes: 301,
+    comments: 56,
+    time: "1d",
+    bgClass: "from-teal-900 via-teal-700 to-cyan-600",
+    icon: Star,
+    tag: "RECORD BROKEN",
+  },
+  {
+    id: 4,
+    type: "post",
+    sport: "Track & Field",
+    event: "100m Sprint",
+    caption: "⚡ Lightning speed on the track! Our athletes gave everything in the 100m sprint. Proud of every single one.",
+    likes: 145,
+    comments: 19,
+    time: "1d",
+    bgClass: "from-amber-900 via-amber-700 to-yellow-600",
+    icon: Flame,
+    tag: "DAY 3",
+  },
+  {
+    id: 5,
+    type: "post",
+    sport: "Opening Ceremony",
+    event: "Intramurals 2025",
+    caption: "🎉 The IskоArena Intramurals 2025 is officially OPEN! Let the games begin. May the best team win!",
+    likes: 512,
+    comments: 94,
+    time: "3d",
+    bgClass: "from-rose-900 via-red-700 to-orange-600",
+    icon: Trophy,
+    tag: "OPENING",
+  },
+  {
+    id: 6,
+    type: "post",
+    sport: "Badminton",
+    event: "Mixed Doubles",
+    caption: "🏸 Precision and power in the mixed doubles bracket. Team B advances to the semis with a clean sweep!",
+    likes: 97,
+    comments: 12,
+    time: "4d",
+    bgClass: "from-green-900 via-green-700 to-emerald-600",
+    icon: Users,
+    tag: "QUARTERFINALS",
+  },
+];
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
+const REELS = [
+  {
+    id: 1,
+    title: "Best Dunks – Basketball Finals",
+    duration: "0:58",
+    views: "2.1K",
+    bgClass: "from-red-900 to-rose-700",
+    icon: Trophy,
+  },
+  {
+    id: 2,
+    title: "Opening Ceremony Highlights",
+    duration: "1:34",
+    views: "3.8K",
+    bgClass: "from-orange-900 to-amber-700",
+    icon: Flame,
+  },
+  {
+    id: 3,
+    title: "Swimming – Record-Breaking Moment",
+    duration: "0:42",
+    views: "1.5K",
+    bgClass: "from-teal-900 to-cyan-700",
+    icon: Star,
+  },
+  {
+    id: 4,
+    title: "Volleyball Spike Compilation",
+    duration: "1:12",
+    views: "1.9K",
+    bgClass: "from-purple-900 to-violet-700",
+    icon: Flame,
+  },
+  {
+    id: 5,
+    title: "Track & Field – Sprint Finals",
+    duration: "0:31",
+    views: "987",
+    bgClass: "from-yellow-900 to-yellow-700",
+    icon: Trophy,
+  },
+  {
+    id: 6,
+    title: "Behind the Scenes – Day 1",
+    duration: "2:05",
+    views: "1.2K",
+    bgClass: "from-pink-900 to-rose-700",
+    icon: Camera,
+  },
+];
 
-/** Circular highlight story bubble */
+// ─── Sub-Components ──────────────────────────────────────────────────────────
+
 function HighlightBubble({
-  item,
-  index,
+  h,
+  active,
   onClick,
 }: {
-  item?: MediaItem;
-  index: number;
+  h: (typeof HIGHLIGHTS)[number];
+  active: boolean;
   onClick: () => void;
 }) {
+  if ("isNew" in h && h.isNew) {
+    return (
+      <button
+        onClick={onClick}
+        className="flex flex-col items-center gap-2 flex-shrink-0"
+      >
+        <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-400 flex items-center justify-center hover:border-red-500 transition-colors">
+          <Plus size={20} className="text-gray-400" />
+        </div>
+        <span className="text-[10px] font-bold tracking-widest text-gray-400">
+          NEW
+        </span>
+      </button>
+    );
+  }
+
+  const hl = h as Exclude<(typeof HIGHLIGHTS)[number], { isNew: boolean }>;
+
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center gap-2 shrink-0 group"
+      className="flex flex-col items-center gap-2 flex-shrink-0"
     >
-      {/* Ring */}
-      <div className="p-[2px] rounded-full bg-gradient-to-tr from-[#A91D3A] via-[#C5A059] to-[#A91D3A]">
-        <div className="p-[2px] rounded-full bg-background">
-          <div className="size-16 rounded-full overflow-hidden bg-muted">
-            {item?.url ? (
-              <img
-                src={item.url}
-                alt={item.title}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <PlaceholderThumb index={index} />
-            )}
-          </div>
-        </div>
+      <div
+        className={`w-16 h-16 rounded-full bg-gradient-to-br ${hl.color} flex items-center justify-center ring-2 transition-all ${
+          active
+            ? "ring-red-500 ring-offset-2 ring-offset-white scale-110"
+            : "ring-transparent hover:ring-red-400 hover:ring-offset-1 hover:ring-offset-white"
+        }`}
+      >
+        <ImageIcon size={22} className="text-white/60" />
       </div>
-      <span className="text-[10px] font-medium text-foreground/70 truncate max-w-[64px] uppercase tracking-wider">
-        {item?.title ?? `Event ${index + 1}`}
+      <span className="text-[9px] font-bold tracking-widest text-gray-600 max-w-[64px] text-center leading-tight">
+        {hl.label}
       </span>
     </button>
   );
 }
 
-/** Instagram-style post card */
-function PostCard({
-  item,
-  index,
-  onClick,
-}: {
-  item?: MediaItem;
-  index: number;
-  onClick: () => void;
-}) {
+function PostCard({ post }: { post: (typeof POSTS)[number] }) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
+  const Icon = post.icon;
 
   return (
-    <Card className="overflow-hidden border-border/60 bg-card group hover:border-[#C5A059]/40 transition-colors duration-200">
-      {/* Image area */}
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+      {/* Media placeholder */}
       <div
-        className="relative aspect-square overflow-hidden cursor-pointer bg-muted"
-        onClick={onClick}
+        className={`relative h-56 bg-gradient-to-br ${post.bgClass} flex items-center justify-center`}
       >
-        {item?.url ? (
-          <img
-            src={item.url}
-            alt={item.title ?? "Post"}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        ) : (
-          <PlaceholderThumb index={index} />
-        )}
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-          <div className="flex gap-4 text-white">
-            <span className="flex items-center gap-1 font-semibold text-sm drop-shadow">
-              <Heart className="size-4 fill-white" />
-              {Math.floor(Math.random() * 200 + 10)}
-            </span>
-            <span className="flex items-center gap-1 font-semibold text-sm drop-shadow">
-              <MessageCircle className="size-4 fill-white" />
-              {Math.floor(Math.random() * 40)}
-            </span>
-          </div>
-        </div>
-        {/* Sport badge */}
-        {item?.sport && (
-          <Badge className="absolute top-2 left-2 text-[9px] uppercase tracking-wider bg-black/60 text-white border-0 backdrop-blur-sm">
-            {item.sport}
-          </Badge>
-        )}
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_30%,white,transparent)]" />
+        <Icon size={48} className="text-white/30" />
+        <span className="absolute top-3 left-3 bg-black/50 text-white text-[10px] font-bold tracking-widest px-2 py-1 rounded-full backdrop-blur-sm">
+          {post.tag}
+        </span>
+        <span className="absolute top-3 right-3 text-white/70">
+          <MoreHorizontal size={18} />
+        </span>
       </div>
 
-      <CardContent className="p-3">
-        {/* Action row */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setLiked(!liked)}
-              className="transition-transform active:scale-90"
-            >
-              <Heart
-                className={cn(
-                  "size-5 transition-colors",
-                  liked
-                    ? "fill-[#A91D3A] text-[#A91D3A]"
-                    : "text-muted-foreground hover:text-[#A91D3A]"
-                )}
-              />
-            </button>
-            <button className="text-muted-foreground hover:text-foreground transition-colors">
-              <MessageCircle className="size-5" />
-            </button>
-            <button className="text-muted-foreground hover:text-foreground transition-colors">
-              <Share2 className="size-5" />
-            </button>
-          </div>
+      {/* Actions */}
+      <div className="px-3 pt-3 pb-1 flex items-center justify-between">
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => setSaved(!saved)}
-            className="transition-transform active:scale-90"
+            onClick={() => setLiked((v) => !v)}
+            className={`transition-colors ${liked ? "text-red-500" : "text-gray-600 hover:text-red-400"}`}
           >
-            <Bookmark
-              className={cn(
-                "size-5 transition-colors",
-                saved
-                  ? "fill-[#C5A059] text-[#C5A059]"
-                  : "text-muted-foreground hover:text-[#C5A059]"
-              )}
-            />
+            <Heart size={20} fill={liked ? "currentColor" : "none"} />
+          </button>
+          <button className="text-gray-600 hover:text-gray-800">
+            <MessageCircle size={20} />
+          </button>
+          <button className="text-gray-600 hover:text-gray-800">
+            <Share2 size={20} />
           </button>
         </div>
-
-        {/* Caption */}
-        <p className="text-xs font-semibold text-foreground truncate">
-          {item?.title ?? `Match Highlight #${index + 1}`}
-        </p>
-        <p className="text-[10px] text-muted-foreground mt-0.5">
-          {item?.createdAt
-            ? new Date(item.createdAt).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-              })
-            : "IskoArena"}
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
-/** Reel card — portrait 9:16 */
-function ReelCard({
-  item,
-  index,
-  onClick,
-}: {
-  item?: MediaItem;
-  index: number;
-  onClick: () => void;
-}) {
-  return (
-    <div
-      className="relative rounded-xl overflow-hidden cursor-pointer group bg-muted shrink-0"
-      style={{ width: 160, height: 284 }}
-      onClick={onClick}
-    >
-      {item?.url ? (
-        <img
-          src={item.url}
-          alt={item.title}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-        />
-      ) : (
-        <PlaceholderThumb index={index} isReel />
-      )}
-
-      {/* Dark gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/10" />
-
-      {/* Play button */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="size-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/40">
-          <Play className="size-5 text-white fill-white ml-0.5" />
-        </div>
+        <button
+          onClick={() => setSaved((v) => !v)}
+          className={`transition-colors ${saved ? "text-gray-900" : "text-gray-400 hover:text-gray-700"}`}
+        >
+          <Bookmark size={20} fill={saved ? "currentColor" : "none"} />
+        </button>
       </div>
 
-      {/* Bottom info */}
-      <div className="absolute bottom-0 left-0 right-0 p-3">
-        {item?.sport && (
-          <Badge className="mb-1.5 text-[8px] uppercase tracking-wider bg-[#A91D3A]/80 text-white border-0 backdrop-blur-sm">
-            {item.sport}
-          </Badge>
-        )}
-        <p className="text-white text-[11px] font-semibold leading-tight line-clamp-2">
-          {item?.title ?? `Reel ${index + 1}`}
+      {/* Likes */}
+      <div className="px-3 pb-1">
+        <span className="text-xs font-bold text-gray-800">
+          {liked ? post.likes + 1 : post.likes} likes
+        </span>
+      </div>
+
+      {/* Caption */}
+      <div className="px-3 pb-3">
+        <p className="text-xs text-gray-700 leading-relaxed line-clamp-2">
+          <span className="font-bold text-gray-900 mr-1">iskoarena</span>
+          {post.caption}
         </p>
-        <div className="flex items-center gap-2 mt-1.5">
-          <Heart className="size-3 text-white/60" />
-          <span className="text-[9px] text-white/60">
-            {Math.floor(Math.random() * 500 + 50)}
-          </span>
-        </div>
+        <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-wide">
+          {post.time} ago · {post.sport}
+        </p>
       </div>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Upload Modal
-// ---------------------------------------------------------------------------
-
-function UploadModal({
-  open,
-  onClose,
-  matches,
-  onAddMedia,
-}: {
-  open: boolean;
-  onClose: () => void;
-  matches: Match[];
-  onAddMedia: (item: Omit<MediaItem, "id" | "createdAt">) => void;
-}) {
-  const [title, setTitle] = useState("");
-  const [matchVal, setMatchVal] = useState("");
-  const [sport, setSport] = useState("");
-  const [mediaType, setMediaType] = useState<"image" | "video" | "reel">(
-    "image"
-  );
-  const [preview, setPreview] = useState<{
-    src: string;
-    isVideo: boolean;
-    name: string;
-  } | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const inputCls =
-    "w-full px-3 py-2 rounded-md border border-border bg-background text-sm text-foreground focus:outline-none focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 transition-colors";
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    if (file.type.startsWith("image/")) {
-      reader.onload = (ev) =>
-        setPreview({
-          src: ev.target?.result as string,
-          isVideo: false,
-          name: file.name,
-        });
-      reader.readAsDataURL(file);
-    } else if (file.type.startsWith("video/")) {
-      setPreview({ src: "", isVideo: true, name: file.name });
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!preview) return alert("Please select a file");
-    if (!title.trim()) return alert("Please enter a title");
-
-    const [matchId, matchSport] = matchVal
-      ? matchVal.split("|")
-      : ["", ""];
-
-    onAddMedia({
-      title: title.trim(),
-      type: preview.isVideo ? "video" : "image",
-      url: preview.src,
-      fileName: preview.name,
-      matchId: matchId || null,
-      sport: sport || matchSport || "",
-      size: "—",
-    });
-
-    // Reset
-    setTitle("");
-    setMatchVal("");
-    setSport("");
-    setPreview(null);
-    if (fileRef.current) fileRef.current.value = "";
-    onClose();
-  };
+function ReelCard({ reel }: { reel: (typeof REELS)[number] }) {
+  const Icon = reel.icon;
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md bg-background border-border">
-        <DialogHeader>
-          <DialogTitle className="text-lg font-bold">
-            Upload Media
-          </DialogTitle>
-        </DialogHeader>
+    <div
+      className={`relative rounded-xl overflow-hidden bg-gradient-to-br ${reel.bgClass} aspect-[9/16] cursor-pointer group`}
+    >
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_30%,white,transparent)]" />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <Icon size={32} className="text-white/20" />
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          {/* Type selector */}
-          <div className="flex gap-2">
-            {(["image", "video", "reel"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setMediaType(t)}
-                className={cn(
-                  "flex-1 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider border transition-all",
-                  mediaType === t
-                    ? "bg-[#A91D3A] text-white border-[#A91D3A]"
-                    : "border-border text-muted-foreground hover:border-[#C5A059]"
-                )}
-              >
-                {t === "image" && <ImageIcon className="inline size-3.5 mr-1" />}
-                {t === "video" && <Film className="inline size-3.5 mr-1" />}
-                {t === "reel" && <Clapperboard className="inline size-3.5 mr-1" />}
-                {t}
-              </button>
-            ))}
-          </div>
+      {/* Play button */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/30 transition-colors">
+          <Play size={16} className="text-white ml-0.5" fill="white" />
+        </div>
+      </div>
 
-          {/* File input */}
-          <div>
-            <label className="block text-xs font-semibold text-foreground mb-1.5 uppercase tracking-wider">
-              Select File *
-            </label>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*,video/*"
-              className={inputCls}
-              onChange={handleFileChange}
-              required
-            />
-          </div>
+      {/* Duration */}
+      <div className="absolute top-2 right-2 bg-black/50 text-white text-[10px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm">
+        {reel.duration}
+      </div>
 
-          {/* Preview */}
-          {preview && (
-            <div className="rounded-lg overflow-hidden border border-border bg-muted">
-              {preview.isVideo ? (
-                <div className="flex items-center gap-2 p-3">
-                  <Film className="size-4 text-[#C5A059]" />
-                  <span className="text-xs text-foreground font-medium">
-                    {preview.name}
-                  </span>
-                </div>
-              ) : (
-                <img
-                  src={preview.src}
-                  alt="Preview"
-                  className="w-full max-h-48 object-cover"
-                />
-              )}
-            </div>
-          )}
-
-          {/* Title */}
-          <div>
-            <label className="block text-xs font-semibold text-foreground mb-1.5 uppercase tracking-wider">
-              Title *
-            </label>
-            <input
-              type="text"
-              className={inputCls}
-              placeholder="e.g. Finals Game 3 Highlights"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-          </div>
-
-          {/* Sport */}
-          <div>
-            <label className="block text-xs font-semibold text-foreground mb-1.5 uppercase tracking-wider">
-              Sport
-            </label>
-            <input
-              type="text"
-              className={inputCls}
-              placeholder="e.g. Basketball, Volleyball…"
-              value={sport}
-              onChange={(e) => setSport(e.target.value)}
-            />
-          </div>
-
-          {/* Related match */}
-          <div>
-            <label className="block text-xs font-semibold text-foreground mb-1.5 uppercase tracking-wider">
-              Related Match
-            </label>
-            <select
-              className={inputCls}
-              value={matchVal}
-              onChange={(e) => setMatchVal(e.target.value)}
-            >
-              <option value="">None</option>
-              {matches.map((m) => (
-                <option key={m.id} value={`${m.id}|${m.homeTeam}`}>
-                  {m.homeTeam} vs {m.awayTeam}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex gap-2 pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={onClose}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1 bg-[#A91D3A] hover:bg-[#8B1528] text-white"
-            >
-              <Upload className="size-3.5 mr-1.5" />
-              Upload
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+      {/* Bottom info */}
+      <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/70 to-transparent">
+        <p className="text-white text-[10px] font-semibold leading-tight line-clamp-2">
+          {reel.title}
+        </p>
+        <p className="text-white/60 text-[9px] mt-0.5">{reel.views} views</p>
+      </div>
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Lightbox / viewer
-// ---------------------------------------------------------------------------
+// ─── Main Page ───────────────────────────────────────────────────────────────
 
-function MediaViewer({
-  item,
-  onClose,
-}: {
-  item: MediaItem | null;
-  onClose: () => void;
-}) {
-  if (!item) return null;
-  return (
-    <Dialog open={!!item} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl p-0 overflow-hidden bg-black border-border">
-        <button
-          onClick={onClose}
-          className="absolute right-3 top-3 z-10 size-8 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
-        >
-          <X className="size-4" />
-        </button>
-        <div className="relative bg-black">
-          {item.type === "video" ? (
-            <div className="aspect-video flex items-center justify-center bg-black">
-              <Play className="size-16 text-white/40" />
-            </div>
-          ) : item.url ? (
-            <img
-              src={item.url}
-              alt={item.title}
-              className="w-full max-h-[70vh] object-contain"
-            />
-          ) : (
-            <div className="aspect-video flex items-center justify-center">
-              <ImageIcon className="size-16 text-white/20" />
-            </div>
-          )}
-        </div>
-        <div className="p-4 bg-background">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="font-bold text-sm">{item.title}</h3>
-              {item.sport && (
-                <Badge className="mt-1 text-[9px] uppercase tracking-wider bg-[#A91D3A] text-white border-0">
-                  {item.sport}
-                </Badge>
-              )}
-            </div>
-            <div className="flex gap-3 text-muted-foreground">
-              <Heart className="size-5 hover:text-[#A91D3A] cursor-pointer transition-colors" />
-              <Bookmark className="size-5 hover:text-[#C5A059] cursor-pointer transition-colors" />
-              <Share2 className="size-5 hover:text-foreground cursor-pointer transition-colors" />
-            </div>
-          </div>
-          <p className="text-[10px] text-muted-foreground mt-2">
-            {item.createdAt
-              ? new Date(item.createdAt).toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })
-              : ""}
-          </p>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main Page
-// ---------------------------------------------------------------------------
-
-// Seed indices for demo placeholders when real media is empty
-const HIGHLIGHT_COUNT = 8;
-const POST_COUNT = 9;
-const REEL_COUNT = 6;
-
-export default function MediaPage({ matches, media, onAddMedia }: MediaPageProps) {
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const [activeViewer, setActiveViewer] = useState<MediaItem | null>(null);
-  const [tab, setTab] = useState<"posts" | "reels">("posts");
-  const [visiblePosts, setVisiblePosts] = useState(6); // Number of posts to show initially
-  const [visibleReels, setVisibleReels] = useState(4); // Number of reels to show initially
-  const reelScrollRef = useRef<HTMLDivElement>(null);
-
-  // Partition real media into categories
-  const highlights = media.filter((m) => m.type === "image").slice(0, HIGHLIGHT_COUNT);
-  const posts = media.filter((m) => m.type === "image");
-  const reels = media.filter((m) => m.type === "video");
-
-  // Add filler content if no real data is available
-  const fillerPosts = Array.from({ length: Math.max(POST_COUNT - posts.length, 0) }).map((_, i) => ({
-    id: `placeholder-post-${i}`,
-    title: `Placeholder Post ${i + 1}`,
-    type: "image",
-    url: "https://via.placeholder.com/300",
-    createdAt: new Date().toISOString(),
-  }));
-
-  const fillerReels = Array.from({ length: Math.max(REEL_COUNT - reels.length, 0) }).map((_, i) => ({
-    id: `placeholder-reel-${i}`,
-    title: `Placeholder Reel ${i + 1}`,
-    type: "video",
-    url: "https://via.placeholder.com/300",
-    createdAt: new Date().toISOString(),
-  }));
-
-  const combinedPosts = [...posts, ...fillerPosts].slice(0, visiblePosts);
-  const combinedReels = [...reels, ...fillerReels].slice(0, visibleReels);
-
-  const scrollReels = (dir: "left" | "right") => {
-    if (!reelScrollRef.current) return;
-    reelScrollRef.current.scrollBy({
-      left: dir === "left" ? -340 : 340,
-      behavior: "smooth",
-    });
-  };
-
-  const loadMorePosts = () => setVisiblePosts((prev) => prev + 6);
-  const loadMoreReels = () => setVisibleReels((prev) => prev + 4);
+export default function MediaPage() {
+  const [activeTab, setActiveTab] = useState<"posts" | "reels">("posts");
+  const [activeHighlight, setActiveHighlight] = useState<number | null>(null);
 
   return (
-    <div className="min-h-screen bg-background pb-16">
+    <div className="min-h-screen bg-gray-50 font-sans">
+      {/* Top Nav */}
+      <header className="bg-black text-white px-4 py-3 flex items-center gap-3">
+        <div className="w-6 h-6 border border-white/30 rounded flex items-center justify-center">
+          <Grid3X3 size={12} />
+        </div>
+        <span className="text-sm font-bold tracking-widest uppercase">
+          Media
+        </span>
+      </header>
+
       {/* Profile Header */}
-      <div className="border-b border-border/60 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="bg-white border-b border-gray-200 px-4 py-4">
+        <div className="flex items-center justify-between">
+          {/* Avatar + Name */}
           <div className="flex items-center gap-3">
-            <div className="p-[2px] rounded-full bg-gradient-to-tr from-[#A91D3A] via-[#C5A059] to-[#A91D3A]">
-              <div className="size-12 rounded-full bg-background flex items-center justify-center overflow-hidden">
-                <span className="text-xs font-black text-[#A91D3A] uppercase tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
-                  IA
-                </span>
-              </div>
+            <div className="w-14 h-14 rounded-full border-2 border-red-600 flex items-center justify-center bg-red-50">
+              <span className="text-red-700 font-black text-lg">IA</span>
             </div>
             <div>
-              <h1 className="text-lg font-black tracking-tight leading-none" style={{ fontFamily: "var(--font-heading)" }}>
-                IskoArena
+              <h1 className="font-black text-sm tracking-widest uppercase">
+                IskоArena
               </h1>
-              <p className="text-[12px] text-muted-foreground uppercase tracking-widest mt-0.5">
+              <p className="text-[10px] text-gray-500 tracking-widest uppercase">
                 Official Media Hub
               </p>
             </div>
           </div>
 
-          <div className="hidden sm:flex items-center gap-8">
-            {[{ label: "Posts", value: combinedPosts.length }, { label: "Followers", value: "1,248" }, { label: "Following", value: "84" }].map(({ label, value }) => (
-              <div key={label} className="text-center">
-                <p className="text-lg font-black leading-none text-foreground">{value}</p>
-                <p className="text-[12px] text-muted-foreground uppercase tracking-wider mt-0.5">{label}</p>
-              </div>
-            ))}
+          {/* Stats */}
+          <div className="flex gap-5 text-center">
+            <div>
+              <p className="font-black text-sm">6</p>
+              <p className="text-[10px] text-gray-500 tracking-widest uppercase">
+                Posts
+              </p>
+            </div>
+            <div>
+              <p className="font-black text-sm">1,248</p>
+              <p className="text-[10px] text-gray-500 tracking-widest uppercase">
+                Followers
+              </p>
+            </div>
+            <div>
+              <p className="font-black text-sm">84</p>
+              <p className="text-[10px] text-gray-500 tracking-widest uppercase">
+                Following
+              </p>
+            </div>
           </div>
 
-          <Button onClick={() => setUploadOpen(true)} className="bg-[#A91D3A] hover:bg-[#8B1528] text-white text-xs font-bold uppercase tracking-wider h-8 px-4 gap-1.5">
-            <Plus className="size-3.5" />
-            Post
-          </Button>
+          {/* Post Button */}
+          <button className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold tracking-widest px-3 py-2 rounded-lg transition-colors">
+            <Plus size={14} />
+            POST
+          </button>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* Highlights Row */}
-        <section className="py-6 border-b border-border/40">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Star className="size-4 text-[#C5A059]" />
-              <h2 className="text-sm font-black uppercase tracking-widest text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-                Highlights
-              </h2>
-            </div>
-            <button onClick={() => setUploadOpen(true)} className="size-14 rounded-full border-2 border-dashed border-border flex items-center justify-center hover:border-[#C5A059] transition-colors group">
-              <Plus className="size-5 text-muted-foreground group-hover:text-[#C5A059] transition-colors" />
-            </button>
+      {/* Highlights */}
+      <div className="bg-white border-b border-gray-200 px-4 py-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Star size={14} className="text-yellow-500 fill-yellow-400" />
+            <span className="text-xs font-black tracking-widest uppercase">
+              Highlights
+            </span>
           </div>
-
-          <div className="flex gap-5 overflow-x-auto pb-2 scrollbar-hide">
-            <button onClick={() => setUploadOpen(true)} className="flex flex-col items-center gap-2 shrink-0 group">
-              <div className="size-16 rounded-full border-2 border-dashed border-border flex items-center justify-center bg-muted/50 group-hover:border-[#C5A059] transition-colors">
-                <Plus className="size-5 text-muted-foreground group-hover:text-[#C5A059] transition-colors" />
-              </div>
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">New</span>
-            </button>
-            {Array.from({ length: HIGHLIGHT_COUNT }).map((_, i) => (
-              <HighlightBubble key={i} item={highlights[i]} index={i} onClick={() => highlights[i] && setActiveViewer(highlights[i])} />
-            ))}
-          </div>
-        </section>
-
-        {/* Posts / Reels Tabs */}
-        <section className="pt-2">
-          <Tabs value={tab} onValueChange={(v) => setTab(v as "posts" | "reels")}>
-            <TabsList className="w-full rounded-none border-b border-border bg-transparent h-auto p-0 mb-0">
-              <TabsTrigger
-                value="posts"
-                className={cn(
-                  "flex-1 rounded-none border-b-2 border-transparent pb-3 pt-3 text-[11px] uppercase tracking-widest font-bold gap-2 data-[state=active]:border-[#A91D3A] data-[state=active]:text-foreground data-[state=active]:bg-transparent text-muted-foreground"
-                )}
-              >
-                <Grid3X3 className="size-3.5" />
-                Posts
-              </TabsTrigger>
-              <TabsTrigger
-                value="reels"
-                className={cn(
-                  "flex-1 rounded-none border-b-2 border-transparent pb-3 pt-3 text-[11px] uppercase tracking-widest font-bold gap-2 data-[state=active]:border-[#A91D3A] data-[state=active]:text-foreground data-[state=active]:bg-transparent text-muted-foreground"
-                )}
-              >
-                <Clapperboard className="size-3.5" />
-                Reels
-              </TabsTrigger>
-            </TabsList>
-
-            {/* ── Posts Grid ── */}
-            <TabsContent value="posts" className="mt-0 pt-6">
-              {posts.length === 0 && (
-                <div className="grid grid-cols-3 gap-1 mb-6">
-                  {Array.from({ length: POST_COUNT }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="aspect-square rounded-sm overflow-hidden bg-muted relative group cursor-pointer"
-                      onClick={() => setUploadOpen(true)}
-                    >
-                      <PlaceholderThumb index={i} />
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
-                        <Plus className="size-6 text-white" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {posts.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {/* Show real items */}
-                  {[...posts, ...fillerPosts].map((item, i) => (
-                    <PostCard
-                      key={item.id}
-                      item={item}
-                      index={i}
-                      onClick={() => setActiveViewer(item)}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Load More Button */}
-              <div className="mt-8 flex justify-center">
-                <button
-                  onClick={loadMorePosts}
-                  className="flex items-center gap-2 px-6 py-3 rounded-full border-2 border-dashed border-border text-muted-foreground hover:border-[#C5A059] hover:text-[#C5A059] transition-all text-xs font-semibold uppercase tracking-wider"
-                >
-                  <Plus className="size-4" />
-                  Load More Posts
-                </button>
-              </div>
-            </TabsContent>
-
-            {/* ── Reels Row ── */}
-            <TabsContent value="reels" className="mt-0 pt-6">
-              <div className="relative">
-                {/* Scroll buttons */}
-                <button
-                  onClick={() => scrollReels("left")}
-                  className="absolute -left-3 top-1/2 -translate-y-1/2 z-10 size-8 rounded-full bg-background border border-border shadow-md flex items-center justify-center hover:border-[#C5A059] transition-colors"
-                >
-                  <ChevronLeft className="size-4" />
-                </button>
-                <button
-                  onClick={() => scrollReels("right")}
-                  className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 size-8 rounded-full bg-background border border-border shadow-md flex items-center justify-center hover:border-[#C5A059] transition-colors"
-                >
-                  <ChevronRight className="size-4" />
-                </button>
-
-                <div
-                  ref={reelScrollRef}
-                  className="flex gap-3 overflow-x-auto pb-4 scroll-smooth"
-                  style={{ scrollbarWidth: "none" }}
-                >
-                  {/* Add new reel */}
-                  <div
-                    className="shrink-0 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#C5A059] transition-colors bg-muted/30"
-                    style={{ width: 160, height: 284 }}
-                    onClick={() => setUploadOpen(true)}
-                  >
-                    <Plus className="size-8 text-muted-foreground" />
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      New Reel
-                    </span>
-                  </div>
-
-                  {reels.length > 0
-                    ? reels.map((item, i) => (
-                        <ReelCard
-                          key={item.id}
-                          item={item}
-                          index={i}
-                          onClick={() => setActiveViewer(item)}
-                        />
-                      ))
-                    : Array.from({ length: REEL_COUNT }).map((_, i) => (
-                        <ReelCard
-                          key={`reel-placeholder-${i}`}
-                          item={undefined}
-                          index={i}
-                          onClick={() => setUploadOpen(true)}
-                        />
-                      ))}
-                </div>
-              </div>
-
-              {/* Upload CTA */}
-              <div className="mt-6 flex justify-center">
-                <button
-                  onClick={() => setUploadOpen(true)}
-                  className="flex items-center gap-2 px-6 py-3 rounded-full border-2 border-dashed border-border text-muted-foreground hover:border-[#C5A059] hover:text-[#C5A059] transition-all text-xs font-semibold uppercase tracking-wider"
-                >
-                  <Clapperboard className="size-4" />
-                  Upload Reel
-                </button>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </section>
+          <button className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:border-red-500 transition-colors">
+            <Plus size={13} className="text-gray-500" />
+          </button>
+        </div>
+        <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
+          {HIGHLIGHTS.map((h) => (
+            <HighlightBubble
+              key={h.id}
+              h={h}
+              active={activeHighlight === h.id}
+              onClick={() =>
+                setActiveHighlight(
+                  activeHighlight === h.id ? null : (h.id as number)
+                )
+              }
+            />
+          ))}
+        </div>
       </div>
 
-      <UploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} matches={matches} onAddMedia={onAddMedia} />
-      <MediaViewer item={activeViewer} onClose={() => setActiveViewer(null)} />
+      {/* Tabs */}
+      <div className="bg-white border-b border-gray-200 px-4">
+        <div className="flex">
+          <button
+            onClick={() => setActiveTab("posts")}
+            className={`flex items-center gap-1.5 px-4 py-3 text-xs font-bold tracking-widest uppercase border-b-2 transition-colors ${
+              activeTab === "posts"
+                ? "border-red-600 text-red-600"
+                : "border-transparent text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            <Grid3X3 size={14} />
+            Posts
+          </button>
+          <button
+            onClick={() => setActiveTab("reels")}
+            className={`flex items-center gap-1.5 px-4 py-3 text-xs font-bold tracking-widest uppercase border-b-2 transition-colors ${
+              activeTab === "reels"
+                ? "border-red-600 text-red-600"
+                : "border-transparent text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            <Film size={14} />
+            Reels
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        {activeTab === "posts" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {POSTS.map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))}
+
+            {/* Upload placeholder */}
+            <div className="border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center py-12 gap-3 hover:border-red-400 transition-colors cursor-pointer group">
+              <div className="w-12 h-12 rounded-full bg-gray-100 group-hover:bg-red-50 flex items-center justify-center transition-colors">
+                <Camera size={20} className="text-gray-400 group-hover:text-red-500 transition-colors" />
+              </div>
+              <p className="text-xs font-bold text-gray-400 group-hover:text-red-500 tracking-widest uppercase transition-colors">
+                Add Post
+              </p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "reels" && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+            {REELS.map((reel) => (
+              <ReelCard key={reel.id} reel={reel} />
+            ))}
+
+            {/* Upload placeholder */}
+            <div className="aspect-[9/16] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-red-400 transition-colors cursor-pointer group">
+              <div className="w-10 h-10 rounded-full bg-gray-100 group-hover:bg-red-50 flex items-center justify-center transition-colors">
+                <Film size={18} className="text-gray-400 group-hover:text-red-500 transition-colors" />
+              </div>
+              <p className="text-[10px] font-bold text-gray-400 group-hover:text-red-500 tracking-widest uppercase transition-colors text-center leading-tight">
+                Add Reel
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
