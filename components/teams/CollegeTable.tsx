@@ -3,7 +3,7 @@ import React from "react";
 import { Plus } from "lucide-react";
 import { CollegeRow } from "./CollegeRow";
 
-export const CollegeTable = ({ colleges }: { colleges: any[] }) => (
+export const CollegeTable = ({ colleges, onDelete }: { colleges: any[]; onDelete?: (college: any) => void }) => (
   <div className="bg-[#111] border border-gray-800 rounded-3xl p-8">
     <div className="flex justify-between items-center mb-8">
       <h3 className="text-xl font-bold text-white">Participating Colleges</h3>
@@ -18,10 +18,11 @@ export const CollegeTable = ({ colleges }: { colleges: any[] }) => (
           <th className="pb-4">Active Teams</th>
           <th className="pb-4">Primary Sports</th>
           <th className="pb-4">Status</th>
+          <th className="pb-4">Actions</th>
         </tr>
       </thead>
       <tbody>
-        {colleges.map((c, i) => <CollegeRow key={i} data={c} />)}
+        {colleges.map((c, i) => <CollegeRow key={i} data={c} onDelete={onDelete} />)}
       </tbody>
     </table>
   </div>
