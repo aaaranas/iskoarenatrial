@@ -14,8 +14,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const utils = trpc.useUtils();
-  
-  // 1. Fetch Session for Sidebar Info
+
   const { data: auth, isLoading } = trpc.auth.getSession.useQuery();
 
   const handleLogout = async () => {
@@ -25,7 +24,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push("/");
   };
 
-  // Extract the current page name from the URL for the header
   const currentPage = pathname.split("/").pop() || "dashboard";
 
   if (isLoading) {
@@ -38,26 +36,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <SidebarProvider>
-      <AppSidebar 
+      <AppSidebar
         variant="sidebar"
-        onLogout={handleLogout} 
-        adminName={auth?.profile?.fullName || "Operator"} 
+        onLogout={handleLogout}
+        adminName={auth?.profile?.fullName || "Operator"}
       />
 
-      <SidebarInset className="bg-[#050505]">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-zinc-800 px-4 sticky top-0 bg-[#050505]/80 backdrop-blur-md z-20">
-          <SidebarTrigger className="-ml-1 text-zinc-400" />
-          <div className="flex-1">
-            <h1 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">
-              {currentPage === "dashboard" ? "System Overview" : currentPage}
-            </h1>
-          </div>
+      <SidebarInset className="bg-transparent">
+        {/* TopAppBar — glass panel matching HTML header */}
+        <header
+          className="sticky top-0 z-10 flex items-center gap-6 border-b"
+          style={{
+            height: "56px",
+            padding: "0 2rem",
+            background: "rgba(0, 0, 0, 0.40)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            borderColor: "rgba(255, 255, 255, 0.05)",
+          }}
+        >
+          {/* Mobile menu toggle */}
+          <SidebarTrigger
+            className="md:hidden p-2 rounded-lg transition-colors hover:bg-white/10"
+            style={{ color: "#F3F4F6" }}
+          />
+
+          {/* Page title — Oswald text-xl bold uppercase, matches HTML h2 */}
+          <h2
+            className="text-white"
+            style={{
+              fontFamily: "'Oswald', sans-serif",
+              fontSize: "1.25rem",
+              fontWeight: 700,
+              letterSpacing: "0.025em",
+              textTransform: "uppercase",
+            }}
+          >
+            {currentPage === "dashboard" ? "Dashboard" : currentPage}
+          </h2>
         </header>
 
         <main className="flex flex-1 flex-col overflow-y-auto">
           {children}
         </main>
       </SidebarInset>
+
       <Toaster />
     </SidebarProvider>
   );

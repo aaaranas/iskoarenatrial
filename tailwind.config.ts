@@ -6,129 +6,114 @@ const config: Config = {
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
-      animation: {
-        "border-beam": "border-beam calc(var(--duration)*1s) infinite linear",
-      },
-      keyframes: {
-        "border-beam": {
-          "100%": {
-            "offset-distance": "100%",
-          },
-        },
-      },
-      rotate: {
-        'x-12': '12deg', // Changed from rotateX(12deg) to just 12deg
-        'x-20': '20deg', // Tailwind 'rotate' utility expects the degree value
-      },
       colors: {
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
-        primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))'
-        },
-        secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))'
-        },
+        // --- Material Design 3 color tokens matching the HTML design ---
+        "on-background": "#F3F4F6",
+        "inverse-on-surface": "#191c1e",
+        "secondary-fixed-dim": "#b9c7df",
+        "on-tertiary-fixed": "#271901",
+        "outline": "#76777d",
+        "on-error": "#ffffff",
+        "on-primary": "#ffffff",
+        "on-secondary-container": "#D4AF37",
+        "surface-container-lowest": "rgba(18, 18, 18, 0.7)",
+        "primary-container": "#800000",
+        "surface-dim": "#1a1a1a",
+        "primary": "#800000",
+        "inverse-primary": "#ffb4ab",
+        "surface-container-low": "rgba(28, 28, 28, 0.7)",
+        "surface-bright": "#2c2c2c",
+        "secondary": "#D4AF37",
+        "on-tertiary-fixed-variant": "#574425",
+        "primary-fixed-dim": "#ffb4ab",
+        "inverse-surface": "#eff1f3",
+        "on-primary-fixed-variant": "#690005",
+        "on-secondary-fixed": "#251a00",
+        "secondary-fixed": "#ffdf9d",
+        "on-tertiary-container": "#98805d",
+        "on-surface": "#F3F4F6",
+        "on-secondary": "#000000",
+        "on-primary-container": "#ffdad6",
+        "secondary-container": "#4e442c",
+        "on-secondary-fixed-variant": "#594400",
+        "surface-variant": "#45464d",
+        "surface-container-high": "rgba(37, 37, 37, 0.7)",
+        "outline-variant": "#c6c6cd",
+        "surface-tint": "#800000",
+        "on-surface-variant": "#c6c6cd",
+        "tertiary-fixed-dim": "#dec29a",
+        "on-primary-fixed": "#410002",
+        "tertiary-container": "#271901",
+        "surface": "#000000",
+        "on-error-container": "#93000a",
+        "error-container": "#ffdad6",
+        "surface-container": "rgba(30, 30, 30, 0.7)",
+        "surface-container-highest": "rgba(51, 51, 51, 0.7)",
+        "tertiary": "#D4AF37",
+        "background": "#000000",
+        "error": "#ffb4ab",
+        "primary-fixed": "#ffdad6",
+        "tertiary-fixed": "#fcdeb5",
+        "on-tertiary": "#000000",
+        // --- shadcn/ui tokens ---
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        foreground: "hsl(var(--foreground))",
         destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))'
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
         },
         muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))'
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))'
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
         },
         popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))'
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
         },
         card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))'
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
         },
         sidebar: {
-          DEFAULT: 'hsl(var(--sidebar-background))',
-          foreground: 'hsl(var(--sidebar-foreground))',
-          primary: 'hsl(var(--sidebar-primary))',
-          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-          accent: 'hsl(var(--sidebar-accent))',
-          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-          border: 'hsl(var(--sidebar-border))',
-          ring: 'hsl(var(--sidebar-ring))',
+          DEFAULT: "hsl(var(--sidebar))",
+          foreground: "hsl(var(--sidebar-foreground))",
+          primary: "hsl(var(--sidebar-primary))",
+          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
+          accent: "hsl(var(--sidebar-accent))",
+          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
+          border: "hsl(var(--sidebar-border))",
+          ring: "hsl(var(--sidebar-ring))",
         },
-        chart: {
-          '1': 'hsl(var(--chart-1))',
-          '2': 'hsl(var(--chart-2))',
-          '3': 'hsl(var(--chart-3))',
-          '4': 'hsl(var(--chart-4))',
-          '5': 'hsl(var(--chart-5))'
-        }
       },
       borderRadius: {
-        xl: 'calc(var(--radius) + 4px)',
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)'
+        DEFAULT: "0.125rem",
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+        xl: "0.5rem",
+        "2xl": "1rem",
+        full: "0.75rem",
       },
       fontFamily: {
-        sans: ['var(--font-sans)'],
-        serif: ['var(--font-serif)'],
-        mono: ['var(--font-mono)'],
-        maroons: ['var(--font-heading)'],
-      }
-    }
+        headline: ["Oswald", "sans-serif"],
+        body: ["Roboto", "sans-serif"],
+        label: ["Roboto", "sans-serif"],
+        sans: ["Roboto", "sans-serif"],
+        mono: ["Geist Mono", "monospace"],
+      },
+    },
   },
-plugins: [
-  require("tailwindcss-animate"),
-  function ({ addUtilities }: { addUtilities: any }) {
-    addUtilities({
-      ".transform-style-3d": {
-        "transform-style": "preserve-3d",
-      ".clip-x": {
-          'overflow-x': 'hidden',
-        },
-      },
-      ".perspective-1000": {
-        perspective: "1000px",
-      },
-
-      ".rotate-x-12": {
-        "--tw-rotate-x": "12deg",
-        transform:
-          "rotateX(var(--tw-rotate-x)) translateZ(var(--tw-translate-z,0))",
-      },
-
-      ".rotate-x-20": {
-        "--tw-rotate-x": "20deg",
-        transform:
-          "rotateX(var(--tw-rotate-x)) translateZ(var(--tw-translate-z,0))",
-      },
-
-      ".translate-z-0": {
-        "--tw-translate-z": "0px",
-      },
-
-      ".translate-z-10": {
-        "--tw-translate-z": "10px",
-      },
-
-      ".translate-z-20": {
-        "--tw-translate-z": "20px",
-      },
-    });
-  },
-],
+  plugins: [require("tailwindcss-animate")],
 };
 
 export default config;

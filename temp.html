@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>IskoArena Admin Console</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Oswald & Roboto -->
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&amp;family=Roboto:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-background": "#F3F4F6",
+                    "inverse-on-surface": "#191c1e",
+                    "secondary-fixed-dim": "#b9c7df",
+                    "on-tertiary-fixed": "#271901",
+                    "outline": "#76777d",
+                    "on-error": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "on-secondary-container": "#D4AF37",
+                    "surface-container-lowest": "rgba(18, 18, 18, 0.7)",
+                    "primary-container": "#800000",
+                    "surface-dim": "#1a1a1a",
+                    "primary": "#800000",
+                    "inverse-primary": "#ffb4ab",
+                    "surface-container-low": "rgba(28, 28, 28, 0.7)",
+                    "surface-bright": "#2c2c2c",
+                    "secondary": "#D4AF37",
+                    "on-tertiary-fixed-variant": "#574425",
+                    "primary-fixed-dim": "#ffb4ab",
+                    "inverse-surface": "#eff1f3",
+                    "on-primary-fixed-variant": "#690005",
+                    "on-secondary-fixed": "#251a00",
+                    "secondary-fixed": "#ffdf9d",
+                    "on-tertiary-container": "#98805d",
+                    "on-surface": "#F3F4F6",
+                    "on-secondary": "#000000",
+                    "on-primary-container": "#ffdad6",
+                    "secondary-container": "#4e442c",
+                    "on-secondary-fixed-variant": "#594400",
+                    "surface-variant": "#45464d",
+                    "surface-container-high": "rgba(37, 37, 37, 0.7)",
+                    "outline-variant": "#c6c6cd",
+                    "surface-tint": "#800000",
+                    "on-surface-variant": "#c6c6cd",
+                    "tertiary-fixed-dim": "#dec29a",
+                    "on-primary-fixed": "#410002",
+                    "tertiary-container": "#271901",
+                    "surface": "#000000",
+                    "on-error-container": "#93000a",
+                    "error-container": "#ffdad6",
+                    "surface-container": "rgba(30, 30, 30, 0.7)",
+                    "surface-container-highest": "rgba(51, 51, 51, 0.7)",
+                    "tertiary": "#D4AF37",
+                    "background": "#000000",
+                    "error": "#ffb4ab",
+                    "primary-fixed": "#ffdad6",
+                    "tertiary-fixed": "#fcdeb5",
+                    "on-tertiary": "#000000"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Oswald", "sans-serif"],
+                    "body": ["Roboto", "sans-serif"],
+                    "label": ["Roboto", "sans-serif"]
+            }
+          },
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Roboto', sans-serif; }
+        h1, h2, h3, .brand-font { font-family: 'Oswald', sans-serif; }
+        ::selection {
+            background-color: #800000;
+            color: white;
+        }
+        .glass-panel {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-panel-maroon {
+            background: linear-gradient(135deg, rgba(128, 0, 0, 0.8), rgba(65, 0, 2, 0.85));
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .bg-gradient-dark {
+            background: radial-gradient(circle at top right, #1a0001, #000000);
+        }
+    </style>
+</head>
+<body class="bg-gradient-dark text-on-surface flex min-h-screen">
+<!-- SideNavBar Component -->
+<aside class="hidden md:flex flex-col h-screen w-64 fixed left-0 bg-black/40 glass-panel py-6 px-4 z-20">
+<!-- Logo & Header -->
+<div class="flex items-center justify-between px-2 mb-10"><div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined" data-icon="sports_esports">sports_esports</span>
+</div>
+<div>
+<h1 class="font-bold text-white text-lg leading-tight tracking-tight uppercase">IskoArena</h1>
+<p class="text-[10px] tracking-widest text-secondary font-bold uppercase">ADMIN CONSOLE</p>
+</div>
+</div><button class="absolute top-6 right-4 p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 glass-panel group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-white text-[20px] block" data-icon="menu_open">menu_open</span>
+</button></div>
+<!-- Navigation Links -->
+<nav class="flex-grow space-y-8">
+<!-- Overview Section -->
+<div>
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.05em] px-2 mb-3">OVERVIEW</p>
+<div class="space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg border-l-4 border-primary text-white bg-primary/20 transition-colors" href="#">
+<span class="material-symbols-outlined text-secondary" data-icon="dashboard">dashboard</span>
+<span class="text-sm font-bold tracking-tight uppercase">DASHBOARD</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="sports_esports">sports_esports</span>
+<span class="text-sm font-bold tracking-tight uppercase">MATCHES</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+<span class="text-sm font-bold tracking-tight uppercase">LEADERBOARDS</span>
+</a>
+</div>
+</div>
+<!-- Management Section -->
+<div>
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.05em] px-2 mb-3">MANAGEMENT</p>
+<div class="space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="perm_media">perm_media</span>
+<span class="text-sm font-bold tracking-tight uppercase">MEDIA</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="text-sm font-bold tracking-tight uppercase">TEAMS</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="text-sm font-bold tracking-tight uppercase">NOTIFICATIONS</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="archive">archive</span>
+<span class="text-sm font-bold tracking-tight uppercase">ARCHIVES</span>
+</a>
+</div>
+</div>
+</nav>
+<!-- Sidebar Footer -->
+<div class="mt-auto pt-6 border-t border-white/10">
+<div class="flex items-center justify-between p-2 bg-white/5 glass-panel rounded-xl">
+<div class="flex items-center gap-3">
+<img alt="Admin profile photo" class="w-10 h-10 rounded-full object-cover border border-secondary/30" data-alt="professional portrait of a confident middle-aged administrator in a modern office setting with soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoXnpLojQ6DePTsJfubYWhyjPu0pU3WNQdmiaf2IORAebZiV9b1-aaJOcqfgboSEV7t__qLVa4VfXg2D-t5oexXXZE2-DI1Od_75Fh-wMqugyuccyddedUNN1IpDNeO8Y3z_m0MH33rqV0ksalASOHEZKC03Pd1wOx_Wn3_Qi-6Bv1AoNNAlD58Ki2FdhNUplrRsy0PHp2Q87H3gR4MS0jZPs7vmsI-MMtI1Zgaz5i4le6MH5fHh2hoGV8QO3lyYcPG4Kv5Pljqcs"/>
+<div>
+<p class="text-xs font-black text-white uppercase">ADMIN</p>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 bg-green-500 rounded-full"></span>
+<p class="text-[10px] font-bold text-secondary uppercase">ACTIVE</p>
+</div>
+</div>
+</div>
+<button class="p-2 text-on-surface-variant hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="flex-grow md:ml-64 min-h-screen">
+<!-- TopAppBar Component -->
+<header class="sticky top-0 z-10 flex justify-between items-center px-8 py-4 w-full bg-black/40 glass-panel border-b border-white/5">
+<div class="flex items-center gap-6">
+<button class="md:hidden p-2 text-on-surface hover:bg-white/10 rounded-lg transition-colors">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h2 class="text-xl font-bold tracking-tight text-white uppercase">DASHBOARD</h2>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex flex-col items-end">
+<p class="text-sm font-bold text-white uppercase">Marcus Chen</p>
+<p class="text-[10px] text-secondary font-bold uppercase tracking-wider">COS Admin</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-white/10 border-2 border-primary flex items-center justify-center overflow-hidden">
+<img alt="Admin profile photo" class="w-full h-full object-cover" data-alt="close up headshot of a professional man with glasses, neutral expression, soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGdLF9JYMMsgY9aHiVGY54Xop4F_kapPd9hjirpfTflVVeUFDzT6ZAZoeSr3jdbDYu5p7SjJMtw2Vazwb7jM_leGryu0Rs6a9_4Rd_GPLW7jfERrsovvVVZTFP-qgoPDmXMKz0nNgLgYFiI-hB_t52CfXmIo60aQG2S9MEz-vQgdTwvfPY9F5Plc-JZzIKBG48T7ZfHXboXhaGrYRsuDW2noNHy3WGxEiZztxL69PIzgvD5sJangCYJ21_Jfn430TaGkUHmvJBsPo"/>
+</div>
+</div>
+</header>
+<!-- Content Area -->
+<div class="p-8 space-y-8">
+<!-- Hero Banner -->
+<section class="relative h-48 rounded-2xl overflow-hidden glass-panel-maroon flex items-center px-10 shadow-2xl">
+<div class="relative z-10 space-y-2">
+<h1 class="text-3xl md:text-5xl font-bold text-white uppercase tracking-tight">Welcome back, Marcus.</h1>
+<p class="text-secondary/90 max-w-md font-bold text-lg">Here's what's happening today.</p>
+</div>
+</section>
+<!-- Stats Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Live Matches -->
+<div class="bg-black/30 glass-panel p-6 rounded-xl flex items-center gap-5 group transition-all duration-300 hover:bg-black/50 hover:translate-y-[-4px]">
+<div class="w-14 h-14 bg-primary/30 text-red-500 rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined" data-icon="sensors" style="font-variation-settings: 'FILL' 1;">sensors</span>
+</div>
+<div>
+<p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Live Matches</p>
+<p class="text-3xl font-bold text-white uppercase">04</p>
+</div>
+</div>
+<!-- Upcoming Games -->
+<div class="bg-black/30 glass-panel p-6 rounded-xl flex items-center gap-5 group transition-all duration-300 hover:bg-black/50 hover:translate-y-[-4px]">
+<div class="w-14 h-14 bg-secondary/20 text-secondary rounded-full flex items-center justify-center shadow-lg shadow-secondary/10">
+<span class="material-symbols-outlined" data-icon="event_upcoming">event_upcoming</span>
+</div>
+<div>
+<p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Upcoming Games</p>
+<p class="text-3xl font-bold text-white uppercase">12</p>
+</div>
+</div>
+<!-- Matches Played -->
+<div class="bg-black/30 glass-panel p-6 rounded-xl flex items-center gap-5 group transition-all duration-300 hover:bg-black/50 hover:translate-y-[-4px]">
+<div class="w-14 h-14 bg-white/10 text-on-surface-variant rounded-full flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined" data-icon="check_circle">check_circle</span>
+</div>
+<div>
+<p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Matches Played</p>
+<p class="text-3xl font-bold text-white uppercase">842</p>
+</div>
+</div>
+<!-- Registered Players -->
+<div class="bg-black/30 glass-panel p-6 rounded-xl flex items-center gap-5 group transition-all duration-300 hover:bg-black/50 hover:translate-y-[-4px]">
+<div class="w-14 h-14 bg-primary/30 text-secondary rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined" data-icon="person_add" style="font-variation-settings: 'FILL' 1;">person_add</span>
+</div>
+<div>
+<p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Players</p>
+<p class="text-3xl font-bold text-white uppercase">3,104</p>
+</div>
+</div>
+</section>
+<!-- Recent Matches Table -->
+<section class="bg-black/20 glass-panel rounded-2xl overflow-hidden shadow-2xl">
+<div class="px-8 py-6 flex justify-between items-center bg-white/5 border-b border-white/5">
+<div>
+<h3 class="text-xl font-bold text-white tracking-tight uppercase">RECENT MATCHES</h3>
+<p class="text-xs text-on-surface-variant font-bold uppercase tracking-wider">Real-time status of current and past matchups</p>
+</div>
+<button class="flex items-center gap-2 bg-primary hover:bg-primary/80 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-colors shadow-lg shadow-primary/30 uppercase tracking-tighter">
+                        View Schedule
+                        <span class="material-symbols-outlined text-[18px] text-secondary" data-icon="calendar_month">calendar_month</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-separate border-spacing-y-2 px-8 pb-6">
+<thead>
+<tr class="text-on-surface-variant">
+<th class="pb-3 pt-6 px-4 text-[10px] font-bold uppercase tracking-[0.15em]">SPORT</th>
+<th class="pb-3 pt-6 px-4 text-[10px] font-bold uppercase tracking-[0.15em]">MATCHUP</th>
+<th class="pb-3 pt-6 px-4 text-[10px] font-bold uppercase tracking-[0.15em]">SCHEDULE</th>
+<th class="pb-3 pt-6 px-4 text-[10px] font-bold uppercase tracking-[0.15em]">STATUS</th>
+<th class="pb-3 pt-6 px-4 text-[10px] font-bold uppercase tracking-[0.15em] text-right">ACTION</th>
+</tr>
+</thead>
+<tbody class="space-y-2">
+<!-- Row 1 -->
+<tr class="group hover:bg-white/5 transition-all rounded-xl">
+<td class="py-5 px-4 align-middle">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="sports_basketball">sports_basketball</span>
+<span class="text-sm font-bold text-white uppercase">BASKETBALL</span>
+</div>
+</td>
+<td class="py-5 px-4">
+<p class="text-sm font-bold text-white uppercase">Lions vs Tigers</p>
+<p class="text-[10px] text-on-surface-variant font-bold uppercase opacity-70">Arena A, Main Court</p>
+</td>
+<td class="py-5 px-4">
+<p class="text-sm font-bold text-on-surface uppercase tracking-tight">Today, 2:00 PM</p>
+</td>
+<td class="py-5 px-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/30 text-red-400 text-[10px] font-black tracking-widest border border-primary/40 shadow-sm">
+<span class="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span> LIVE
+                                    </span>
+</td>
+<td class="py-5 px-4 text-right">
+<button class="p-2 text-on-surface-variant hover:text-secondary transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="group hover:bg-white/5 transition-all rounded-xl">
+<td class="py-5 px-4 align-middle">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="sports_soccer">sports_soccer</span>
+<span class="text-sm font-bold text-white uppercase">FOOTBALL</span>
+</div>
+</td>
+<td class="py-5 px-4">
+<p class="text-sm font-bold text-white uppercase">Falcons FC vs United</p>
+<p class="text-[10px] text-on-surface-variant font-bold uppercase opacity-70">National Stadium</p>
+</td>
+<td class="py-5 px-4">
+<p class="text-sm font-bold text-on-surface uppercase tracking-tight">Today, 4:30 PM</p>
+</td>
+<td class="py-5 px-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/20 text-secondary text-[10px] font-black tracking-widest border border-secondary/30 shadow-sm">
+                                        UPCOMING
+                                    </span>
+</td>
+<td class="py-5 px-4 text-right">
+<button class="p-2 text-on-surface-variant hover:text-secondary transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="group hover:bg-white/5 transition-all rounded-xl">
+<td class="py-5 px-4 align-middle">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="sports_volleyball">sports_volleyball</span>
+<span class="text-sm font-bold text-white uppercase">VOLLEYBALL</span>
+</div>
+</td>
+<td class="py-5 px-4">
+<p class="text-sm font-bold text-white uppercase">Spikers vs Blockers</p>
+<p class="text-[10px] text-on-surface-variant font-bold uppercase opacity-70">University Gymnasium</p>
+</td>
+<td class="py-5 px-4">
+<p class="text-sm font-bold text-on-surface uppercase tracking-tight">Yesterday, 10:00 AM</p>
+</td>
+<td class="py-5 px-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 text-on-surface-variant text-[10px] font-black tracking-widest border border-white/10 shadow-sm">
+                                        COMPLETED
+                                    </span>
+</td>
+<td class="py-5 px-4 text-right">
+<button class="p-2 text-on-surface-variant hover:text-secondary transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="group hover:bg-white/5 transition-all rounded-xl">
+<td class="py-5 px-4 align-middle">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="sports_tennis">sports_tennis</span>
+<span class="text-sm font-bold text-white uppercase">TENNIS</span>
+</div>
+</td>
+<td class="py-5 px-4">
+<p class="text-sm font-bold text-white uppercase">Silva vs Tanaka</p>
+<p class="text-[10px] text-on-surface-variant font-bold uppercase opacity-70">East Side Courts</p>
+</td>
+<td class="py-5 px-4">
+<p class="text-sm font-bold text-on-surface uppercase tracking-tight">Today, 1:15 PM</p>
+</td>
+<td class="py-5 px-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/30 text-red-400 text-[10px] font-black tracking-widest border border-primary/40 shadow-sm">
+<span class="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span> LIVE
+                                    </span>
+</td>
+<td class="py-5 px-4 text-right">
+<button class="p-2 text-on-surface-variant hover:text-secondary transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</main>
+</body></html>

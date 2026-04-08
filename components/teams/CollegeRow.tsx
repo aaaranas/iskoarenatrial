@@ -1,7 +1,13 @@
 "use client";
 import React from "react";
+import type { College } from "@/components/pages/TeamsPage";
 
-export const CollegeRow = ({ data }: { data: any }) => (
+interface CollegeRowProps {
+  data: College;
+  onDelete: (college: College) => void;
+}
+
+export const CollegeRow = ({ data, onDelete }: CollegeRowProps) => (
   <tr className="hover:bg-[#1A1A1A]/40 transition-colors border-b border-gray-800">
     <td className="py-6 flex items-center gap-4">
       <div className="w-10 h-10 bg-[#A91D3A] rounded-lg flex items-center justify-center font-bold text-white shadow-lg shadow-[#A91D3A]/20">
@@ -14,16 +20,35 @@ export const CollegeRow = ({ data }: { data: any }) => (
     </td>
     <td className="font-bold text-white">{data.activeTeams}</td>
     <td className="space-x-2">
-      {data.sports.map((sport: string) => (
-        <span key={sport} className="text-[10px] bg-[#1A1A1A] px-2 py-1 rounded border border-gray-800 text-gray-400">
+      {data.sports.map((sport) => (
+        <span
+          key={sport}
+          className="text-[10px] bg-[#1A1A1A] px-2 py-1 rounded border border-gray-800 text-gray-400"
+        >
           {sport}
         </span>
       ))}
     </td>
     <td>
-      <span className="text-green-500 text-[10px] font-bold flex items-center gap-2 uppercase tracking-widest">
+      <span
+        className={`text-[10px] font-bold flex items-center gap-2 uppercase tracking-widest ${
+          data.status === "Active"
+            ? "text-emerald-500"
+            : data.status === "Pending"
+            ? "text-yellow-500"
+            : "text-zinc-500"
+        }`}
+      >
         ● {data.status}
       </span>
+    </td>
+    <td>
+      <button
+        onClick={() => onDelete(data)}
+        className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 hover:text-[#A91D3A] transition-colors"
+      >
+        Remove
+      </button>
     </td>
   </tr>
 );

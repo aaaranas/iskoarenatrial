@@ -1,24 +1,8 @@
 "use client"
 
 import * as React from "react"
-import Image from 'next/image';
-import {
-  LayoutDashboard,
-  Trophy,
-  FileText,
-  BarChart3,
-  Image as ImageIcon,
-  Users,
-  Sword,
-  Bell,
-  Archive,
-  LogOut,
-  User,
-  Activity,
-  ChevronRight
-} from "lucide-react"
-
-
+import Image from 'next/image'
+import { LogOut, User } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -33,157 +17,291 @@ import {
   SidebarGroupContent
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
-import type { PageName } from "@/types"
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { MatIcon } from "@/components/ui/MatIcon"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  currentPage: PageName;
-  onNavigate: (page: PageName) => void;
   onLogout: () => void;
   adminName: string;
 }
 
-// 1. Update your menu items to include the actual URL paths
 const navMain = [
-  { label: "Dashboard", icon: LayoutDashboard, url: "/dashboard" },
-  { label: "Matches", icon: Sword, url: "/dashboard/matches" },
-  { label: "Leaderboards", icon: BarChart3, url: "/dashboard/leaderboards" },
-];
+  { label: "Dashboard",    url: "/dashboard",              matIcon: "dashboard" },
+  { label: "Matches",      url: "/dashboard/matches",      matIcon: "sports_esports" },
+  { label: "Leaderboards", url: "/dashboard/leaderboards", matIcon: "leaderboard" },
+]
 
 const manageItems = [
-  { label: "Media", icon: ImageIcon, url: "/dashboard/media" },
-  { label: "Teams", icon: Users, url: "/dashboard/teams" },
-  { label: "Notifications", icon: Bell, url: "/dashboard/notifications" },
-  { label: "Archives", icon: Archive, url: "/dashboard/archives" },
+  { label: "Media",         url: "/dashboard/media",         matIcon: "perm_media" },
+  { label: "Teams",         url: "/dashboard/teams",         matIcon: "groups" },
+  { label: "Notifications", url: "/dashboard/notifications", matIcon: "notifications" },
+  { label: "Archives",      url: "/dashboard/archives",      matIcon: "archive" },
+]
 
-];
+const groupLabelStyle: React.CSSProperties = {
+  fontFamily: "'Roboto', sans-serif",
+  fontSize: "10px",
+  letterSpacing: "0.05em",
+  color: "rgba(255,255,255,0.35)",
+  fontWeight: 700,
+  textTransform: "uppercase",
+}
 
-export function AppSidebar({ 
-  currentPage, 
-  onNavigate, 
-  onLogout, 
-  adminName, 
-  ...props 
-}: AppSidebarProps) {
+const navLabelStyle: React.CSSProperties = {
+  fontFamily: "'Roboto', sans-serif",
+  fontSize: "0.875rem",
+  fontWeight: 700,
+  letterSpacing: "0.025em",
+  textTransform: "uppercase",
+}
 
-  const pathname = usePathname();
+export function AppSidebar({ onLogout, adminName, ...props }: AppSidebarProps) {
+  const pathname = usePathname()
 
   return (
-    <Sidebar variant="inset" collapsible="icon" {...props} className="bg-background border-r border-border/50">
-      {/* Brand Header */}
-      <SidebarHeader className="h-14 bg-background flex items-center justify-center border-b border-border/50 px-4">
+    <Sidebar
+      variant="inset"
+      collapsible="icon"
+      {...props}
+      className="border-r"
+      style={{
+        background: "rgba(0, 0, 0, 0.40)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        borderRight: "1px solid rgba(255, 255, 255, 0.08)",
+      }}
+    >
+      {/* ── Brand Header ── */}
+      <SidebarHeader
+        className="flex items-center border-b"
+        style={{
+          height: "64px",
+          padding: "0 1rem",
+          borderColor: "rgba(255, 255, 255, 0.08)",
+        }}
+      >
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="hover:bg-transparent cursor-default">
-              <div className="flex size-8 items-center justify-center rounded-full bg-foreground text-background font-bold text-[10px] uppercase shadow-sm transition-all group-data-[collapsible=icon]:size-8">
-		 <Image
-		    src="/logo.png"
-		    width={500}
-		    height={500}
-		    alt="Picture of the author"
-		    />
+            <SidebarMenuButton size="lg" className="hover:bg-transparent cursor-default gap-3">
+              {/* White rounded-square logo */}
+              <div
+                className="flex shrink-0 items-center justify-center rounded-sm overflow-hidden"
+                style={{
+                  width: 36,
+                  height: 36,
+                  background: "#ffffff",
+                  boxShadow: "0 2px 12px rgba(255,255,255,0.15)",
+                }}
+              >
+                <Image src="/logo.png" width={32} height={32} alt="IskoArena logo" />
               </div>
-              <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-semibold tracking-tight">IskoArena</span>
-                <span className="truncate text-[10px] text-muted-foreground uppercase font-medium tracking-tighter">Admin Console</span>
+
+              <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+                <span
+                  className="truncate text-white"
+                  style={{
+                    fontFamily: "'Oswald', sans-serif",
+                    fontSize: "1.125rem",
+                    fontWeight: 700,
+                    letterSpacing: "-0.01em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  IskoArena
+                </span>
+                <span
+                  className="truncate text-secondary"
+                  style={{
+                    fontFamily: "'Roboto', sans-serif",
+                    fontSize: "10px",
+                    fontWeight: 700,
+                    letterSpacing: "0.15em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Admin Console
+                </span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="gap-0 bg-background">
-        {/* Overview Group */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Overview</SidebarGroupLabel>
+      {/* ── Nav Content ── */}
+      <SidebarContent className="gap-0 py-6">
+
+        {/* Overview */}
+        <SidebarGroup className="px-3 mb-6">
+          <SidebarGroupLabel
+            className="mb-3 px-2 group-data-[collapsible=icon]:hidden"
+            style={groupLabelStyle}
+          >
+            Overview
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {navMain.map((item) => (
-                <SidebarMenuItem key={item.label}>
-				    <SidebarMenuButton 
-                  asChild 
-                  tooltip={item.label}
-                  isActive={pathname === item.url}
-                  className={cn(
-                    "transition-all hover:bg-zinc-900",
-                    pathname === item.url && "bg-zinc-900 text-[#C5A059] font-bold"
-                  )}
-                >
-                  <Link href={item.url}>
-                    <item.icon className={cn(
-                      "w-4 h-4",
-                      pathname === item.url ? "text-[#C5A059]" : "text-zinc-500"
-                    )} />
-                    <span className="text-[11px] uppercase tracking-wider">
-                      {item.label}
-                    </span>
-                  </Link>
-		 </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+            <SidebarMenu className="space-y-1">
+              {navMain.map((item) => {
+                const isActive = pathname === item.url
+                return (
+                  <SidebarMenuItem key={item.label}>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip={item.label}
+                      isActive={isActive}
+                      className={cn(
+                        "rounded-lg transition-colors duration-150",
+                        isActive
+                          ? "text-white"
+                          : "text-on-surface-variant hover:text-white hover:bg-white/5"
+                      )}
+                      style={{
+                        padding: "10px 12px",
+                        borderLeft: isActive ? "4px solid #800000" : "4px solid transparent",
+                        background: isActive ? "rgba(128, 0, 0, 0.20)" : "transparent",
+                      }}
+                    >
+                      <Link href={item.url} className="flex items-center gap-3">
+                        <MatIcon
+                          icon={item.matIcon}
+                          className={cn("shrink-0", isActive ? "text-secondary" : "text-on-surface-variant")}
+                        />
+                        <span style={{ ...navLabelStyle, color: isActive ? "#ffffff" : "inherit" }}>
+                          {item.label}
+                        </span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Management Group */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Management</SidebarGroupLabel>
+        {/* Management */}
+        <SidebarGroup className="px-3">
+          <SidebarGroupLabel
+            className="mb-3 px-2 group-data-[collapsible=icon]:hidden"
+            style={groupLabelStyle}
+          >
+            Management
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {manageItems.map((item) => (
-                <SidebarMenuItem key={item.label}>
-				    <SidebarMenuButton 
-                  asChild 
-                  tooltip={item.label}
-                  isActive={pathname === item.url}
-                  className={cn(
-                    "transition-all hover:bg-zinc-900",
-                    pathname === item.url && "bg-zinc-900 text-[#C5A059] font-bold"
-                  )}
-                >
-                  <Link href={item.url}>
-                    <item.icon className={cn(
-                      "w-4 h-4",
-                      pathname === item.url ? "text-[#C5A059]" : "text-zinc-500"
-                    )} />
-                    <span className="text-[11px] uppercase tracking-wider">
-                      {item.label}
-                    </span>
-                  </Link>
-                </SidebarMenuButton>
-
-                </SidebarMenuItem>
-              ))}
+            <SidebarMenu className="space-y-1">
+              {manageItems.map((item) => {
+                const isActive = pathname === item.url
+                return (
+                  <SidebarMenuItem key={item.label}>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip={item.label}
+                      isActive={isActive}
+                      className={cn(
+                        "rounded-lg transition-colors duration-150",
+                        isActive
+                          ? "text-white"
+                          : "text-on-surface-variant hover:text-white hover:bg-white/5"
+                      )}
+                      style={{
+                        padding: "10px 12px",
+                        borderLeft: isActive ? "4px solid #800000" : "4px solid transparent",
+                        background: isActive ? "rgba(128, 0, 0, 0.20)" : "transparent",
+                      }}
+                    >
+                      <Link href={item.url} className="flex items-center gap-3">
+                        <MatIcon
+                          icon={item.matIcon}
+                          className={cn("shrink-0 text-[20px]", isActive ? "text-secondary" : "text-on-surface-variant")}
+                        />
+                        <span style={{ ...navLabelStyle, color: isActive ? "#ffffff" : "inherit" }}>
+                          {item.label}
+                        </span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      {/* User Footer */}
-      <SidebarFooter className="border-t border-border/50 p-2 bg-background">
+      {/* ── User Footer ── */}
+      <SidebarFooter
+        className="border-t"
+        style={{
+          borderColor: "rgba(255, 255, 255, 0.10)",
+          padding: "12px 8px 8px",
+        }}
+      >
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton 
-              size="lg" 
-              className="hover:bg-accent/50 group-data-[collapsible=icon]:justify-center px-2"
+            <SidebarMenuButton
+              size="lg"
+              className="hover:bg-white/5 group-data-[collapsible=icon]:justify-center rounded-xl transition-colors"
+              style={{
+                background: "rgba(255, 255, 255, 0.04)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                padding: "8px",
+              }}
               onClick={onLogout}
             >
-              <div className="flex size-8 items-center justify-center rounded-full bg-muted border border-border">
-                <User className="size-4 text-muted-foreground" />
+              <div
+                className="flex shrink-0 items-center justify-center rounded-xl border"
+                style={{
+                  width: 40,
+                  height: 40,
+                  background: "rgba(255, 255, 255, 0.08)",
+                  borderColor: "rgba(255, 255, 255, 0.15)",
+                }}
+              >
+                <User className="text-on-surface-variant" style={{ width: 18, height: 18 }} />
               </div>
-              <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-semibold text-xs tracking-tight">{adminName}</span>
-                <div className="flex items-center gap-1.5">
-                  <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="truncate text-[10px] text-muted-foreground uppercase font-bold tracking-tight">Active</span>
+
+              <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+                <span
+                  className="truncate text-white"
+                  style={{
+                    fontFamily: "'Roboto', sans-serif",
+                    fontSize: "0.75rem",
+                    fontWeight: 900,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.025em",
+                  }}
+                >
+                  {adminName}
+                </span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span
+                    className="rounded-full bg-emerald-500 animate-pulse"
+                    style={{ width: 8, height: 8, display: "inline-block" }}
+                  />
+                  <span
+                    className="text-secondary"
+                    style={{
+                      fontFamily: "'Roboto', sans-serif",
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    Active
+                  </span>
                 </div>
               </div>
-              <LogOut className="ml-auto size-3.5 text-muted-foreground group-data-[collapsible=icon]:hidden" />
+
+              <LogOut
+                className="ml-auto text-on-surface-variant hover:text-red-400 transition-colors group-data-[collapsible=icon]:hidden"
+                style={{ width: 20, height: 20 }}
+              />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+
       <SidebarRail />
     </Sidebar>
   )

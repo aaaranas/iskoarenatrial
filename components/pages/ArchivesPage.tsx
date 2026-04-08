@@ -1,35 +1,79 @@
 "use client";
+
 import React from "react";
-import { ArchiveHeader } from "../archives/ArchiveHeader";
-import { ArchiveSidebar } from "../archives/ArchiveSidebar";
-import { ArchiveGrid } from "../archives/ArchiveGrid";
-import { Grid, List } from "lucide-react";
+import type { Result, MediaItem } from "@/types";
 
-export default function ArchivesPage() {
+interface ArchivesPageProps {
+  results: Result[];
+  media: MediaItem[];
+}
+
+export default function ArchivesPage({ results, media }: ArchivesPageProps) {
   return (
-    <div className="bg-[#0A0A0A] min-h-screen text-white p-8">
-      <ArchiveHeader />
-
-      <div className="flex gap-8">
-        <ArchiveSidebar />
-
-        <main className="flex-1">
-          {/* Alphabet Bar */}
-          <div className="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
-            <div className="flex gap-2">
-              {"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').map(l => (
-                <span key={l} className="text-xs text-gray-500 hover:text-white cursor-pointer">{l}</span>
-              ))}
-            </div>
-            <div className="flex gap-2 bg-[#1A1A1A] p-1 rounded-lg">
-              <Grid className="w-5 h-5 text-[#C5A059] cursor-pointer" />
-              <List className="w-5 h-5 text-gray-500 cursor-pointer" />
-            </div>
+    <div className="p-6 space-y-8">
+      {/* Results Archive */}
+      <section>
+        <h2 className="text-2xl font-black tracking-tight mb-4">Results Archive</h2>
+        {results.length === 0 ? (
+          <p className="text-muted-foreground text-sm italic">No results recorded yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
+                  <th className="py-3 pr-4">Sport</th>
+                  <th className="py-3 pr-4">Team A</th>
+                  <th className="py-3 pr-4">Score</th>
+                  <th className="py-3 pr-4">Team B</th>
+                  <th className="py-3">Winner</th>
+                </tr>
+              </thead>
+              <tbody>
+                {results.map((r) => (
+                  <tr key={r.id} className="border-b hover:bg-muted/10 transition-colors">
+                    <td className="py-3 pr-4 text-muted-foreground">{r.sport}</td>
+                    <td className="py-3 pr-4 font-medium">{r.teamA}</td>
+                    <td className="py-3 pr-4 font-mono font-semibold">
+                      {r.scoreA} – {r.scoreB}
+                    </td>
+                    <td className="py-3 pr-4 font-medium">{r.teamB}</td>
+                    <td className="py-3 font-semibold text-emerald-600">{r.winner}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        )}
+      </section>
 
-          <ArchiveGrid />
-        </main>
-      </div>
+      {/* Media Archive */}
+      <section>
+        <h2 className="text-2xl font-black tracking-tight mb-4">Media Archive</h2>
+        {media.length === 0 ? (
+          <p className="text-muted-foreground text-sm italic">No media uploaded yet.</p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {media.map((item) => (
+              <div
+                key={item.id}
+                className="border border-border rounded-lg overflow-hidden bg-card shadow-sm"
+              >
+                {item.type === "image" ? (
+                  <img src={item.url} alt={item.title} className="w-full h-32 object-cover" />
+                ) : (
+                  <div className="w-full h-32 bg-muted flex items-center justify-center text-muted-foreground text-xs font-medium uppercase tracking-widest">
+                    VIDEO
+                  </div>
+                )}
+                <div className="p-2">
+                  <p className="text-xs font-semibold truncate">{item.title}</p>
+                  <p className="text-[10px] text-muted-foreground">{item.sport}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

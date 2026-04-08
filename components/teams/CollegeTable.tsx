@@ -2,8 +2,14 @@
 import React from "react";
 import { Plus } from "lucide-react";
 import { CollegeRow } from "./CollegeRow";
+import type { College } from "@/components/pages/TeamsPage"; // adjust path
 
-export const CollegeTable = ({ colleges }: { colleges: any[] }) => (
+interface CollegeTableProps {
+  colleges: College[];
+  onDelete: (college: College) => void;
+}
+
+export const CollegeTable = ({ colleges, onDelete }: CollegeTableProps) => (
   <div className="bg-[#111] border border-gray-800 rounded-3xl p-8">
     <div className="flex justify-between items-center mb-8">
       <h3 className="text-xl font-bold text-white">Participating Colleges</h3>
@@ -21,7 +27,9 @@ export const CollegeTable = ({ colleges }: { colleges: any[] }) => (
         </tr>
       </thead>
       <tbody>
-        {colleges.map((c, i) => <CollegeRow key={i} data={c} />)}
+        {colleges.map((c, i) => (
+          <CollegeRow key={i} data={c} onDelete={onDelete} />
+        ))}
       </tbody>
     </table>
   </div>
