@@ -6,6 +6,7 @@ const config: Config = {
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}", // Added src just in case
   ],
   theme: {
     extend: {
@@ -14,14 +15,8 @@ const config: Config = {
       },
       keyframes: {
         "border-beam": {
-          "100%": {
-            "offset-distance": "100%",
-          },
+          "100%": { "offset-distance": "100%" },
         },
-      },
-      rotate: {
-        'x-12': '12deg', // Changed from rotateX(12deg) to just 12deg
-        'x-20': '20deg', // Tailwind 'rotate' utility expects the degree value
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -57,23 +52,6 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))'
         },
-        sidebar: {
-          DEFAULT: 'hsl(var(--sidebar-background))',
-          foreground: 'hsl(var(--sidebar-foreground))',
-          primary: 'hsl(var(--sidebar-primary))',
-          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-          accent: 'hsl(var(--sidebar-accent))',
-          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-          border: 'hsl(var(--sidebar-border))',
-          ring: 'hsl(var(--sidebar-ring))',
-        },
-        chart: {
-          '1': 'hsl(var(--chart-1))',
-          '2': 'hsl(var(--chart-2))',
-          '3': 'hsl(var(--chart-3))',
-          '4': 'hsl(var(--chart-4))',
-          '5': 'hsl(var(--chart-5))'
-        }
       },
       borderRadius: {
         xl: 'calc(var(--radius) + 4px)',
@@ -82,53 +60,38 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)'
       },
       fontFamily: {
-        sans: ['var(--font-sans)'],
-        serif: ['var(--font-serif)'],
-        mono: ['var(--font-mono)'],
-        maroons: ['var(--font-heading)'],
+        sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui'],
+        maroons: ["Maroons Strong", "sans-serif"],
       }
     }
   },
-plugins: [
-  require("tailwindcss-animate"),
-  function ({ addUtilities }: { addUtilities: any }) {
-    addUtilities({
-      ".transform-style-3d": {
-        "transform-style": "preserve-3d",
-      ".clip-x": {
+  plugins: [
+    require("tailwindcss-animate"),
+    function ({ addUtilities }: { addUtilities: any }) {
+      addUtilities({
+        ".transform-style-3d": {
+          "transform-style": "preserve-3d",
+        },
+        ".clip-x": {
           'overflow-x': 'hidden',
         },
-      },
-      ".perspective-1000": {
-        perspective: "1000px",
-      },
-
-      ".rotate-x-12": {
-        "--tw-rotate-x": "12deg",
-        transform:
-          "rotateX(var(--tw-rotate-x)) translateZ(var(--tw-translate-z,0))",
-      },
-
-      ".rotate-x-20": {
-        "--tw-rotate-x": "20deg",
-        transform:
-          "rotateX(var(--tw-rotate-x)) translateZ(var(--tw-translate-z,0))",
-      },
-
-      ".translate-z-0": {
-        "--tw-translate-z": "0px",
-      },
-
-      ".translate-z-10": {
-        "--tw-translate-z": "10px",
-      },
-
-      ".translate-z-20": {
-        "--tw-translate-z": "20px",
-      },
-    });
-  },
-],
+        ".perspective-1000": {
+          perspective: "1000px",
+        },
+        ".rotate-x-12": {
+          "--tw-rotate-x": "12deg",
+          transform: "rotateX(var(--tw-rotate-x)) translateZ(var(--tw-translate-z,0))",
+        },
+        ".rotate-x-20": {
+          "--tw-rotate-x": "20deg",
+          transform: "rotateX(var(--tw-rotate-x)) translateZ(var(--tw-translate-z,0))",
+        },
+        ".translate-z-0": { "--tw-translate-z": "0px" },
+        ".translate-z-10": { "--tw-translate-z": "10px" },
+        ".translate-z-20": { "--tw-translate-z": "20px" },
+      });
+    },
+  ],
 };
 
 export default config;

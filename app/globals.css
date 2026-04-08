@@ -1,5 +1,4 @@
 @import url(https://db.onlinewebfonts.com/c/fb243b62cb1ea9f8e36964305d7e1fc3?family=Maroons+Strong);
-
 @import "tailwindcss-animate";
 
 @tailwind base;
@@ -8,160 +7,118 @@
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #F5F5F5; }
-::-webkit-scrollbar-thumb { background: #6B7280; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #A91D3A; }
-
-/* Toast animation */
-@keyframes slide-in {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-slide-in { animation: slide-in 0.3s ease-out; }
-
-/* Magic UI Border Beam Animation */
-@keyframes border-beam {
-  100% {
-    offset-distance: 100%;
-  }
-}
-
-.animate-border-beam {
-  animation: border-beam calc(var(--duration) * 1s) infinite linear;
-}
-
-/* Page fade-in */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.page-fade { animation: fadeIn 0.3s ease-in; }
+::-webkit-scrollbar-track { background: #000000; }
+::-webkit-scrollbar-thumb { background: #450a0a; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #800000; }
 
 @layer base {
-    :root {
-  --background: 223.8136 0.0005% 98.6829%;
-  --foreground: 0 0% 0%;
-  --card: 223.8136 -172.5242% 100.0000%;
-  --card-foreground: 0 0% 0%;
-  --popover: 223.8136 0.0005% 98.6829%;
-  --popover-foreground: 0 0% 0%;
-  --primary: 0 0% 0%;
-  --primary-foreground: 223.8136 -172.5242% 100.0000%;
-  --secondary: 223.8136 0.0001% 92.1478%;
-  --secondary-foreground: 0 0% 0%;
-  --muted: 223.8136 0.0002% 96.0587%;
-  --muted-foreground: 223.8136 0.0000% 32.3067%;
-  --accent: 223.8136 0.0001% 92.1478%;
-  --accent-foreground: 0 0% 0%;
-  --destructive: 358.4334 74.9120% 59.7455%;
-  --destructive-foreground: 223.8136 -172.5242% 100.0000%;
-  --border: 223.8136 0.0001% 89.5577%;
-  --input: 223.8136 0.0001% 92.1478%;
-  --ring: 0 0% 0%;
-  --chart-1: 40.6655 100.2361% 50.9228%;
-  --chart-2: 223.7490 85.9924% 55.8092%;
-  --chart-3: 223.8136 0.0000% 64.4710%;
-  --chart-4: 223.8136 0.0001% 89.5577%;
-  --chart-5: 223.8136 0.0000% 45.6078%;
-  --sidebar: 223.8136 0.0005% 98.6829%;
-  --sidebar-foreground: 240 5.3% 26.1%;
-  --sidebar-primary: 240 5.9% 10%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 240 4.8% 95.9%;
-  --sidebar-accent-foreground: 240 5.9% 10%;
-  --sidebar-border: 220 13% 91%;
-  --sidebar-ring: 217.2 91.2% 59.8%;
-  --font-sans: Geist, sans-serif;
-  --font-serif: Georgia, serif;
-  --font-mono: Geist Mono, monospace;
-  --font-heading: "Maroons Strong", sans-serif;
-  --radius: 0.5rem;
-  --shadow-x: 0px;
-  --shadow-y: 1px;
-  --shadow-blur: 2px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0.18;
-  --shadow-color: hsl(0 0% 0%);
-  --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.09);
-  --shadow-xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.09);
-  --shadow-sm: 0px 1px 2px 0px hsl(0 0% 0% / 0.18), 0px 1px 2px -1px hsl(0 0% 0% / 0.18);
-  --shadow: 0px 1px 2px 0px hsl(0 0% 0% / 0.18), 0px 1px 2px -1px hsl(0 0% 0% / 0.18);
-  --shadow-md: 0px 1px 2px 0px hsl(0 0% 0% / 0.18), 0px 2px 4px -1px hsl(0 0% 0% / 0.18);
-  --shadow-lg: 0px 1px 2px 0px hsl(0 0% 0% / 0.18), 0px 4px 6px -1px hsl(0 0% 0% / 0.18);
-  --shadow-xl: 0px 1px 2px 0px hsl(0 0% 0% / 0.18), 0px 8px 10px -1px hsl(0 0% 0% / 0.18);
-  --shadow-2xl: 0px 1px 2px 0px hsl(0 0% 0% / 0.45);
-  --tracking-normal: 0em;
-  --spacing: 0.25rem;
-  --sidebar-background: 0 0% 98%;
+  :root {
+    /* Brand Colors for Light Mode (If used) */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    
+    /* Maroon: #800000 */
+    --primary: 0 100% 25%; 
+    --primary-foreground: 0 0% 98%;
+    
+    /* Gold: #D4AF37 */
+    --secondary: 46 65% 52%;
+    --secondary-foreground: 0 0% 0%;
+
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 46 65% 52%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 100% 25%;
+    --radius: 0.5rem;
+    --font-heading: "Maroons Strong", sans-serif;
+  }
+
+  .dark {
+    /* Pure Black Background */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Maroon Primary */
+    --primary: 0 100% 25%;
+    --primary-foreground: 0 0% 98%;
+
+    /* Gold Secondary */
+    --secondary: 46 65% 52%;
+    --secondary-foreground: 0 0% 0%;
+
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 100% 25%;
+  }
 }
 
-.dark {
-  --background: 0 0% 0%;
-  --foreground: 223.8136 -172.5242% 100.0000%;
-  --card: 223.8136 0.0000% 3.5452%;
-  --card-foreground: 223.8136 -172.5242% 100.0000%;
-  --popover: 223.8136 0.0000% 6.8692%;
-  --popover-foreground: 223.8136 -172.5242% 100.0000%;
-  --primary: 223.8136 -172.5242% 100.0000%;
-  --primary-foreground: 0 0% 0%;
-  --secondary: 223.8136 0.0000% 13.1499%;
-  --secondary-foreground: 223.8136 -172.5242% 100.0000%;
-  --muted: 223.8136 0.0000% 11.3040%;
-  --muted-foreground: 223.8136 0.0000% 64.4710%;
-  --accent: 223.8136 0.0000% 19.8916%;
-  --accent-foreground: 223.8136 -172.5242% 100.0000%;
-  --destructive: 359.9132 100.2494% 67.8807%;
-  --destructive-foreground: 0 0% 0%;
-  --border: 223.8136 0.0000% 14.0871%;
-  --input: 223.8136 0.0000% 19.8916%;
-  --ring: 223.8136 0.0000% 64.4710%;
-  --chart-1: 40.6655 100.2361% 50.9228%;
-  --chart-2: 218.1624 90.0354% 55.1618%;
-  --chart-3: 223.8136 0.0000% 45.6078%;
-  --chart-4: 223.8136 0.0000% 32.3067%;
-  --chart-5: 223.8136 0.0001% 89.5577%;
-  --sidebar: 223.8136 0.0000% 6.8692%;
-  --sidebar-foreground: 240 4.8% 95.9%;
-  --sidebar-primary: 224.3 76.3% 48%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 240 3.7% 15.9%;
-  --sidebar-accent-foreground: 240 4.8% 95.9%;
-  --sidebar-border: 240 3.7% 15.9%;
-  --sidebar-ring: 217.2 91.2% 59.8%;
-  --font-sans: Geist, sans-serif;
-  --font-serif: Georgia, serif;
-  --font-mono: Geist Mono, monospace;
-  --font-heading: "Maroons Strong", sans-serif;
-  --radius: 0.5rem;
-  --shadow-x: 0px;
-  --shadow-y: 1px;
-  --shadow-blur: 2px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0.18;
-  --shadow-color: hsl(0 0% 0%);
-  --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.09);
-  --shadow-xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.09);
-  --shadow-sm: 0px 1px 2px 0px hsl(0 0% 0% / 0.18), 0px 1px 2px -1px hsl(0 0% 0% / 0.18);
-  --shadow: 0px 1px 2px 0px hsl(0 0% 0% / 0.18), 0px 1px 2px -1px hsl(0 0% 0% / 0.18);
-  --shadow-md: 0px 1px 2px 0px hsl(0 0% 0% / 0.18), 0px 2px 4px -1px hsl(0 0% 0% / 0.18);
-  --shadow-lg: 0px 1px 2px 0px hsl(0 0% 0% / 0.18), 0px 4px 6px -1px hsl(0 0% 0% / 0.18);
-  --shadow-xl: 0px 1px 2px 0px hsl(0 0% 0% / 0.18), 0px 8px 10px -1px hsl(0 0% 0% / 0.18);
-  --shadow-2xl: 0px 1px 2px 0px hsl(0 0% 0% / 0.45);
-  --sidebar-background: 240 5.9% 10%;
+@layer components {
+  /* The Custom Glass Effects from your HTML Design */
+  .glass-panel {
+    @apply backdrop-blur-md border border-white/10 bg-black/40;
+  }
+
+  .glass-panel-maroon {
+    background: linear-gradient(135deg, rgba(128, 0, 0, 0.8), rgba(65, 0, 2, 0.85));
+    @apply backdrop-blur-lg border border-white/20 shadow-2xl;
+  }
+
+  .bg-gradient-dark {
+    background: radial-gradient(circle at top right, #1a0001, #000000);
+  }
 }
 
-  * {
-    @apply border-border;
+@layer base {
+  * { @apply border-border; }
+  body { 
+    @apply bg-background text-foreground; 
+    background: radial-gradient(circle at top right, #1a0001, #000000);
+    min-height: 100vh;
   }
+  h1, h2, h3, h4, h5, h6 { font-family: "Maroons Strong", sans-serif; }
+}
 
-  body {
-    @apply bg-background text-foreground;
-    letter-spacing: var(--tracking-normal);
-  }
+/* Animations and Material Symbols remain same as your provided code */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.page-fade { animation: fadeIn 0.3s ease-in; }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: "Maroons Strong", sans-serif;
-  }
 
-  .theme { --font-sans: Geist, sans-serif; --font-mono: Geist Mono, monospace; --font-serif: Georgia, serif; --font-heading: "Maroons Strong", sans-serif; --radius: 0.5rem; --tracking-tighter: calc(var(--tracking-normal) - 0.05em); --tracking-tight: calc(var(--tracking-normal) - 0.025em); --tracking-wide: calc(var(--tracking-normal) + 0.025em); --tracking-wider: calc(var(--tracking-normal) + 0.05em); --tracking-widest: calc(var(--tracking-normal) + 0.1em); }
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  src: url('/fonts/font.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;  /* Preferred icon size */
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
 }

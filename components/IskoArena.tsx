@@ -6,7 +6,7 @@ import type { Admin, AppData, Match, Result, Player, Stat, MediaItem, Notificati
 
 // Page Components
 import LandingPage from "@/components/pages/LandingPage"; 
-import DashboardPage from "@/components/pages/DashboardPage";
+import DashboardPage from "@/app/dashboard/page";
 import MatchesPage from "@/components/pages/MatchesPage";
 import StatsPage from "@/components/pages/StatsPage";
 import MediaPage from "@/components/pages/MediaPage";
