@@ -5,27 +5,53 @@ import { TRPCError } from "@trpc/server";
 
 export const matchRouter = router({
   getAll: publicProcedure.query(async () => {
-    // Check your table name and columns in Supabase
+    // Fetch matches with related team, sport, and venue data
     const { data, error } = await supabase
       .from("matches")
-      .select("*")
-      .order("created_at", { ascending: true });
+      .select(`
+        id,
+        match_date,
+        status,
+        home_score,
+        away_score,
+        created_at,
+        home_team:home_team_id (id, name, college),
+        away_team:away_team_id (id, name, college),
+        sport:sport_id (id, name),
+        venue:venue_id (id, name, location)
+      `)
+      .order("match_date", { ascending: false });
 
     if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
-    return data || [];
+
+    // Transform data to match UI expectations
+    return (data || []).map((match: any) => ({
+      id: match.id,
+      homeTeam: match.home_team?.name || "TBD",
+      awayTeam: match.away_team?.name || "TBD",
+      homeScore: match.home_score,
+      awayScore: match.away_score,
+      league: match.sport?.name || "Unknown Sport",
+      venue: match.venue?.name || "TBD",
+      date: match.match_date ? new Date(match.match_date).toLocaleDateString() : "TBD",
+      time: match.match_date ? new Date(match.match_date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "TBD",
+      status: match.status || "upcoming",
+      statusType: (match.status || "upcoming").toLowerCase(),
+      category: "Intramurals",
+      isOwner: false,
+    }));
   }),
 
   addMatch: adminProcedure
     .input(z.object({
-      sport_id: z.string(),     // Use your actual DB column names here
+      sport_id: z.string(),
       home_team_id: z.string(),
       away_team_id: z.string(),
-      match_date: z.string(),   // Maps to your DB 'match_date'
+      match_date: z.string(),
+      venue_id: z.string(),
       status: z.string().default("upcoming"),
     }))
-    .mutation(async ({ input, ctx }) => {
-      // The error happened here because keys like 'college_a' 
-      // probably don't exist in your 'matches' table
+    .mutation(async ({ input }) => {
       const { data, error } = await supabase
         .from("matches")
         .insert({
@@ -33,9 +59,25 @@ export const matchRouter = router({
           home_team_id: input.home_team_id,
           away_team_id: input.away_team_id,
           match_date: input.match_date,
+          venue_id: input.venue_id,
           status: input.status,
-          // created_by: ctx.user.id // Add this if you have this column
         })
+        .select()
+        .single();
+
+      if (error) throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
+      return data;
+    }),
+
+  deleteMatch: adminProcedure
+    .input(z.object({
+      id: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const { data, error } = await supabase
+        .from("matches")
+        .delete()
+        .eq("id", input.id)
         .select()
         .single();
 
