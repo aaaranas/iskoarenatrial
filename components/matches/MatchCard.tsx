@@ -1,9 +1,11 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { Match } from "@/types";
 import { MapPin, Edit3, Trash2, Clock } from "lucide-react";
+import { DeleteMatchModal } from "./DeleteMatchModal";
 
 export const MatchCard = ({ match }: { match: Match }) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const isLive = match.statusType === "live";
 
   // Array of sports images to simulate variety if no specific image is provided
@@ -18,7 +20,7 @@ export const MatchCard = ({ match }: { match: Match }) => {
   const cardImage = match.imageUrl || fallbackImages[match.id % fallbackImages.length];
 
   return (
-    <div className="group relative h-[480px] w-full bg-[#050505] rounded-sm overflow-hidden border border-white/5 transition-all duration-500 hover:border-[#C5A059]/40 hover:shadow-2xl hover:shadow-[#A91D3A]/10">
+    <div className="group relative h-[350px] sm:h-[420px] lg:h-[480px] w-full bg-[#050505] rounded-sm overflow-hidden border border-white/5 transition-all duration-500 hover:border-[#C5A059]/40 hover:shadow-2xl hover:shadow-[#A91D3A]/10">
       
       {/* 1. CINEMATIC POSTER LAYER */}
       <div className="absolute inset-0 z-0">
@@ -39,7 +41,10 @@ export const MatchCard = ({ match }: { match: Match }) => {
         <button className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#C5A059] hover:text-black transition-all">
           <Edit3 className="w-4 h-4" />
         </button>
-        <button className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#A91D3A] transition-all">
+        <button
+          onClick={() => setDeleteDialogOpen(true)}
+          className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#A91D3A] transition-all"
+        >
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
@@ -106,9 +111,16 @@ export const MatchCard = ({ match }: { match: Match }) => {
           </div>
         </div>
       </div>
-      
+
       {/* Cinematic Film-Grain / Texture Overlay (Optional) */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+
+      {/* Delete confirmation modal */}
+      <DeleteMatchModal
+        match={match}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+      />
     </div>
   );
 };

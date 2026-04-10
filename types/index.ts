@@ -15,23 +15,18 @@ export interface Admin {
 
 export interface Match {
   id: string;
-  league: string;
-  leagueLogo: string;
-  country: string;
-  status: string;
+  league: string; // Sport name
+  status: string; // e.g., "UPCOMING", "LIVE", "CONCLUDED"
   statusType: "live" | "finished" | "upcoming";
   date: string;
   time: string;
   homeTeam: string;
-  homeTeamShort: string;
   awayTeam: string;
-  awayTeamShort: string;
   homeScore: number | null;
   awayScore: number | null;
-  minute: string | null;
-  isOwner?: boolean;
-  homeScorers: string[];
-  awayScorers: string[];
+  venue: string; // Venue name
+  category?: string; // Match category (e.g., "Intramurals")
+  isOwner?: boolean; // UI logic: true if created_by === current_user.id
 }
 
 export interface MatchUI {
