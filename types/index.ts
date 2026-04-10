@@ -14,24 +14,19 @@ export interface Admin {
 }
 
 export interface Match {
-  id: string; // Changed from number to string (UUID)
-  league: string; // Derived from Sport Name
-  leagueLogo: string;
-  country: string;
-  status: string; // e.g., "LIVE", "UPCOMING", "FT"
+  id: string;
+  league: string; // Sport name
+  status: string; // e.g., "UPCOMING", "LIVE", "CONCLUDED"
   statusType: "live" | "finished" | "upcoming";
   date: string; // Formatted match_date
   time: string; // Formatted match_date
   homeTeam: string;
-  homeTeamShort: string;
   awayTeam: string;
-  awayTeamShort: string;
   homeScore: number | null;
   awayScore: number | null;
-  minute: string | null;
+  venue: string; // Venue name
+  category?: string; // Match category (e.g., "Intramurals")
   isOwner?: boolean; // UI logic: true if created_by === current_user.id
-  homeScorers: string[];
-  awayScorers: string[];
 }
 
 export interface MatchUI {
