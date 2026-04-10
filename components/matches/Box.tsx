@@ -50,8 +50,6 @@ export const Box = () => {
     status: "Status"
   });
 
-  // 2. PERMISSIONS
-  const isAdmin = auth?.profile?.role === 'super_admin' || auth?.profile?.role === 'college_admin';
 
   // 3. FILTERING LOGIC (Aligned with your Match interface)
   const filteredMatches = useMemo(() => {
@@ -171,14 +169,12 @@ export const Box = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 shrink-0 w-full sm:w-auto">
-            {isAdmin && (
               <AddMatchModal>
                 <button className="flex items-center gap-2 px-5 h-9 bg-[#C5A059]/5 border border-[#C5A059]/20 hover:border-[#C5A059]/60 hover:bg-[#C5A059]/10 rounded-md transition-all group w-full sm:w-auto justify-center">
                   <Plus className="w-3.5 h-3.5 text-[#C5A059]" />
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#C5A059]">Add Match</span>
                 </button>
               </AddMatchModal>
-            )}
             <div className="hidden sm:block h-4 w-px bg-white/10 mx-1" />
             <div className="relative w-full sm:w-[280px]">
               <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-600" />

@@ -3,10 +3,12 @@ import React, { useState } from "react";
 import { Match } from "@/types";
 import { MapPin, Edit3, Trash2, Clock } from "lucide-react";
 import { DeleteMatchModal } from "./DeleteMatchModal";
+import { EditMatchModal } from "./EditMatchModal";
 
 export const MatchCard = ({ match }: { match: Match }) => {
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const isLive = match.statusType === "live";
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   // Array of sports images to simulate variety if no specific image is provided
   const fallbackImages = [
@@ -38,7 +40,7 @@ export const MatchCard = ({ match }: { match: Match }) => {
 
       {/* 2. ADMIN QUICK ACTIONS (Hidden until hover) */}
       <div className="absolute top-4 right-4 z-30 flex flex-col gap-2 translate-x-10 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300">
-        <button className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#C5A059] hover:text-black transition-all">
+        <button onClick={() => setEditDialogOpen(true)} className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#C5A059] hover:text-black transition-all">
           <Edit3 className="w-4 h-4" />
         </button>
         <button
@@ -114,7 +116,14 @@ export const MatchCard = ({ match }: { match: Match }) => {
 
       {/* Cinematic Film-Grain / Texture Overlay (Optional) */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
-
+	
+       {/* Edit confirmation modal */}
+      <EditMatchModal
+        match={match}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+      /> 
+    
       {/* Delete confirmation modal */}
       <DeleteMatchModal
         match={match}

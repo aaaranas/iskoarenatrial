@@ -1,0 +1,55 @@
+import { router, publicProcedure, adminProcedure } from "../trpc";
+import { z } from "zod";
+import { supabase } from "@/lib/supabase/client";
+import { TRPCError } from "@trpc/server";
+
+export const matchRouter = router({
+  getAll: publicProcedure.query(async () => {
+    const { data, error } = await supabase
+      .from("matches")
+      .select(`
+        id,
+        match_date,
+        status,
+        home_score,
+        away_score,
+        sport:sports(name),
+        home_team:teams!matches_home_team_id_fkey(name),
+        away_team:teams!matches_away_team_id_fkey(name),
+        venue:venues(name)
+      `)
+      .order("match_date", { ascending: true });
+
+    if (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error.message,
+      });
+    }
+
+    // 🔥 Transform DB → UI shape
+    return (data || []).map((m, index) => ({
+      id: m.id, // keep UUID
+
+      // UI expects these names
+      league: m.sport?.name ?? "Unknown Sport",
+      homeTeam: m.home_team?.name ?? "TBD",
+      awayTeam: m.away_team?.name ?? "TBD",
+      venue: m.venue?.name ?? "TBA",
+
+      date: new Date(m.match_date).toLocaleString(),
+
+      status: m.status ?? "scheduled",
+      statusType: m.status ?? "scheduled",
+
+      homeScore: m.home_score ?? 0,
+      awayScore: m.away_score ?? 0,
+
+      category: ["Men's", "Women's", "Mixed"][index % 3],
+
+      imageUrl: null,
+
+      // Fake ownership (for your "Initialized Entries" section)
+      isOwner: index % 4 === 0,
+    }));
+  }),
