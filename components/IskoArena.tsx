@@ -1,33 +1,28 @@
 "use client";
-
 import React, { useState, useEffect, useCallback } from "react";
 import { AuthManager, DataManager } from "@/lib/dataManager";
-import type { Admin, AppData, Match, Result, Player, Stat, MediaItem, Notification, PageName } from "@/types";
-
+import type { Admin, AppData, Match, Result, Player, Stat, MediaItem, PageName } from "@/types";
 // Page Components
-import LandingPage from "@/components/pages/LandingPage"; 
+import LandingPage from "@/components/pages/LandingPage";
 import DashboardPage from "@/app/dashboard/page";
 import MatchesPage from "@/components/pages/MatchesPage";
 import StatsPage from "@/components/pages/StatsPage";
 import MediaPage from "@/components/pages/MediaPage";
 import TeamsPage from "@/components/pages/TeamsPage";
 import ArchivesPage from "@/components/pages/ArchivesPage";
-
 // Shadcn Sidebar Components
-import { AppSidebar } from "@/components/app-sidebar"; // This is the new component we created
+import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-
 // Layout & UI
 import { Toaster } from "@/components/ui/sonner";
 import { useToast } from "@/hooks/use-toast";
 
 export default function IskoArena() {
   const [currentAdmin, setCurrentAdmin] = useState<Admin | null>(null);
-  const [currentPage, setCurrentPage] = useState<PageName>("dashboard");
-  const [data, setData] = useState<AppData | null>(null);
-  const [logoutModal, setLogoutModal] = useState(false);
-  
+  const [currentPage, setCurrentPage]   = useState<PageName>("dashboard");
+  const [data, setData]                 = useState<AppData | null>(null);
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -56,44 +51,36 @@ export default function IskoArena() {
     });
   };
 
-  // ---- Handlers (Matches, Results, etc.) ----
   const handleAddMatch = (match: Omit<Match, "id" | "createdAt">) => {
     DataManager.add("matches", match);
     refresh();
     toast({ title: "Success", description: "Match added.", variant: "success" });
   };
 
-    // Example: MatchesPage handler
-const handleDeleteMatch = (id: number) => {
-  // coerce number to string for DataManager
-  DataManager.delete("matches", String(id));
-  refresh();
-};
+  const handleDeleteMatch = (id: number) => {
+    DataManager.delete("matches", String(id));
+    refresh();
+  };
 
-// StatsPage handlers
-const handleAddStat = (stat: any) => {
-  DataManager.add("stats", stat);
-  refresh();
-};
+  const handleAddStat = (stat: any) => {
+    DataManager.add("stats", stat);
+    refresh();
+  };
 
-const handleUpdateStat = (id: string, stat: any) => {
-  DataManager.update("stats", String(id), stat); // coerce number → string
-  refresh();
-};
+  const handleUpdateStat = (id: string, stat: any) => {
+    DataManager.update("stats", String(id), stat);
+    refresh();
+  };
 
-const handleDeleteStat = (id: string) => {
-  DataManager.delete("stats", String(id)); // coerce number → string
-  refresh();
-};
+  const handleDeleteStat = (id: string) => {
+    DataManager.delete("stats", String(id));
+    refresh();
+  };
 
-
-// TeamsPage handler
-const handleDeletePlayer = (id: number) => {
-  DataManager.delete("players", String(id));
-  refresh();
-};
-
-  // ... (Other handlers remain the same as your original file)
+  const handleDeletePlayer = (id: number) => {
+    DataManager.delete("players", String(id));
+    refresh();
+  };
 
   if (!currentAdmin) {
     return (
@@ -113,26 +100,33 @@ const handleDeletePlayer = (id: number) => {
       case "matches":
         return <MatchesPage matches={data.matches} onAddMatch={handleAddMatch} onDeleteMatch={handleDeleteMatch} />;
       case "stats":
-	 return <StatsPage
-      stats={data.stats}
-      players={data.players}
-      onAddStat={handleAddStat}
-      onUpdateStat={handleUpdateStat}
-      onDeleteStat={handleDeleteStat}
-      onLoadDemoStats={() => { refresh(); }}
-    />
+        return (
+          <StatsPage
+            stats={data.stats}
+            players={data.players}
+            onAddStat={handleAddStat}
+            onUpdateStat={handleUpdateStat}
+            onDeleteStat={handleDeleteStat}
+            onLoadDemoStats={() => { refresh(); }}
+          />
+        );
       case "media":
-        return <MediaPage matches={data.matches} media={data.media} onUploadMedia={(m) => { DataManager.add("media", m); refresh(); }} />;
+        return (
+          <MediaPage
+            media={data.media}
+            onUploadMedia={(m) => { DataManager.add("media", m); refresh(); }}
+          />
+        );
       case "teams":
-	return <TeamsPage
-  players={data.players}
-  onAddPlayer={(p) => { DataManager.add("players", p); refresh(); }}
-  onDeletePlayer={handleDeletePlayer}   // numeric ID in, string for DataManager
-  onDeleteAllPlayers={() => { data.players = []; DataManager.saveData(data); refresh(); }}
-  onImportPlayers={(ps) => { ps.forEach(p => DataManager.add("players", p)); refresh(); }}
-/>
-      case "notifications":
-        return <NotificationsPage notifications={data.notifications} onSend={(n) => { DataManager.add("notifications", n); refresh(); }} />;
+        return (
+          <TeamsPage
+            players={data.players}
+            onAddPlayer={(p) => { DataManager.add("players", p); refresh(); }}
+            onDeletePlayer={handleDeletePlayer}
+            onDeleteAllPlayers={() => { data.players = []; DataManager.saveData(data); refresh(); }}
+            onImportPlayers={(ps) => { ps.forEach(p => DataManager.add("players", p)); refresh(); }}
+          />
+        );
       case "archives":
         return <ArchivesPage results={data.results} media={data.media} />;
       default:
@@ -142,16 +136,13 @@ const handleDeletePlayer = (id: number) => {
 
   return (
     <SidebarProvider>
-      {/* New Shadcn UI Sidebar */}
-      <AppSidebar 
-	variant="sidebar"
-        currentPage={currentPage} 
-        onNavigate={setCurrentPage} 
-        onLogout={handleLogout} 
-        adminName={currentAdmin.fullName} 
+      <AppSidebar
+        variant="sidebar"
+        currentPage={currentPage}
+        onNavigate={setCurrentPage}
+        onLogout={handleLogout}
+        adminName={currentAdmin.fullName}
       />
-
-      {/* Main Content Area using Inset Variant */}
       <SidebarInset className="bg-background">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 sticky top-0 bg-background/80 backdrop-blur-md z-20">
           <SidebarTrigger className="-ml-1" />
@@ -160,12 +151,10 @@ const handleDeletePlayer = (id: number) => {
             <h1 className="text-sm font-semibold tracking-tight capitalize">{currentPage}</h1>
           </div>
         </header>
-
         <div className="flex flex-1 flex-col overflow-y-auto">
           {renderPage()}
         </div>
       </SidebarInset>
-
       <Toaster />
     </SidebarProvider>
   );

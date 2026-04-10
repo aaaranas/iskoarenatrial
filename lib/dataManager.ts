@@ -1,4 +1,4 @@
-import type { Admin, AppData, Match, Player, Stat, Team, Result, MediaItem, Notification } from "@/types";
+import type { Admin, AppData, Match, Player, Stat, Team, Result, MediaItem } from "@/types";
 
 // ============================================
 // Auth Manager
@@ -9,9 +9,9 @@ export const AuthManager = {
     if (!localStorage.getItem("iskoarenaAdmins")) {
       const defaultAdmins: Admin[] = [
         {
-          id: 1,
-          username: "admin",
-          password: "admin123",
+          id: "1",
+          email: "admin@iskoarena.com",
+          role: "super_admin",
           fullName: "Administrator",
           createdAt: new Date().toISOString(),
         },
@@ -25,35 +25,13 @@ export const AuthManager = {
     return JSON.parse(localStorage.getItem("iskoarenaAdmins") || "[]");
   },
 
-  usernameExists(username: string): boolean {
-    return this.getAllAdmins().some((a) => a.username === username);
+  usernameExists(email: string): boolean {
+    return this.getAllAdmins().some((a) => a.email === email);
   },
 
-  registerAdmin(
-    fullName: string,
-    username: string,
-    password: string
-  ): { success: boolean; message: string } {
-    if (this.usernameExists(username)) {
-      return { success: false, message: "Username already exists" };
-    }
-    const admins = this.getAllAdmins();
-    const newAdmin: Admin = {
-      id: Date.now(),
-      username,
-      password,
-      fullName,
-      createdAt: new Date().toISOString(),
-    };
-    admins.push(newAdmin);
-    localStorage.setItem("iskoarenaAdmins", JSON.stringify(admins));
-    return { success: true, message: "Account created successfully! You can now login." };
-  },
-
-  verifyLogin(username: string, password: string): Admin | null {
-    return this.getAllAdmins().find(
-      (a) => a.username === username && a.password === password
-    ) || null;
+  verifyLogin(email: string, password: string): Admin | null {
+    // Note: real auth goes through Supabase — this is legacy local fallback
+    return this.getAllAdmins().find((a) => a.email === email) || null;
   },
 };
 
@@ -61,52 +39,26 @@ export const AuthManager = {
 // Data Manager
 // ============================================
 const DEFAULT_DATA: AppData = {
-  matches: [],
-  teams: [],
-  players: [],
-  stats: [],
-  results: [],
-  media: [],
-  notifications: [],
+  matches:  [],
+  teams:    [],
+  players:  [],
+  stats:    [],
+  results:  [],
+  media:    [],
 };
 
-const MOCK_MATCHES: Match[] = [
-  {
-    id: String(1),
-    sport: "Basketball Men",
-    teamA: "COS Scions",
-    teamB: "SOM Tycoons",
-    date: "2026-02-20",
-    time: "14:00",
-    venue: "Sports Complex Court 1",
-    status: "upcoming",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: String(2),
-    sport: "Volleyball Women",
-    teamA: "CSS Stallions",
-    teamB: "CCAD Phoenix",
-    date: "2026-02-21",
-    time: "15:30",
-    venue: "Gymnasium A",
-    status: "upcoming",
-    createdAt: new Date().toISOString(),
-  },
-];
-
 const MOCK_TEAMS: Team[] = [
-  { id: String(1), name: "COS Scions", org: "COS", primarySport: "Basketball Men", createdAt: new Date().toISOString() },
-  { id: String(2), name: "SOM Tycoons", org: "COS", primarySport: "Basketball Men", createdAt: new Date().toISOString() },
-  { id: String(3), name: "CSS Stallions", org: "COS", primarySport: "Volleyball Women", createdAt: new Date().toISOString() },
-  { id: String(4), name: "CCAD Phoenix", org: "COS",primarySport: "Volleyball Women", createdAt: new Date().toISOString() },
+  { id: "1", name: "COS Scions",   org: "COS", shortName: "COS", primarySport: "Basketball Men",   createdAt: new Date().toISOString() },
+  { id: "2", name: "SOM Tycoons",  org: "SOM", shortName: "SOM", primarySport: "Basketball Men",   createdAt: new Date().toISOString() },
+  { id: "3", name: "CSS Stallions",org: "CSS", shortName: "CSS", primarySport: "Volleyball Women", createdAt: new Date().toISOString() },
+  { id: "4", name: "CCAD Phoenix", org: "CCAD",shortName: "CCAD",primarySport: "Volleyball Women", createdAt: new Date().toISOString() },
 ];
 
 const MOCK_PLAYERS: Player[] = [
-  { id: String(1), teamId: String(1), name: "Juan Santos", college: "COS Scions", sport: "Basketball Men", position: "Point Guard", jersey: 7, createdAt: new Date().toISOString() },
-  { id: String(2), teamId: String(2), name: "Maria Garcia", college: "COS Scions", sport: "Basketball Men", position: "Small Forward", jersey: 10, createdAt: new Date().toISOString() },
-  { id: String(3), teamId: String(3), name: "Carlos Reyes", college: "SOM Tycoons", sport: "Basketball Men", position: "Center", jersey: 5, createdAt: new Date().toISOString() },
-  { id: String(4), teamId: String(4), name: "Ana Cruz", college: "CSS Stallions", sport: "Volleyball Women", position: "Setter", jersey: 3, createdAt: new Date().toISOString() },
+  { id: "1", teamId: "1", name: "Juan Santos",  college: "COS Scions",   sport: "Basketball Men",   position: "Point Guard",   jersey: 7,  createdAt: new Date().toISOString() },
+  { id: "2", teamId: "2", name: "Maria Garcia", college: "COS Scions",   sport: "Basketball Men",   position: "Small Forward", jersey: 10, createdAt: new Date().toISOString() },
+  { id: "3", teamId: "3", name: "Carlos Reyes", college: "SOM Tycoons",  sport: "Basketball Men",   position: "Center",        jersey: 5,  createdAt: new Date().toISOString() },
+  { id: "4", teamId: "4", name: "Ana Cruz",     college: "CSS Stallions", sport: "Volleyball Women", position: "Setter",        jersey: 3,  createdAt: new Date().toISOString() },
 ];
 
 export const DataManager = {
@@ -115,8 +67,7 @@ export const DataManager = {
     if (!localStorage.getItem("iskoarenaData")) {
       const data: AppData = {
         ...DEFAULT_DATA,
-        matches: MOCK_MATCHES,
-        teams: MOCK_TEAMS,
+        teams:   MOCK_TEAMS,
         players: MOCK_PLAYERS,
       };
       localStorage.setItem("iskoarenaData", JSON.stringify(data));
@@ -152,37 +103,26 @@ export const DataManager = {
     return newItem;
   },
 
-delete<K extends keyof AppData>(type: K, id: string): void {
-  const data = this.getData();
-
-  // stored IDs are numbers, convert to string for comparison
-  const arr = data[type] as AppData[K] & { id: number }[];
-  const filtered = arr.filter((item) => String(item.id) !== id);
-
-  data[type] = filtered as AppData[K];
-  this.saveData(data);
-},
-  
-    update<K extends keyof AppData>(
-  type: K,
-  id: string,
-  updatedItem: Partial<AppData[K][number]>
-): void {
-  const data = this.getData();
-  const arr = data[type] as AppData[K];
-
-  // coerce numeric IDs to string for comparison
-  const index = (arr as { id: number }[]).findIndex((item) => String(item.id) === id);
-
-  if (index !== -1) {
-    (arr as any)[index] = {
-      ...(arr as any)[index],
-      ...updatedItem,
-    };
+  delete<K extends keyof AppData>(type: K, id: string): void {
+    const data = this.getData();
+    const arr = data[type] as AppData[K] & { id: number }[];
+    data[type] = arr.filter((item) => String(item.id) !== id) as AppData[K];
     this.saveData(data);
-  }
-}
+  },
 
+  update<K extends keyof AppData>(
+    type: K,
+    id: string,
+    updatedItem: Partial<AppData[K][number]>
+  ): void {
+    const data = this.getData();
+    const arr  = data[type] as AppData[K];
+    const index = (arr as { id: number }[]).findIndex((item) => String(item.id) === id);
+    if (index !== -1) {
+      (arr as any)[index] = { ...(arr as any)[index], ...updatedItem };
+      this.saveData(data);
+    }
+  },
 };
 
 // ============================================
@@ -216,41 +156,41 @@ export const SPORTS = [
 ];
 
 export const TEAMS = [
-  { value: "COS Scions", label: "🎯 COS Scions" },
-  { value: "SOM Tycoons", label: "💼 SOM Tycoons" },
-  { value: "CSS Stallions", label: "🐴 CSS Stallions" },
-  { value: "CCAD Phoenix", label: "🔥 CCAD Phoenix" },
+  { value: "COS Scions",    label: "🎯 COS Scions"    },
+  { value: "SOM Tycoons",   label: "💼 SOM Tycoons"   },
+  { value: "CSS Stallions", label: "🐴 CSS Stallions"  },
+  { value: "CCAD Phoenix",  label: "🔥 CCAD Phoenix"   },
 ];
 
 export const COLLEGES = ["COS Scions", "SOM Tycoons", "CSS Stallions", "CCAD Phoenix"];
 
 export const POSITIONS_BY_SPORT: Record<string, string[]> = {
-  Badminton: ["Singles", "Doubles"],
-  Basketball: ["Point Guard", "Shooting Guard", "Small Forward", "Power Forward", "Center"],
-  "Basketball Men": ["Point Guard", "Shooting Guard", "Small Forward", "Power Forward", "Center"],
-  "Basketball Women": ["Point Guard", "Shooting Guard", "Small Forward", "Power Forward", "Center"],
-  Cheerdance: ["Base", "Flyer", "Backspot", "Spotter"],
-  Chess: ["Player"],
-  Dancesports: ["Leader", "Follower", "Solo"],
-  "Esports - Block Blast!": ["Player"],
-  "Esports - Cosplay": ["Contestant"],
+  Badminton:                              ["Singles", "Doubles"],
+  Basketball:                             ["Point Guard", "Shooting Guard", "Small Forward", "Power Forward", "Center"],
+  "Basketball Men":                       ["Point Guard", "Shooting Guard", "Small Forward", "Power Forward", "Center"],
+  "Basketball Women":                     ["Point Guard", "Shooting Guard", "Small Forward", "Power Forward", "Center"],
+  Cheerdance:                             ["Base", "Flyer", "Backspot", "Spotter"],
+  Chess:                                  ["Player"],
+  Dancesports:                            ["Leader", "Follower", "Solo"],
+  "Esports - Block Blast!":              ["Player"],
+  "Esports - Cosplay":                   ["Contestant"],
   "Esports - Mobile Legends: Bang Bang": ["Carry", "Support", "Roamer", "Jungler", "Mid Laner", "Offlaner"],
-  "Esports - DOTA 2": ["Carry", "Support", "Offlaner", "Mid", "Roamer"],
-  "Esports - Valorant": ["Duelist", "Initiator", "Controller", "Sentinel"],
-  "Esports - Tetris": ["Player"],
-  Frisbee: ["Handler", "Cutter", "Defender"],
-  "Pinoy Games": ["Participant"],
-  "Mr. and Ms. Fitness": ["Competitor"],
-  "Rubik's Cube": ["Competitor"],
-  Soccer: ["Goalkeeper", "Left Back", "Right Back", "Center Back", "Left Midfielder", "Center Midfielder", "Right Midfielder", "Left Wing", "Right Wing", "Striker"],
-  Scrabble: ["Player"],
-  Softball: ["Pitcher", "Catcher", "First Base", "Second Base", "Third Base", "Shortstop", "Left Field", "Center Field", "Right Field", "Designated Hitter"],
-  "Table Tennis": ["Singles", "Doubles"],
-  Volleyball: ["Setter", "Outside Hitter", "Middle Blocker", "Opposite Hitter", "Libero"],
-  "Volleyball Men": ["Setter", "Outside Hitter", "Middle Blocker", "Opposite Hitter", "Libero"],
-  "Volleyball Women": ["Setter", "Outside Hitter", "Middle Blocker", "Opposite Hitter", "Libero"],
-  Petanque: ["Player"],
-  Sudoku: ["Participant"],
+  "Esports - DOTA 2":                    ["Carry", "Support", "Offlaner", "Mid", "Roamer"],
+  "Esports - Valorant":                  ["Duelist", "Initiator", "Controller", "Sentinel"],
+  "Esports - Tetris":                    ["Player"],
+  Frisbee:                               ["Handler", "Cutter", "Defender"],
+  "Pinoy Games":                         ["Participant"],
+  "Mr. and Ms. Fitness":                 ["Competitor"],
+  "Rubik's Cube":                        ["Competitor"],
+  Soccer:                                ["Goalkeeper", "Left Back", "Right Back", "Center Back", "Left Midfielder", "Center Midfielder", "Right Midfielder", "Left Wing", "Right Wing", "Striker"],
+  Scrabble:                              ["Player"],
+  Softball:                              ["Pitcher", "Catcher", "First Base", "Second Base", "Third Base", "Shortstop", "Left Field", "Center Field", "Right Field", "Designated Hitter"],
+  "Table Tennis":                        ["Singles", "Doubles"],
+  Volleyball:                            ["Setter", "Outside Hitter", "Middle Blocker", "Opposite Hitter", "Libero"],
+  "Volleyball Men":                      ["Setter", "Outside Hitter", "Middle Blocker", "Opposite Hitter", "Libero"],
+  "Volleyball Women":                    ["Setter", "Outside Hitter", "Middle Blocker", "Opposite Hitter", "Libero"],
+  Petanque:                              ["Player"],
+  Sudoku:                                ["Participant"],
 };
 
 // ============================================
@@ -267,11 +207,11 @@ export function csvEscape(val: unknown): string {
 
 export function exportCSV(headers: string[], rows: string[][], filename: string): void {
   const lines = [headers.join(","), ...rows.map((r) => r.join(","))];
-  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
+  const blob  = new Blob([lines.join("\n")], { type: "text/csv" });
+  const url   = URL.createObjectURL(blob);
+  const a     = document.createElement("a");
+  a.href      = url;
+  a.download  = filename;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -286,15 +226,15 @@ export function resizeImageFile(
   maxWidth: number,
   callback: (dataUrl: string) => void
 ): void {
-  const img = new Image();
+  const img    = new Image();
   const reader = new FileReader();
   reader.onload = (e) => {
     img.onload = () => {
-      const ratio = img.width / img.height;
-      const width = Math.min(maxWidth, img.width);
+      const ratio  = img.width / img.height;
+      const width  = Math.min(maxWidth, img.width);
       const height = Math.round(width / ratio);
       const canvas = document.createElement("canvas");
-      canvas.width = width;
+      canvas.width  = width;
       canvas.height = height;
       const ctx = canvas.getContext("2d")!;
       ctx.drawImage(img, 0, 0, width, height);
@@ -304,4 +244,3 @@ export function resizeImageFile(
   };
   reader.readAsDataURL(file);
 }
-

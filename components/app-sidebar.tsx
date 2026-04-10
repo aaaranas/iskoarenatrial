@@ -4,20 +4,14 @@ import * as React from "react"
 import Image from 'next/image';
 import {
   LayoutDashboard,
-  Trophy,
-  FileText,
   BarChart3,
   Image as ImageIcon,
   Users,
   Sword,
-  Bell,
   Archive,
   LogOut,
   User,
-  Activity,
-  ChevronRight
 } from "lucide-react"
-
 
 import {
   Sidebar,
@@ -44,19 +38,16 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   adminName: string;
 }
 
-// 1. Update your menu items to include the actual URL paths
 const navMain = [
-  { label: "Dashboard", icon: LayoutDashboard, url: "/dashboard" },
-  { label: "Matches", icon: Sword, url: "/dashboard/matches" },
-  { label: "Leaderboards", icon: BarChart3, url: "/dashboard/leaderboards" },
+  { label: "Dashboard",    icon: LayoutDashboard, url: "/dashboard"             },
+  { label: "Matches",      icon: Sword,           url: "/dashboard/matches"     },
+  { label: "Leaderboards", icon: BarChart3,        url: "/dashboard/leaderboards"},
 ];
 
 const manageItems = [
-  { label: "Media", icon: ImageIcon, url: "/dashboard/media" },
-  { label: "Teams", icon: Users, url: "/dashboard/teams" },
-  { label: "Notifications", icon: Bell, url: "/dashboard/notifications" },
-  { label: "Archives", icon: Archive, url: "/dashboard/archives" },
-
+  { label: "Media",    icon: ImageIcon, url: "/dashboard/media"    },
+  { label: "Teams",    icon: Users,     url: "/dashboard/teams"    },
+  { label: "Archives", icon: Archive,   url: "/dashboard/archives" },
 ];
 
 export function AppSidebar({ 
@@ -77,12 +68,12 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="hover:bg-transparent cursor-default">
               <div className="flex size-8 items-center justify-center rounded-full bg-foreground text-background font-bold text-[10px] uppercase shadow-sm transition-all group-data-[collapsible=icon]:size-8">
-		 <Image
-		    src="/logo.png"
-		    width={500}
-		    height={500}
-		    alt="Picture of the author"
-		    />
+                <Image
+                  src="/logo.png"
+                  width={500}
+                  height={500}
+                  alt="Picture of the author"
+                />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                 <span className="truncate font-semibold tracking-tight">IskoArena</span>
@@ -101,25 +92,25 @@ export function AppSidebar({
             <SidebarMenu>
               {navMain.map((item) => (
                 <SidebarMenuItem key={item.label}>
-				    <SidebarMenuButton 
-                  asChild 
-                  tooltip={item.label}
-                  isActive={pathname === item.url}
-                  className={cn(
-                    "transition-all hover:bg-zinc-900",
-                    pathname === item.url && "bg-zinc-900 text-[#C5A059] font-bold"
-                  )}
-                >
-                  <Link href={item.url}>
-                    <item.icon className={cn(
-                      "w-4 h-4",
-                      pathname === item.url ? "text-[#C5A059]" : "text-zinc-500"
-                    )} />
-                    <span className="text-[11px] uppercase tracking-wider">
-                      {item.label}
-                    </span>
-                  </Link>
-		 </SidebarMenuButton>
+                  <SidebarMenuButton
+                    asChild
+                    tooltip={item.label}
+                    isActive={pathname === item.url}
+                    className={cn(
+                      "transition-all hover:bg-zinc-900",
+                      pathname === item.url && "bg-zinc-900 text-[#C5A059] font-bold"
+                    )}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className={cn(
+                        "w-4 h-4",
+                        pathname === item.url ? "text-[#C5A059]" : "text-zinc-500"
+                      )} />
+                      <span className="text-[11px] uppercase tracking-wider">
+                        {item.label}
+                      </span>
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -133,26 +124,25 @@ export function AppSidebar({
             <SidebarMenu>
               {manageItems.map((item) => (
                 <SidebarMenuItem key={item.label}>
-				    <SidebarMenuButton 
-                  asChild 
-                  tooltip={item.label}
-                  isActive={pathname === item.url}
-                  className={cn(
-                    "transition-all hover:bg-zinc-900",
-                    pathname === item.url && "bg-zinc-900 text-[#C5A059] font-bold"
-                  )}
-                >
-                  <Link href={item.url}>
-                    <item.icon className={cn(
-                      "w-4 h-4",
-                      pathname === item.url ? "text-[#C5A059]" : "text-zinc-500"
-                    )} />
-                    <span className="text-[11px] uppercase tracking-wider">
-                      {item.label}
-                    </span>
-                  </Link>
-                </SidebarMenuButton>
-
+                  <SidebarMenuButton
+                    asChild
+                    tooltip={item.label}
+                    isActive={pathname === item.url}
+                    className={cn(
+                      "transition-all hover:bg-zinc-900",
+                      pathname === item.url && "bg-zinc-900 text-[#C5A059] font-bold"
+                    )}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className={cn(
+                        "w-4 h-4",
+                        pathname === item.url ? "text-[#C5A059]" : "text-zinc-500"
+                      )} />
+                      <span className="text-[11px] uppercase tracking-wider">
+                        {item.label}
+                      </span>
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -164,8 +154,8 @@ export function AppSidebar({
       <SidebarFooter className="border-t border-border/50 p-2 bg-background">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton 
-              size="lg" 
+            <SidebarMenuButton
+              size="lg"
               className="hover:bg-accent/50 group-data-[collapsible=icon]:justify-center px-2"
               onClick={onLogout}
             >

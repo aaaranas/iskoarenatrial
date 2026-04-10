@@ -5,10 +5,10 @@ export type DbRow<T extends keyof Database['public']['Tables']> = Database['publ
 export type AdminRole = Database['public']['Enums']['admin_role'];
 
 export interface Admin {
-  id: string; // Changed from number to string (UUID)
-  email: string; // Supabase uses email as identifier
+  id: string;
+  email: string;
   role: AdminRole;
-  fullName: string; // Maps to full_name
+  fullName: string;
   collegeAffiliation?: string | null;
   createdAt: string;
 }
@@ -18,8 +18,8 @@ export interface Match {
   league: string; // Sport name
   status: string; // e.g., "UPCOMING", "LIVE", "CONCLUDED"
   statusType: "live" | "finished" | "upcoming";
-  date: string; // Formatted match_date
-  time: string; // Formatted match_date
+  date: string;
+  time: string;
   homeTeam: string;
   awayTeam: string;
   homeScore: number | null;
@@ -30,7 +30,7 @@ export interface Match {
 }
 
 export interface MatchUI {
-  id: string; // Changed from number to string (UUID)
+  id: string;
   league: string;
   homeTeam: string;
   homeTeamShort: string;
@@ -43,7 +43,7 @@ export interface MatchUI {
 }
 
 export interface Result {
-  id: string; // Changed from number to string (UUID)
+  id: string;
   winnerId: string | null;
   matchId: string;
   teamA: string;
@@ -56,67 +56,57 @@ export interface Result {
 }
 
 export interface Player {
-  id: string; // UUID
+  id: string;
   name: string;
   teamId: string;
   college: string;
   sport: string;
   position: string;
-  jersey: number; // jersey_number in DB
+  jersey: number;
   photo?: string | null;
   createdAt: string;
 }
 
 export interface Team {
-  id: string; // UUID
-  org: string; // usually 'college' in DB
+  id: string;
+  org: string;
   name: string;
-  shortName: string; // short_name in DB
+  shortName: string;
   primarySport: string;
   logoUrl?: string | null;
   createdAt: string;
 }
 
 export interface Stat {
-  id: string; // UUID
+  id: string;
   type: "Player" | "Team";
   sport: string;
   college: string;
-  playerId: string | null; // Changed from number to string (UUID)
+  playerId: string | null;
   statName: string;
   statValue: string | number;
   createdAt: string;
 }
 
 export interface MediaItem {
-  id: string; // UUID
+  id: string;
   title: string;
   type: "image" | "video";
-  url: string; // Maps to 'data' or public URL
+  url: string;
   fileName: string;
-  matchId: string | null; // Changed from number to string (UUID)
+  matchId: string | null;
   sport: string;
   size: string;
   createdAt: string;
 }
 
-export interface Notification {
-  id: string; // UUID
-  message: string;
-  type: string;
-  sport: string;
-  timestamp: string;
-  createdAt: string;
-}
-
 export interface AppData {
-  matches: Match[];
-  teams: Team[];
-  players: Player[];
-  stats: Stat[];
-  results: Result[];
-  media: MediaItem[];
-  notifications: Notification[];
+  matches:  Match[];
+  teams:    Team[];
+  players:  Player[];
+  stats:    Stat[];
+  results:  Result[];
+  media:    MediaItem[];
 }
 
 export type PageName =
@@ -126,5 +116,4 @@ export type PageName =
   | "stats"
   | "media"
   | "teams"
-  | "notifications"
   | "archives";
