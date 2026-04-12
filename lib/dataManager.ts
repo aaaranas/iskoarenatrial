@@ -30,7 +30,6 @@ export const AuthManager = {
   },
 
   verifyLogin(email: string, password: string): Admin | null {
-    // Note: real auth goes through Supabase — this is legacy local fallback
     return this.getAllAdmins().find((a) => a.email === email) || null;
   },
 };
@@ -48,28 +47,24 @@ const DEFAULT_DATA: AppData = {
 };
 
 const MOCK_TEAMS: Team[] = [
-  { id: "1", name: "COS Scions",   org: "COS", shortName: "COS", primarySport: "Basketball Men",   createdAt: new Date().toISOString() },
-  { id: "2", name: "SOM Tycoons",  org: "SOM", shortName: "SOM", primarySport: "Basketball Men",   createdAt: new Date().toISOString() },
-  { id: "3", name: "CSS Stallions",org: "CSS", shortName: "CSS", primarySport: "Volleyball Women", createdAt: new Date().toISOString() },
-  { id: "4", name: "CCAD Phoenix", org: "CCAD",shortName: "CCAD",primarySport: "Volleyball Women", createdAt: new Date().toISOString() },
+  { id: "1", name: "COS Scions",    org: "COS",  shortName: "COS",  primarySport: "Basketball Men",   createdAt: new Date().toISOString() },
+  { id: "2", name: "SOM Tycoons",   org: "SOM",  shortName: "SOM",  primarySport: "Basketball Men",   createdAt: new Date().toISOString() },
+  { id: "3", name: "CSS Stallions", org: "CSS",  shortName: "CSS",  primarySport: "Volleyball Women", createdAt: new Date().toISOString() },
+  { id: "4", name: "CCAD Phoenix",  org: "CCAD", shortName: "CCAD", primarySport: "Volleyball Women", createdAt: new Date().toISOString() },
 ];
 
 const MOCK_PLAYERS: Player[] = [
-  { id: "1", teamId: "1", name: "Juan Santos",  college: "COS Scions",   sport: "Basketball Men",   position: "Point Guard",   jersey: 7,  createdAt: new Date().toISOString() },
-  { id: "2", teamId: "2", name: "Maria Garcia", college: "COS Scions",   sport: "Basketball Men",   position: "Small Forward", jersey: 10, createdAt: new Date().toISOString() },
-  { id: "3", teamId: "3", name: "Carlos Reyes", college: "SOM Tycoons",  sport: "Basketball Men",   position: "Center",        jersey: 5,  createdAt: new Date().toISOString() },
-  { id: "4", teamId: "4", name: "Ana Cruz",     college: "CSS Stallions", sport: "Volleyball Women", position: "Setter",        jersey: 3,  createdAt: new Date().toISOString() },
+  { id: "1", teamId: "1", name: "Juan Santos",  college: "COS Scions",    sport: "Basketball Men",   position: "Point Guard",   jersey: 7,  createdAt: new Date().toISOString() },
+  { id: "2", teamId: "2", name: "Maria Garcia", college: "COS Scions",    sport: "Basketball Men",   position: "Small Forward", jersey: 10, createdAt: new Date().toISOString() },
+  { id: "3", teamId: "3", name: "Carlos Reyes", college: "SOM Tycoons",   sport: "Basketball Men",   position: "Center",        jersey: 5,  createdAt: new Date().toISOString() },
+  { id: "4", teamId: "4", name: "Ana Cruz",     college: "CSS Stallions",  sport: "Volleyball Women", position: "Setter",        jersey: 3,  createdAt: new Date().toISOString() },
 ];
 
 export const DataManager = {
   initializeData(): void {
     if (typeof window === "undefined") return;
     if (!localStorage.getItem("iskoarenaData")) {
-      const data: AppData = {
-        ...DEFAULT_DATA,
-        teams:   MOCK_TEAMS,
-        players: MOCK_PLAYERS,
-      };
+      const data: AppData = { ...DEFAULT_DATA, teams: MOCK_TEAMS, players: MOCK_PLAYERS };
       localStorage.setItem("iskoarenaData", JSON.stringify(data));
     }
   },
@@ -88,16 +83,16 @@ export const DataManager = {
     return this.getData()[type];
   },
 
-  add<T extends { id?: number; createdAt?: string }>(
+  add<T extends { id?: string; createdAt?: string }>(
     type: keyof AppData,
     item: Omit<T, "id" | "createdAt">
-  ): T & { id: number; createdAt: string } {
+  ): T & { id: string; createdAt: string } {
     const data = this.getData();
     const newItem = {
       ...item,
-      id: Date.now(),
+      id: String(Date.now()),
       createdAt: new Date().toISOString(),
-    } as T & { id: number; createdAt: string };
+    } as T & { id: string; createdAt: string };
     (data[type] as unknown[]).push(newItem);
     this.saveData(data);
     return newItem;
@@ -105,8 +100,8 @@ export const DataManager = {
 
   delete<K extends keyof AppData>(type: K, id: string): void {
     const data = this.getData();
-    const arr = data[type] as AppData[K] & { id: number }[];
-    data[type] = arr.filter((item) => String(item.id) !== id) as AppData[K];
+    const arr = data[type] as unknown as { id: unknown }[];
+    data[type] = arr.filter((item) => String(item.id) !== id) as unknown as AppData[K];
     this.saveData(data);
   },
 
@@ -117,7 +112,7 @@ export const DataManager = {
   ): void {
     const data = this.getData();
     const arr  = data[type] as AppData[K];
-    const index = (arr as { id: number }[]).findIndex((item) => String(item.id) === id);
+    const index = (arr as unknown as { id: unknown }[]).findIndex((item) => String(item.id) === id);
     if (index !== -1) {
       (arr as any)[index] = { ...(arr as any)[index], ...updatedItem };
       this.saveData(data);
@@ -129,37 +124,19 @@ export const DataManager = {
 // Constants
 // ============================================
 export const SPORTS = [
-  "Badminton",
-  "Basketball Men",
-  "Basketball Women",
-  "Cheerdance",
-  "Chess",
-  "Dancesports",
-  "Esports - Block Blast!",
-  "Esports - Cosplay",
-  "Esports - Mobile Legends: Bang Bang",
-  "Esports - DOTA 2",
-  "Esports - Valorant",
-  "Esports - Tetris",
-  "Frisbee",
-  "Pinoy Games",
-  "Mr. and Ms. Fitness",
-  "Rubik's Cube",
-  "Soccer",
-  "Scrabble",
-  "Softball",
-  "Table Tennis",
-  "Volleyball Men",
-  "Volleyball Women",
-  "Petanque",
-  "Sudoku",
+  "Badminton", "Basketball Men", "Basketball Women", "Cheerdance", "Chess",
+  "Dancesports", "Esports - Block Blast!", "Esports - Cosplay",
+  "Esports - Mobile Legends: Bang Bang", "Esports - DOTA 2", "Esports - Valorant",
+  "Esports - Tetris", "Frisbee", "Pinoy Games", "Mr. and Ms. Fitness",
+  "Rubik's Cube", "Soccer", "Scrabble", "Softball", "Table Tennis",
+  "Volleyball Men", "Volleyball Women", "Petanque", "Sudoku",
 ];
 
 export const TEAMS = [
-  { value: "COS Scions",    label: "🎯 COS Scions"    },
-  { value: "SOM Tycoons",   label: "💼 SOM Tycoons"   },
-  { value: "CSS Stallions", label: "🐴 CSS Stallions"  },
-  { value: "CCAD Phoenix",  label: "🔥 CCAD Phoenix"   },
+  { value: "COS Scions",    label: "🎯 COS Scions"   },
+  { value: "SOM Tycoons",   label: "💼 SOM Tycoons"  },
+  { value: "CSS Stallions", label: "🐴 CSS Stallions" },
+  { value: "CCAD Phoenix",  label: "🔥 CCAD Phoenix"  },
 ];
 
 export const COLLEGES = ["COS Scions", "SOM Tycoons", "CSS Stallions", "CCAD Phoenix"];
