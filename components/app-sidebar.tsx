@@ -1,5 +1,4 @@
 "use client"
-
 import * as React from "react"
 import Image from 'next/image';
 import {
@@ -12,7 +11,6 @@ import {
   LogOut,
   User,
 } from "lucide-react"
-
 import {
   Sidebar,
   SidebarContent,
@@ -27,21 +25,18 @@ import {
   SidebarGroupContent
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
-import type { PageName } from "@/types"
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  currentPage: PageName;
-  onNavigate: (page: PageName) => void;
   onLogout: () => void;
   adminName: string;
 }
 
 const navMain = [
-  { label: "Dashboard",    icon: LayoutDashboard, url: "/dashboard"             },
-  { label: "Matches",      icon: Sword,           url: "/dashboard/matches"     },
-  { label: "Leaderboards", icon: BarChart3,        url: "/dashboard/leaderboards"},
+  { label: "Dashboard",    icon: LayoutDashboard, url: "/dashboard"              },
+  { label: "Matches",      icon: Sword,           url: "/dashboard/matches"      },
+  { label: "Leaderboards", icon: BarChart3,        url: "/dashboard/leaderboards" },
 ];
 
 const manageItems = [
@@ -50,14 +45,7 @@ const manageItems = [
   { label: "Archives", icon: Archive,   url: "/dashboard/archives" },
 ];
 
-export function AppSidebar({ 
-  currentPage, 
-  onNavigate, 
-  onLogout, 
-  adminName, 
-  ...props 
-}: AppSidebarProps) {
-
+export function AppSidebar({ onLogout, adminName, ...props }: AppSidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -72,7 +60,7 @@ export function AppSidebar({
                   src="/logo.png"
                   width={500}
                   height={500}
-                  alt="Picture of the author"
+                  alt="IskoArena logo"
                 />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
@@ -106,9 +94,7 @@ export function AppSidebar({
                         "w-4 h-4",
                         pathname === item.url ? "text-[#C5A059]" : "text-zinc-500"
                       )} />
-                      <span className="text-[11px] uppercase tracking-wider">
-                        {item.label}
-                      </span>
+                      <span className="text-[11px] uppercase tracking-wider">{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -138,9 +124,7 @@ export function AppSidebar({
                         "w-4 h-4",
                         pathname === item.url ? "text-[#C5A059]" : "text-zinc-500"
                       )} />
-                      <span className="text-[11px] uppercase tracking-wider">
-                        {item.label}
-                      </span>
+                      <span className="text-[11px] uppercase tracking-wider">{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
