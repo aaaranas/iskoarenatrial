@@ -5,7 +5,6 @@ import { TRPCError } from "@trpc/server";
 
 export const matchRouter = router({
   getAll: publicProcedure.query(async () => {
-    // Fetch matches with related team, sport, and venue data
     const { data, error } = await supabase
       .from("matches")
       .select(`
@@ -24,7 +23,6 @@ export const matchRouter = router({
 
     if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
 
-    // Transform data to match UI expectations
     return (data || []).map((match: any) => ({
       id: match.id,
       homeTeam: match.home_team?.name || "TBD",
@@ -70,13 +68,34 @@ export const matchRouter = router({
     }),
 
   deleteMatch: adminProcedure
-    .input(z.object({
-      id: z.string(),
-    }))
+    .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       const { data, error } = await supabase
         .from("matches")
         .delete()
+        .eq("id", input.id)
+        .select()
+        .single();
+
+      if (error) throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
+      return data;
+    }),
+
+  // ── Added: update scores ──────────────────────────────────────────────────
+  updateScore: adminProcedure
+    .input(z.object({
+      id: z.string(),
+      homeScore: z.number(),
+      awayScore: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const { data, error } = await supabase
+        .from("matches")
+        .update({
+          home_score: input.homeScore,
+          away_score: input.awayScore,
+          status: "completed",
+        })
         .eq("id", input.id)
         .select()
         .single();
