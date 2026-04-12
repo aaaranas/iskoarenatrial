@@ -10,7 +10,6 @@ export const MatchCard = ({ match }: { match: Match }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
-  // Array of sports images to simulate variety if no specific image is provided
   const fallbackImages = [
     "/iskolarobaseball.jpg",
     "/iskolarofrisbee.jpg",
@@ -19,117 +18,81 @@ export const MatchCard = ({ match }: { match: Match }) => {
     "/iskolarovolley.jpg"
   ];
 
-  const cardImage = match.imageUrl || fallbackImages[match.id % fallbackImages.length];
+  // id is a string (UUID) — use a hash to pick a fallback image
+  const idHash = match.id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const cardImage = fallbackImages[idHash % fallbackImages.length];
 
   return (
     <div className="group relative h-[350px] sm:h-[420px] lg:h-[480px] w-full bg-[#050505] rounded-sm overflow-hidden border border-white/5 transition-all duration-500 hover:border-[#C5A059]/40 hover:shadow-2xl hover:shadow-[#A91D3A]/10">
       
-      {/* 1. CINEMATIC POSTER LAYER */}
+      {/* Cinematic Poster Layer */}
       <div className="absolute inset-0 z-0">
-        <img 
-          src={cardImage} 
-          alt="Match Poster" 
-          className="h-full w-full object-cover transition-all duration-1000 
-                     grayscale-[0.5] brightness-[0.5] contrast-[1.1]
-                     group-hover:scale-105 group-hover:grayscale-0 group-hover:brightness-[0.7]"
+        <img
+          src={cardImage}
+          alt="Match Poster"
+          className="h-full w-full object-cover transition-all duration-1000 grayscale-[0.5] brightness-[0.5] contrast-[1.1] group-hover:scale-105 group-hover:grayscale-0 group-hover:brightness-[0.7]"
         />
-        {/* The Vignette: Essential for text readability */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/20 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent opacity-60" />
       </div>
 
-      {/* 2. ADMIN QUICK ACTIONS (Hidden until hover) */}
+      {/* Admin Quick Actions */}
       <div className="absolute top-4 right-4 z-30 flex flex-col gap-2 translate-x-10 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300">
         <button onClick={() => setEditDialogOpen(true)} className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#C5A059] hover:text-black transition-all">
           <Edit3 className="w-4 h-4" />
         </button>
-        <button
-          onClick={() => setDeleteDialogOpen(true)}
-          className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#A91D3A] transition-all"
-        >
+        <button onClick={() => setDeleteDialogOpen(true)} className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#A91D3A] transition-all">
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
 
-      {/* 3. CARD CONTENT */}
+      {/* Card Content */}
       <div className="relative z-10 h-full p-6 flex flex-col justify-between">
-        
-        {/* TOP: Metadata */}
         <div className="flex justify-between items-start">
           <div className="space-y-1">
-             <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059]" />
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-100">
-                  {match.league}
-                </span>
-             </div>
-             <div className="flex items-center gap-1.5 text-zinc-400 pl-3">
-               <MapPin className="w-2.5 h-2.5" />
-               <span className="text-[9px] font-bold uppercase tracking-widest">{match.venue}</span>
-             </div>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-100">{match.league}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-zinc-400 pl-3">
+              <MapPin className="w-2.5 h-2.5" />
+              <span className="text-[9px] font-bold uppercase tracking-widest">{match.venue}</span>
+            </div>
           </div>
-
-          <div className={`px-2 py-0.5 rounded-[2px] text-[8px] font-black tracking-[0.2em] border ${
-            isLive 
-            ? "bg-[#A91D3A] border-[#A91D3A] text-white shadow-[0_0_15px_rgba(169,29,58,0.4)]" 
-            : "bg-black/40 backdrop-blur-md border-white/10 text-zinc-400"
-          }`}>
+          <div className={`px-2 py-0.5 rounded-[2px] text-[8px] font-black tracking-[0.2em] border ${isLive ? "bg-[#A91D3A] border-[#A91D3A] text-white shadow-[0_0_15px_rgba(169,29,58,0.4)]" : "bg-black/40 backdrop-blur-md border-white/10 text-zinc-400"}`}>
             {isLive ? "LIVE" : match.status}
           </div>
         </div>
 
-        {/* BOTTOM: Match Info */}
         <div className="space-y-5">
-          {/* Teams Lineup */}
           <div className="space-y-1">
             <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white leading-tight">
-              {match.homeTeam} <br /> 
+              {match.homeTeam} <br />
               <span className="text-zinc-500 not-italic font-light text-lg">vs</span> <br />
               {match.awayTeam}
             </h3>
           </div>
-
-          {/* Scores & Footer */}
           <div className="pt-4 border-t border-white/10 flex items-end justify-between">
             <div className="flex items-baseline gap-3">
-              <span className="text-4xl font-black tabular-nums text-white">
-                {match.homeScore ?? 0}
-              </span>
+              <span className="text-4xl font-black tabular-nums text-white">{match.homeScore ?? 0}</span>
               <span className="text-xl font-thin text-zinc-700">-</span>
-              <span className="text-4xl font-black tabular-nums text-white">
-                {match.awayScore ?? 0}
-              </span>
+              <span className="text-4xl font-black tabular-nums text-white">{match.awayScore ?? 0}</span>
             </div>
-            
             <div className="flex flex-col items-end gap-1">
-               <div className="flex items-center gap-1.5 text-zinc-500">
-                  <Clock className="w-2.5 h-2.5" />
-                  <span className="text-[9px] font-bold uppercase tracking-widest">{match.date}</span>
-               </div>
-               <span className="text-[8px] font-black text-[#C5A059] uppercase tracking-widest">
-                 {match.category || "Intramurals"}
-               </span>
+              <div className="flex items-center gap-1.5 text-zinc-500">
+                <Clock className="w-2.5 h-2.5" />
+                <span className="text-[9px] font-bold uppercase tracking-widest">{match.date}</span>
+              </div>
+              <span className="text-[8px] font-black text-[#C5A059] uppercase tracking-widest">{match.category || "Intramurals"}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Cinematic Film-Grain / Texture Overlay (Optional) */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
-	
-       {/* Edit confirmation modal */}
-      <EditMatchModal
-        match={match}
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-      /> 
-    
-      {/* Delete confirmation modal */}
-      <DeleteMatchModal
-        match={match}
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-      />
+
+      <EditMatchModal match={match} open={editDialogOpen} onOpenChange={setEditDialogOpen} />
+      <DeleteMatchModal match={match} open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} />
     </div>
   );
 };
