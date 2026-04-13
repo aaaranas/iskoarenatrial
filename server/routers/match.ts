@@ -67,6 +67,28 @@ export const matchRouter = router({
       return data;
     }),
 
+  updateMatch: adminProcedure
+    .input(z.object({
+      id: z.string(),
+      home_score: z.number().optional(),
+      away_score: z.number().optional(),
+      status: z.string().optional(),
+      match_date: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...updateFields } = input;
+
+      const { data, error } = await supabase
+        .from("matches")
+        .update(updateFields)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
+      return data;
+    }),
+
   deleteMatch: adminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
