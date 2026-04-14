@@ -16,14 +16,14 @@ const DashboardPage = ({ matches, playersCount = 3104 }: DashboardPageProps) => 
       {/* Hero Banner with Maroon Glass Effect */}
       <section className="relative h-52 rounded-2xl overflow-hidden glass-panel-maroon flex items-center px-10 shadow-2xl border border-white/10">
         <div className="relative z-10 space-y-1">
-          <h1 className="text-4xl md:text-5xl font-bold text-white uppercase tracking-tight font-headline">
+          <h1 className="text-4xl md:text-5xl font-bold text-white uppercase tracking-wide font-maroons">
             Welcome back, Admin.
           </h1>
           <p className="text-secondary font-bold text-lg uppercase tracking-widest opacity-90">
             Here's what's happening today.
           </p>
         </div>
-        {/* Decorative mask for the right side (as seen in your HTML reference) */}
+        {/* Decorative mask for the right side */}
         <div className="absolute top-0 right-0 w-1/3 h-full bg-black/10 -skew-x-12 translate-x-16" />
       </section>
 

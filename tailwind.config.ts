@@ -62,6 +62,7 @@ const config: Config = {
       fontFamily: {
         sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui'],
         maroons: ["Maroons Strong", "sans-serif"],
+        headline: ["Oswald", "sans-serif"],
       }
     }
   },
