@@ -5,10 +5,16 @@ import { MapPin, Edit3, Trash2, Clock } from "lucide-react";
 import { DeleteMatchModal } from "./DeleteMatchModal";
 import { EditMatchModal } from "./EditMatchModal";
 
-export const MatchCard = ({ match }: { match: Match }) => {
+interface MatchCardProps {
+  match: Match;
+  onOpenDetails: () => void; 
+}
+
+export const MatchCard = ({ match, onOpenDetails }: MatchCardProps) => {
   const isLive = match.statusType === "live";
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+
 
   const fallbackImages = [
     "/iskolarobaseball.jpg",
@@ -23,8 +29,9 @@ export const MatchCard = ({ match }: { match: Match }) => {
   const cardImage = fallbackImages[idHash % fallbackImages.length];
 
   return (
-    <div className="group relative h-[350px] sm:h-[420px] lg:h-[480px] w-full bg-[#050505] rounded-sm overflow-hidden border border-white/5 transition-all duration-500 hover:border-[#C5A059]/40 hover:shadow-2xl hover:shadow-[#A91D3A]/10">
-      
+    <div className="group relative h-[350px] sm:h-[420px] lg:h-[480px] w-full bg-[#050505] rounded-sm overflow-hidden border border-white/5 transition-all duration-500 hover:border-[#C5A059]/40 hover:shadow-2xl hover:shadow-[#A91D3A]/10" >
+      <div className="absolute inset-0 z-10" onClick={onOpenDetails} />     
+	    
       {/* Cinematic Poster Layer */}
       <div className="absolute inset-0 z-0">
         <img
@@ -37,7 +44,7 @@ export const MatchCard = ({ match }: { match: Match }) => {
       </div>
 
       {/* Admin Quick Actions */}
-      <div className="absolute top-4 right-4 z-30 flex flex-col gap-2 translate-x-10 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300">
+      <div className="absolute top-4 right-4 z-50 flex flex-col gap-2 translate-x-10 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300" onClick={(e) => e.stopPropagation()}>
         <button onClick={() => setEditDialogOpen(true)} className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#C5A059] hover:text-black transition-all">
           <Edit3 className="w-4 h-4" />
         </button>

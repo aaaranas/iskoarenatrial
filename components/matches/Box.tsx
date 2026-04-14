@@ -32,7 +32,7 @@ const FILTER_OPTIONS = {
 
 const ITEMS_PER_PAGE = 8;
 
-export const Box = () => {
+export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) => {
   // 1. DATA FETCHING (tRPC)
   // We cast the data to Match[] to ensure the UI properties exist
   const { data: matchesData, isLoading } = trpc.match.getAll.useQuery();
@@ -49,6 +49,9 @@ export const Box = () => {
     sport: "Sport",
     status: "Status"
   });
+  
+  const [matchToEdit, setMatchToEdit] = useState<Match | null>(null);
+  const [matchToDelete, setMatchToDelete] = useState<Match | null>(null);  
 
 
   // 3. FILTERING LOGIC (Aligned with your Match interface)
@@ -206,7 +209,11 @@ export const Box = () => {
               <CarouselContent className="-ml-4 sm:-ml-6">
                 {myMatches.map((match) => (
                   <CarouselItem key={match.id} className="pl-4 sm:pl-6 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                     <MatchCard match={match} />
+					<MatchCard 
+    key={match.id} 
+    match={match} 
+    onOpenDetails={() => onSelectMatch(match)} // Pass the function here
+  />
                   </CarouselItem>
                 ))}
               </CarouselContent>
@@ -222,7 +229,19 @@ export const Box = () => {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {paginatedMatches.map((match) => (
-              <MatchCard key={match.id} match={match} />
+             <div 
+            key={match.id} 
+            onClick={() => onSelectMatch(match)} 
+            className="cursor-pointer"
+          >
+	    <MatchCard 
+    key={match.id} 
+    match={match} 
+    onOpenDetails={() => onSelectMatch(match)}
+    onEdit={() => setMatchToEdit(match)}   // Pass as props
+    onDelete={() => setMatchToDelete(match)} 
+  />
+          </div> 
             ))}
           </div>
 
