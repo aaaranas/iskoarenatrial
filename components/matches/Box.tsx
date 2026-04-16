@@ -21,6 +21,7 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import { AddMatchModal } from "./AddMatchModal";
+import { FinalizeMatchModal } from "./FinalizeMatchModal";
 
 const FILTER_OPTIONS = {
   category: ["Men's", "Women's", "Men's Singles", "Men's Doubles", "Women's Singles", "Women's Doubles", "Mixed Singles", "Mixed Doubles"],
@@ -37,6 +38,7 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
   // We cast the data to Match[] to ensure the UI properties exist
   const { data: matchesData, isLoading } = trpc.match.getAll.useQuery();
   const matches = (matchesData as Match[]) || [];
+  const [matchToFinalize, setMatchToFinalize] = useState<Match | null>(null);
 
   const { data: auth } = trpc.auth.getSession.useQuery();
 
@@ -234,11 +236,21 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
             onClick={() => onSelectMatch(match)} 
             className="cursor-pointer"
           >
+
+	{matchToFinalize && (
+       <FinalizeMatchModal 
+         match={matchToFinalize} 
+         isOpen={!!matchToFinalize} 
+         onClose={() => setMatchToFinalize(null)} 
+       />
+    )}
+	
 	    <MatchCard 
     key={match.id} 
     match={match} 
     onOpenDetails={() => onSelectMatch(match)}
-    onEdit={() => setMatchToEdit(match)}   // Pass as props
+    onEdit={() => setMatchToEdit(match)}   
+    onFinalize={() => setMatchToFinalize(match)}
     onDelete={() => setMatchToDelete(match)} 
   />
           </div> 
