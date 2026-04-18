@@ -7,49 +7,119 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
-      matches: {
+      highlight_slides: {
         Row: {
-          away_score: number | null
-          away_team_id: string | null
-          created_at: string
-          home_score: number | null
-          home_team_id: string | null
-          id: string
-          match_date: string
-          sport_id: string | null
-          status: string | null
-          venue_id: string | null
+          id:           string
+          highlight_id: string
+          emoji:        string | null
+          text:         string | null
+          image_url:    string | null
+          media_id:     string | null
+          slide_order:  number
+          created_at:   string
         }
         Insert: {
-          away_score?: number | null
-          away_team_id?: string | null
-          created_at?: string
-          home_score?: number | null
-          home_team_id?: string | null
-          id?: string
-          match_date: string
-          sport_id?: string | null
-          status?: string | null
-          venue_id?: string | null
+          id?:          string
+          highlight_id: string
+          emoji?:       string | null
+          text?:        string | null
+          image_url?:   string | null
+          media_id?:    string | null
+          slide_order?: number
+          created_at?:  string
         }
         Update: {
-          away_score?: number | null
-          away_team_id?: string | null
+          id?:          string
+          highlight_id?: string
+          emoji?:       string | null
+          text?:        string | null
+          image_url?:   string | null
+          media_id?:    string | null
+          slide_order?: number
+          created_at?:  string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "highlight_slides_highlight_id_fkey"
+            columns: ["highlight_id"]
+            isOneToOne: false
+            referencedRelation: "highlights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "highlight_slides_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      highlights: {
+        Row: {
+          id:         string
+          label:      string
+          color:      string
+          cover_url:  string | null
+          created_at: string
+        }
+        Insert: {
+          id?:        string
+          label:      string
+          color?:     string
+          cover_url?: string | null
           created_at?: string
-          home_score?: number | null
+        }
+        Update: {
+          id?:        string
+          label?:     string
+          color?:     string
+          cover_url?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      matches: {
+        Row: {
+          away_score:   number | null
+          away_team_id: string | null
+          created_at:   string
+          home_score:   number | null
+          home_team_id: string | null
+          id:           string
+          match_date:   string
+          sport_id:     string | null
+          status:       string | null
+          venue_id:     string | null
+        }
+        Insert: {
+          away_score?:   number | null
+          away_team_id?: string | null
+          created_at?:   string
+          home_score?:   number | null
           home_team_id?: string | null
-          id?: string
-          match_date?: string
-          sport_id?: string | null
-          status?: string | null
-          venue_id?: string | null
+          id?:           string
+          match_date:    string
+          sport_id?:     string | null
+          status?:       string | null
+          venue_id?:     string | null
+        }
+        Update: {
+          away_score?:   number | null
+          away_team_id?: string | null
+          created_at?:   string
+          home_score?:   number | null
+          home_team_id?: string | null
+          id?:           string
+          match_date?:   string
+          sport_id?:     string | null
+          status?:       string | null
+          venue_id?:     string | null
         }
         Relationships: [
           {
@@ -82,36 +152,90 @@ export type Database = {
           },
         ]
       }
-      players: {
+      media: {
         Row: {
+          id:         string
+          title:      string
+          type:       string
+          url:        string
+          file_name:  string
+          sport_id:   string | null
+          match_id:   string | null
+          tag:        string | null
+          size:       string | null
           created_at: string
-          id: string
-          is_active: boolean | null
-          jersey_number: number | null
-          name: string
-          photo_url: string | null
-          position: string | null
-          team_id: string | null
         }
         Insert: {
+          id?:        string
+          title:      string
+          type:       string
+          url:        string
+          file_name:  string
+          sport_id?:  string | null
+          match_id?:  string | null
+          tag?:       string | null
+          size?:      string | null
           created_at?: string
-          id?: string
-          is_active?: boolean | null
-          jersey_number?: number | null
-          name: string
-          photo_url?: string | null
-          position?: string | null
-          team_id?: string | null
         }
         Update: {
+          id?:        string
+          title?:     string
+          type?:      string
+          url?:       string
+          file_name?: string
+          sport_id?:  string | null
+          match_id?:  string | null
+          tag?:       string | null
+          size?:      string | null
           created_at?: string
-          id?: string
-          is_active?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_sport_id_fkey"
+            columns: ["sport_id"]
+            isOneToOne: false
+            referencedRelation: "sports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          created_at:    string
+          id:            string
+          is_active:     boolean | null
+          jersey_number: number | null
+          name:          string
+          photo_url:     string | null
+          position:      string | null
+          team_id:       string | null
+        }
+        Insert: {
+          created_at?:    string
+          id?:            string
+          is_active?:     boolean | null
           jersey_number?: number | null
-          name?: string
-          photo_url?: string | null
-          position?: string | null
-          team_id?: string | null
+          name:           string
+          photo_url?:     string | null
+          position?:      string | null
+          team_id?:       string | null
+        }
+        Update: {
+          created_at?:    string
+          id?:            string
+          is_active?:     boolean | null
+          jersey_number?: number | null
+          name?:          string
+          photo_url?:     string | null
+          position?:      string | null
+          team_id?:       string | null
         }
         Relationships: [
           {
@@ -125,85 +249,85 @@ export type Database = {
       }
       profiles: {
         Row: {
-          avatar_url: string | null
+          avatar_url:          string | null
           college_affiliation: string | null
-          created_at: string | null
-          email: string
-          full_name: string
-          id: string
-          last_login: string | null
-          permissions: Json | null
-          role: Database["public"]["Enums"]["admin_role"]
-          updated_at: string | null
+          created_at:          string | null
+          email:               string
+          full_name:           string
+          id:                  string
+          last_login:          string | null
+          permissions:         Json | null
+          role:                Database["public"]["Enums"]["admin_role"]
+          updated_at:          string | null
         }
         Insert: {
-          avatar_url?: string | null
+          avatar_url?:          string | null
           college_affiliation?: string | null
-          created_at?: string | null
-          email: string
-          full_name: string
-          id: string
-          last_login?: string | null
-          permissions?: Json | null
-          role?: Database["public"]["Enums"]["admin_role"]
-          updated_at?: string | null
+          created_at?:          string | null
+          email:                string
+          full_name:            string
+          id:                   string
+          last_login?:          string | null
+          permissions?:         Json | null
+          role?:                Database["public"]["Enums"]["admin_role"]
+          updated_at?:          string | null
         }
         Update: {
-          avatar_url?: string | null
+          avatar_url?:          string | null
           college_affiliation?: string | null
-          created_at?: string | null
-          email?: string
-          full_name?: string
-          id?: string
-          last_login?: string | null
-          permissions?: Json | null
-          role?: Database["public"]["Enums"]["admin_role"]
-          updated_at?: string | null
+          created_at?:          string | null
+          email?:               string
+          full_name?:           string
+          id?:                  string
+          last_login?:          string | null
+          permissions?:         Json | null
+          role?:                Database["public"]["Enums"]["admin_role"]
+          updated_at?:          string | null
         }
         Relationships: []
       }
       sports: {
         Row: {
-          created_at: string
+          created_at:  string
           description: string | null
-          id: string
-          name: string
+          id:          string
+          name:        string
         }
         Insert: {
-          created_at?: string
+          created_at?:  string
           description?: string | null
-          id?: string
-          name: string
+          id?:          string
+          name:         string
         }
         Update: {
-          created_at?: string
+          created_at?:  string
           description?: string | null
-          id?: string
-          name?: string
+          id?:          string
+          name?:        string
         }
         Relationships: []
       }
       teams: {
         Row: {
-          college: string
+          college:    string
           created_at: string
-          id: string
-          name: string
-          sport_id: string | null
+          id:         string
+          name:       string
+          sport_id:   string | null
         }
         Insert: {
-          college: string
+          college:     string
           created_at?: string
-          id?: string
-          name: string
-          sport_id?: string | null
+          id?:         string
+          name:        string
+          sport_id?:   string | null
         }
         Update: {
-          college?: string
+          college?:    string
           created_at?: string
-          id?: string
-          name?: string
-          sport_id?: string | null
+          id?:         string
+          name?:       string
+          sport_id?:   string | null
         }
         Relationships: [
           {
@@ -217,25 +341,25 @@ export type Database = {
       }
       venues: {
         Row: {
-          capacity: number | null
+          capacity:   number | null
           created_at: string
-          id: string
-          location: string | null
-          name: string
+          id:         string
+          location:   string | null
+          name:       string
         }
         Insert: {
-          capacity?: number | null
+          capacity?:   number | null
           created_at?: string
-          id?: string
-          location?: string | null
-          name: string
+          id?:         string
+          location?:   string | null
+          name:        string
         }
         Update: {
-          capacity?: number | null
+          capacity?:   number | null
           created_at?: string
-          id?: string
-          location?: string | null
-          name?: string
+          id?:         string
+          location?:   string | null
+          name?:       string
         }
         Relationships: []
       }
@@ -256,7 +380,6 @@ export type Database = {
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
