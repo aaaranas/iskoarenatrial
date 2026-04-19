@@ -1,3 +1,4 @@
+// src/app/dashboard/layout.tsx
 "use client";
 
 import React from "react";
@@ -8,13 +9,13 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/app-sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
-import { User } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const utils = trpc.useUtils();
-
+  
+  // 1. Fetch Session for Sidebar Info
   const { data: auth, isLoading } = trpc.auth.getSession.useQuery();
 
   const handleLogout = async () => {
@@ -24,56 +25,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push("/");
   };
 
-  const currentPage = pathname.split("/").filter(Boolean).pop() || "dashboard";
-  const pageLabel = currentPage.charAt(0).toUpperCase() + currentPage.slice(1);
+  // Extract the current page name from the URL for the header
+  const currentPage = pathname.split("/").pop() || "dashboard";
 
   if (isLoading) {
     return (
-      <div className="h-screen bg-[radial-gradient(circle_at_top_right,_#1a0001,_#000000)] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
+      <div className="h-screen bg-[#050505] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#C5A059] animate-spin" />
       </div>
     );
   }
 
-  const adminName = auth?.profile?.fullName || "Operator";
-  const adminRole = auth?.profile?.role || "Admin";
-
   return (
     <SidebarProvider>
-      {/* No variant prop here — AppSidebar sets variant="inset" internally */}
-      <AppSidebar
-        onLogout={handleLogout}
-        adminName={adminName}
+      <AppSidebar 
+        variant="sidebar"
+        onLogout={handleLogout} 
+        adminName={auth?.profile?.fullName || "Operator"} 
       />
 
-      <SidebarInset className="bg-[radial-gradient(circle_at_top_right,_#1a0001,_#000000)] min-h-screen">
-        {/* TopAppBar */}
-        <header className="sticky top-0 z-20 flex justify-between items-center px-8 py-4 w-full bg-black/40 backdrop-blur-[12px] border-b border-white/[0.08]">
-          {/* Left: toggle trigger + page title */}
-          <div className="flex items-center gap-4">
-            <SidebarTrigger className="text-zinc-400 hover:text-white hover:bg-white/10 rounded-sm transition-colors" />
-            <h2 className="text-xl font-bold tracking-tight text-white uppercase font-headline">
-              {pageLabel}
-            </h2>
-          </div>
-
-          {/* Right: admin info + avatar */}
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex flex-col items-end">
-              <p className="text-sm font-bold text-white uppercase tracking-tight">{adminName}</p>
-              <p className="text-[10px] text-[#D4AF37] font-bold uppercase tracking-wider">{adminRole}</p>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-white/10 border-2 border-[#800000] flex items-center justify-center overflow-hidden flex-shrink-0">
-              <User className="w-5 h-5 text-zinc-400" />
-            </div>
+      <SidebarInset className="bg-[#050505]">
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-zinc-800 px-4 sticky top-0 bg-[#050505]/80 backdrop-blur-md z-20">
+          <SidebarTrigger className="-ml-1 text-zinc-400" />
+          <div className="flex-1">
+            <h1 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">
+              {currentPage === "dashboard" ? "System Overview" : currentPage}
+            </h1>
           </div>
         </header>
 
-        <main className="flex flex-1 flex-col overflow-y-auto text-[#F3F4F6]">
+        <main className="flex flex-1 flex-col overflow-y-auto">
           {children}
         </main>
       </SidebarInset>
-
       <Toaster />
     </SidebarProvider>
   );
