@@ -27,7 +27,7 @@ export const RecentMatchesTable = ({ matches = [] }: RecentMatchesTableProps) =>
     <section className="bg-black/20 glass-panel rounded-2xl overflow-hidden shadow-2xl">
       <div className="px-8 py-6 flex justify-between items-center bg-white/5 border-b border-white/5">
         <div>
-          <h3 className="text-xl font-bold text-white tracking-tight uppercase">RECENT MATCHES</h3>
+          <h3 className="text-2xl font-bold text-white tracking-wider uppercase font-maroons">RECENT MATCHES</h3>
           <p className="text-xs text-on-surface-variant font-bold uppercase tracking-wider">
             Real-time status of current and past matchups
           </p>
