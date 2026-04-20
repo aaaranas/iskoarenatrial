@@ -7,6 +7,7 @@ import { teamsRouter }     from './teams';
 import { sportRouter }     from './sport';
 import { mediaRouter }     from './media';
 import { highlightRouter } from './highlights';
+import { storyRouter }     from './story';
 
 export const appRouter = router({
   match:     matchRouter,
@@ -17,6 +18,7 @@ export const appRouter = router({
   sport:     sportRouter,
   media:     mediaRouter,
   highlight: highlightRouter,
+  story:     storyRouter,
 });
 
 export type AppRouter = typeof appRouter;

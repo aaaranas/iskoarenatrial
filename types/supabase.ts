@@ -24,24 +24,24 @@ export type Database = {
           created_at:   string
         }
         Insert: {
-          id?:          string
-          highlight_id: string
-          emoji?:       string | null
-          text?:        string | null
-          image_url?:   string | null
-          media_id?:    string | null
-          slide_order?: number
-          created_at?:  string
+          id?:           string
+          highlight_id:  string
+          emoji?:        string | null
+          text?:         string | null
+          image_url?:    string | null
+          media_id?:     string | null
+          slide_order?:  number
+          created_at?:   string
         }
         Update: {
-          id?:          string
+          id?:           string
           highlight_id?: string
-          emoji?:       string | null
-          text?:        string | null
-          image_url?:   string | null
-          media_id?:    string | null
-          slide_order?: number
-          created_at?:  string
+          emoji?:        string | null
+          text?:         string | null
+          image_url?:    string | null
+          media_id?:     string | null
+          slide_order?:  number
+          created_at?:   string
         }
         Relationships: [
           {
@@ -66,6 +66,7 @@ export type Database = {
           label:      string
           color:      string
           cover_url:  string | null
+          story_id:   string | null
           created_at: string
         }
         Insert: {
@@ -73,6 +74,7 @@ export type Database = {
           label:      string
           color?:     string
           cover_url?: string | null
+          story_id?:  string | null
           created_at?: string
         }
         Update: {
@@ -80,9 +82,18 @@ export type Database = {
           label?:     string
           color?:     string
           cover_url?: string | null
+          story_id?:  string | null
           created_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "highlights_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       matches: {
         Row: {
@@ -306,6 +317,47 @@ export type Database = {
           name?:        string
         }
         Relationships: []
+      }
+      stories: {
+        Row: {
+          id:         string
+          type:       string
+          emoji:      string | null
+          text:       string | null
+          image_url:  string | null
+          media_id:   string | null
+          expires_at: string
+          created_at: string
+        }
+        Insert: {
+          id?:        string
+          type:       string
+          emoji?:     string | null
+          text?:      string | null
+          image_url?: string | null
+          media_id?:  string | null
+          expires_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?:        string
+          type?:      string
+          emoji?:     string | null
+          text?:      string | null
+          image_url?: string | null
+          media_id?:  string | null
+          expires_at?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stories_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       teams: {
         Row: {

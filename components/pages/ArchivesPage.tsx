@@ -1,3 +1,5 @@
+//archives page
+
 "use client";
 import React from "react";
 import { ArchiveHeader } from "../archives/ArchiveHeader";

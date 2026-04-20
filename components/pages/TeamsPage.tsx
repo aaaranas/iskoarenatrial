@@ -1,3 +1,5 @@
+//teamspage
+
 "use client";
 import React, { useState, useMemo, useEffect } from "react";
 import { AnalyticsCard } from "../teams/AnalyticsCard";

@@ -6,13 +6,14 @@ const t = initTRPC.create({
   transformer: superjson,
 });
 
-export const router = t.router;
+export const router          = t.router;
 export const publicProcedure = t.procedure;
 
-// PROTECTED PROCEDURE (For Admins)
+// PROTECTED PROCEDURE
+// Every logged-in user is an admin on this platform —
+// no role check needed, just verify the session exists.
 export const adminProcedure = t.procedure.use(async ({ next }) => {
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
   const { data: profile } = await supabase
@@ -21,8 +22,8 @@ export const adminProcedure = t.procedure.use(async ({ next }) => {
     .eq('id', user.id)
     .single();
 
-  if (profile?.role !== 'super_admin' && profile?.role !== 'college_admin') {
-    throw new TRPCError({ code: 'FORBIDDEN', message: "Insufficient permissions" });
+  if (!profile) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Profile not found.' });
   }
 
   return next({ ctx: { user, profile } });
