@@ -1,42 +1,36 @@
-// src/components/dashboard/StatCard.tsx
 import React from "react";
 
-export const StatCard = ({ label, value, icon, variant = "default" }: any) => {
-  const styles = {
-    live: {
-      container: "bg-primary/30 text-red-500 shadow-primary/20",
-      iconFill: "'FILL' 1",
-    },
-    secondary: {
-      container: "bg-secondary/20 text-secondary shadow-secondary/10",
-      iconFill: "'FILL' 0",
-    },
-    default: {
-      container: "bg-white/10 text-on-surface-variant shadow-none",
-      iconFill: "'FILL' 0",
-    }
-  };
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  isLive?: boolean;
+}
 
-  const currentStyle = styles[variant as keyof typeof styles] || styles.default;
-
+export const StatCard = ({ title, value, subtitle, isLive = false }: StatCardProps) => {
   return (
-    <div className="bg-black/30 glass-panel p-6 rounded-xl flex items-center gap-5 group transition-all duration-300 hover:bg-black/50 hover:translate-y-[-4px]">
-      <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg ${currentStyle.container}`}>
-        <span 
-          className="material-symbols-outlined" 
-          style={{ fontVariationSettings: currentStyle.iconFill }}
-        >
-          {icon}
+    <div className="relative p-6 pt-7 rounded-xl bg-[#222222] border border-white/5 flex flex-col justify-between overflow-hidden transition-all duration-300 hover:bg-[#282828]">
+      <div className="flex items-center gap-2 mb-5">
+        {isLive && <span className="w-2 h-2 rounded-full bg-[#FF3300]"></span>}
+        <span className={`text-xs font-semibold tracking-wider uppercase ${isLive ? 'text-[#FF3300]' : 'text-zinc-400'}`}>
+          {title}
         </span>
       </div>
+      
       <div>
-        <p className="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-1 font-label">
-          {label}
-        </p>
-        <p className="text-3xl font-bold text-white uppercase font-headline">
+        <p className="text-5xl font-bold text-white mb-2.5 tracking-tight leading-none">
           {value}
         </p>
+        {subtitle && (
+          <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider leading-tight mt-1">
+            {subtitle}
+          </p>
+        )}
       </div>
+
+      {isLive && (
+        <div className="absolute bottom-0 left-0 w-1/4 h-1 bg-[#FF3300]"></div>
+      )}
     </div>
   );
 };

@@ -1,13 +1,12 @@
-// src/components/dashboard/RecentMatchesTable.tsx
 import React from "react";
 
 export interface MatchUI {
   id: string;
   sport: string;
   matchup: string;
-  location: string;
   schedule: string;
-  status: "LIVE" | "UPCOMING" | "COMPLETED";
+  status: "LIVE NOW" | "UPCOMING" | "FINISHED";
+  currentScore: string;
 }
 
 interface RecentMatchesTableProps {
@@ -15,79 +14,78 @@ interface RecentMatchesTableProps {
 }
 
 export const RecentMatchesTable = ({ matches = [] }: RecentMatchesTableProps) => {
-  const getStatusStyle = (status: string) => {
-    switch (status) {
-      case "LIVE": return "bg-primary/30 text-red-400 border-primary/40";
-      case "UPCOMING": return "bg-secondary/20 text-secondary border-secondary/30";
-      default: return "bg-white/5 text-on-surface-variant border-white/10";
-    }
-  };
-
   return (
-    <section className="bg-black/20 glass-panel rounded-2xl overflow-hidden shadow-2xl">
-      <div className="px-8 py-6 flex justify-between items-center bg-white/5 border-b border-white/5">
-        <div>
-          <h3 className="text-xl font-bold text-white tracking-tight uppercase">RECENT MATCHES</h3>
-          <p className="text-xs text-on-surface-variant font-bold uppercase tracking-wider">
-            Real-time status of current and past matchups
-          </p>
+    <section className="bg-transparent animate-in fade-in duration-700 delay-300 pt-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 pl-2 pr-1 gap-4">
+        <div className="space-y-1.5">
+          <h3 className="text-lg font-bold text-zinc-300 tracking-[0.15em] uppercase">
+            Recent Matches
+          </h3>
         </div>
-        <button className="flex items-center gap-2 bg-primary hover:bg-primary/80 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-colors shadow-lg shadow-primary/30 uppercase tracking-tighter">
-          View Schedule
-          <span className="material-symbols-outlined text-[18px] text-secondary">calendar_month</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button className="bg-[#1C1C1C] hover:bg-zinc-800 text-zinc-300 px-5 py-2.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-colors border border-zinc-700/50">
+            Filter
+          </button>
+          <button className="bg-[#1C1C1C] hover:bg-zinc-800 text-zinc-300 px-5 py-2.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-colors border border-zinc-700/50">
+            Export CSV
+          </button>
+        </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-separate border-spacing-y-2 px-8 pb-6">
-          <thead>
-            <tr className="text-on-surface-variant">
-              <th className="pb-3 pt-6 px-4 text-[10px] font-bold uppercase tracking-[0.15em]">SPORT</th>
-              <th className="pb-3 pt-6 px-4 text-[10px] font-bold uppercase tracking-[0.15em]">MATCHUP</th>
-              <th className="pb-3 pt-6 px-4 text-[10px] font-bold uppercase tracking-[0.15em]">SCHEDULE</th>
-              <th className="pb-3 pt-6 px-4 text-[10px] font-bold uppercase tracking-[0.15em]">STATUS</th>
-              <th className="pb-3 pt-6 px-4 text-[10px] font-bold uppercase tracking-[0.15em] text-right">ACTION</th>
-            </tr>
-          </thead>
-          <tbody className="space-y-2">
-            {matches.length > 0 ? (
-              matches.map((match) => (
-                <tr key={match.id} className="group hover:bg-white/5 transition-all rounded-xl">
-                  <td className="py-5 px-4 align-middle">
-                    <div className="flex items-center gap-3">
-                      <span className="material-symbols-outlined text-secondary">sports_esports</span>
-                      <span className="text-sm font-bold text-white uppercase">{match.sport}</span>
-                    </div>
-                  </td>
-                  <td className="py-5 px-4">
-                    <p className="text-sm font-bold text-white uppercase">{match.matchup}</p>
-                    <p className="text-[10px] text-on-surface-variant font-bold uppercase opacity-70">{match.location}</p>
-                  </td>
-                  <td className="py-5 px-4 text-sm font-bold text-on-surface uppercase tracking-tight">
-                    {match.schedule}
-                  </td>
-                  <td className="py-5 px-4">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-widest border shadow-sm ${getStatusStyle(match.status)}`}>
-                      {match.status === "LIVE" && <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>}
-                      {match.status}
-                    </span>
-                  </td>
-                  <td className="py-5 px-4 text-right">
-                    <button className="p-2 text-on-surface-variant hover:text-secondary transition-colors">
-                      <span className="material-symbols-outlined">more_vert</span>
-                    </button>
+      {/* Table */}
+      <div className="bg-[#1C1C1C] rounded-xl border border-white/5 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
+            <thead>
+              <tr className="border-b border-white/5 bg-[#181818]">
+                <th className="py-5 px-6 text-xs font-semibold uppercase tracking-wider text-zinc-400">Sport</th>
+                <th className="py-5 px-6 text-xs font-semibold uppercase tracking-wider text-zinc-400">Matchup</th>
+                <th className="py-5 px-6 text-xs font-semibold uppercase tracking-wider text-zinc-400">Schedule</th>
+                <th className="py-5 px-6 text-xs font-semibold uppercase tracking-wider text-zinc-400">Status</th>
+                <th className="py-5 px-6 text-xs font-semibold uppercase tracking-wider text-zinc-400">Current Score</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {matches.length > 0 ? (
+                matches.map((match) => (
+                  <tr key={match.id} className="hover:bg-white/5 transition-colors bg-[#222222]">
+                    <td className="py-5 px-6 text-xs font-bold text-zinc-300 uppercase tracking-widest">
+                      {match.sport}
+                    </td>
+                    <td className="py-5 px-6">
+                      <p className="text-base font-bold text-white tracking-tight leading-tight">{match.matchup}</p>
+                    </td>
+                    <td className="py-5 px-6 text-sm font-medium text-zinc-400 tracking-wide">
+                      {match.schedule}
+                    </td>
+                    <td className="py-5 px-6">
+                      {match.status === "LIVE NOW" ? (
+                        <span className="inline-flex items-center gap-2 bg-[#3A1D1A] text-[#FF3300] px-3.5 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider border border-[#FF3300]/20">
+                          <span className="w-2 h-2 bg-[#FF3300] rounded-full animate-pulse"></span>
+                          Live Now
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-2 bg-zinc-800 text-zinc-300 px-3.5 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider border border-zinc-700">
+                          {match.status}
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-5 px-6 text-base font-bold text-white tracking-wide">
+                      {match.currentScore}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="py-14 text-center text-zinc-500 font-medium tracking-wide text-sm">
+                    No match data available at this time.
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={5} className="py-10 text-center text-on-surface-variant font-bold uppercase opacity-50">
-                  No matches found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );
