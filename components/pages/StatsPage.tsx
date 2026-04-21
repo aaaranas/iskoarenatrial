@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { ChevronDown, Search, ArrowRight, Layers, Loader2 } from "lucide-react";
+import { trpc } from "@/utils/trpc";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Podium } from "../leaderboards/Podium";
 import { LeaderboardTable } from "../leaderboards/LeaderboardTable";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { ChevronDown, Search, ArrowRight, Layers, Activity, Users, Shield, Loader2 } from "lucide-react";
-import { trpc } from "@/utils/trpc";
 
 interface Performer {
   id: string;
@@ -25,11 +25,11 @@ export default function LeaderboardPage() {
   const [viewMode, setViewMode] = useState<"players" | "teams">("players");
   const [timeframe, setTimeframe] = useState<string>("Season");
   const [searchQuery, setSearchQuery] = useState("");
-  
-  // ── DATA FETCHING — only use procedures that exist in the routers ──
+
+  // ── DATA FETCHING ──
   const { data: players, isLoading: plLoading } = trpc.players.getAll.useQuery();
-  const { data: teams,   isLoading: tmLoading } = trpc.teams.getAll.useQuery();
-  const { data: stats,   isLoading: stLoading } = trpc.stats.getLeaderboard.useQuery({
+  const { data: teams, isLoading: tmLoading } = trpc.teams.getAll.useQuery();
+  const { data: stats, isLoading: stLoading } = trpc.stats.getLeaderboard.useQuery({
     type: viewMode,
     timeframe,
   });
@@ -49,7 +49,7 @@ export default function LeaderboardPage() {
   const mappedPlayers = useMemo(() => {
     if (!players) return [];
     return players
-      .filter(p => (p as any).name?.toLowerCase().includes(searchQuery.toLowerCase()))
+      .filter((p: any) => p.name?.toLowerCase().includes(searchQuery.toLowerCase()))
       .map((p: any, i) => ({
         rank: i + 1,
         name: p.name,
@@ -61,7 +61,7 @@ export default function LeaderboardPage() {
   const mappedTeams = useMemo(() => {
     if (!teams) return [];
     return teams
-      .filter(t => (t as any).name?.toLowerCase().includes(searchQuery.toLowerCase()))
+      .filter((t: any) => t.name?.toLowerCase().includes(searchQuery.toLowerCase()))
       .map((t: any, i) => ({
         rank: i + 1,
         name: t.name,
@@ -71,8 +71,7 @@ export default function LeaderboardPage() {
   }, [teams, searchQuery]);
 
   const { scrollY } = useScroll();
-  const athleteOneY  = useTransform(scrollY, [0, 1000], [0, -180]);
-  const ghostTextX   = useTransform(scrollY, [0, 1000], [0, 120]);
+  const ghostTextX = useTransform(scrollY, [0, 1000], [0, 120]);
 
   if (plLoading || tmLoading || stLoading) {
     return (
@@ -92,63 +91,62 @@ export default function LeaderboardPage() {
         <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/60 to-transparent" />
       </div>
 
-      <div className="relative z-10 max-w-[1700px] mx-auto px-6 lg:px-20 pt-24">
+      <div className="relative z-10 max-w-[1700px] mx-auto px-6 lg:px-20 pt-32">
         
-        {/* Hero */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 mb-56">
-          <div className="lg:col-span-7">
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 mb-10">
-              <span className="w-12 h-[1px] bg-[#A91D3A]" />
-              <span className="text-[10px] font-black uppercase tracking-[0.5em] text-[#A91D3A]">Official Standings</span>
-            </motion.div>
-            <h1 className="text-8xl lg:text-[11.5rem] font-black leading-[0.72] tracking-tighter uppercase italic mb-14">
-              Beyond <br />
-              <span className="text-transparent" style={{ WebkitTextStroke: "2px rgba(255,255,255,0.15)" }}>Limits</span>
-            </h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-              <div className="space-y-8">
-                <p className="text-xl font-medium italic text-zinc-400 border-l-2 border-[#C5A059] pl-8 leading-relaxed">
-                  "The arena only recognizes performance as its universal currency."
-                </p>
-                <p className="text-[12px] text-zinc-500 tracking-[0.25em]">
-                  Quantifying campus dominance across every bracket. An archive of collegiate legacy and individual brilliance.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="lg:col-span-5 relative h-[600px] lg:h-auto">
-            <motion.div style={{ y: athleteOneY }} className="absolute top-0 right-0 w-72 lg:w-80 aspect-[3/4] bg-zinc-900 border border-white/10 p-2 shadow-2xl z-20">
-              <img src="/iskolarofrisbee2.jpg" className="w-full h-full object-cover grayscale brightness-75" />
-              <div className="absolute -bottom-6 -left-8 bg-[#C5A059] text-black px-5 py-3 text-[10px] font-black uppercase italic tracking-widest shadow-2xl">
-                FEATURED / ISKOLARO 2026
-              </div>
-            </motion.div>
-          </div>
+        {/* Centered Heading Layout */}
+        <div className="flex flex-col items-center justify-center text-center mb-24">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            className="flex items-center gap-4 mb-6"
+          >
+          </motion.div>
+          
+          <h1 className="text-6xl lg:text-8xl font-black uppercase italic tracking-tighter mb-6">
+            Leaderboard
+          </h1>
+          
+          <p className="max-w-xl text-zinc-500 text-xs font-medium tracking-[0.2em] uppercase">
+            Quantifying campus dominance across every bracket.
+          </p>
         </div>
 
-        {/* Toolbar */}
-        <div className="flex flex-col lg:flex-row items-center justify-between py-12 border-y border-white/5 mb-40 sticky top-0 bg-[#050505]/95 backdrop-blur-2xl z-30">
-          <div className="flex items-center gap-12">
+		{/* Toolbar: Modified with contrasting background panel */}
+        <div className="flex items-center justify-center py-6 mb-32 sticky top-24 z-30">
+          <div className="bg-[#0f0f0f] border border-white/10 shadow-2xl p-4 flex items-center gap-16 backdrop-blur-md">
+            
+            {/* Timeframe Dropdown */}
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 hover:text-white outline-none">
-                <Layers className="w-4 h-4 text-[#A91D3A]" /> TIMEFRAME: {timeframe}
+              <DropdownMenuTrigger className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-white hover:text-[#C5A059] outline-none transition-colors px-4">
+                <Layers className="w-3.5 h-3.5 text-[#A91D3A]" /> 
+                {timeframe} 
+                <ChevronDown className="w-3 h-3 opacity-50" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-black border border-zinc-800 text-white rounded-none">
+              <DropdownMenuContent className="bg-[#1a1a1a] border border-white/10 text-white rounded-none">
                 {["Weekly", "Monthly", "Season"].map(t => (
-                  <DropdownMenuItem key={t} onClick={() => setTimeframe(t)} className="text-[10px] font-black uppercase tracking-widest hover:bg-[#A91D3A]">
+                  <DropdownMenuItem 
+                    key={t} 
+                    onClick={() => setTimeframe(t)} 
+                    className="text-[10px] font-black uppercase tracking-widest hover:bg-[#A91D3A] focus:bg-[#A91D3A]"
+                  >
                     {t}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <div className="relative group">
-              <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-800 group-hover:text-[#C5A059] transition-all" />
+
+            {/* Separator Line */}
+            <div className="w-[1px] h-6 bg-white/10" />
+
+            {/* Search Bar */}
+            <div className="relative group px-4">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 group-hover:text-[#C5A059] transition-colors" />
               <input
                 type="text"
                 placeholder="QUERY LEDGER..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="bg-transparent border-none pl-10 text-xs font-black tracking-widest uppercase focus:outline-none w-48 focus:w-72 border-b border-transparent focus:border-[#A91D3A] transition-all duration-700"
+                className="bg-transparent border-none pl-10 text-[10px] font-black tracking-widest uppercase focus:outline-none w-48 text-white placeholder:text-zinc-700"
               />
             </div>
           </div>
@@ -156,8 +154,6 @@ export default function LeaderboardPage() {
 
         {/* Sections */}
         <div className="space-y-72 pb-72">
-
-          {/* Podium */}
           <section className="relative">
             <motion.div style={{ x: ghostTextX }} className="absolute -top-32 left-0 text-[18rem] font-black text-white/[0.012] select-none pointer-events-none uppercase italic">
               Summit
@@ -175,7 +171,6 @@ export default function LeaderboardPage() {
             </div>
           </section>
 
-          {/* Standings */}
           <section>
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12 mb-20">
               <h3 className="text-9xl font-black uppercase italic tracking-tighter">Standings</h3>
