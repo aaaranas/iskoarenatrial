@@ -54,10 +54,10 @@ const MOCK_TEAMS: Team[] = [
 ];
 
 const MOCK_PLAYERS: Player[] = [
-  { id: "1", teamId: "1", name: "Juan Santos",  college: "COS Scions",    sport: "Basketball Men",   position: "Point Guard",   jersey: 7,  createdAt: new Date().toISOString() },
-  { id: "2", teamId: "2", name: "Maria Garcia", college: "COS Scions",    sport: "Basketball Men",   position: "Small Forward", jersey: 10, createdAt: new Date().toISOString() },
-  { id: "3", teamId: "3", name: "Carlos Reyes", college: "SOM Tycoons",   sport: "Basketball Men",   position: "Center",        jersey: 5,  createdAt: new Date().toISOString() },
-  { id: "4", teamId: "4", name: "Ana Cruz",     college: "CSS Stallions",  sport: "Volleyball Women", position: "Setter",        jersey: 3,  createdAt: new Date().toISOString() },
+  { id: "1", teamId: "1", name: "Juan Santos",  college: "COS Scions",    sport: "Basketball Men",   position: "Point Guard",   jersey: 7,  studentId: "2024-001234", verificationStatus: "verified", verifiedAt: new Date().toISOString(), createdAt: new Date().toISOString() },
+  { id: "2", teamId: "2", name: "Maria Garcia", college: "COS Scions",    sport: "Basketball Men",   position: "Small Forward", jersey: 10, studentId: "2024-001235", verificationStatus: "unverified", createdAt: new Date().toISOString() },
+  { id: "3", teamId: "3", name: "Carlos Reyes", college: "SOM Tycoons",   sport: "Basketball Men",   position: "Center",        jersey: 5,  studentId: "2024-001236", verificationStatus: "verified", verifiedAt: new Date().toISOString(), createdAt: new Date().toISOString() },
+  { id: "4", teamId: "4", name: "Ana Cruz",     college: "CSS Stallions",  sport: "Volleyball Women", position: "Setter",        jersey: 3,  studentId: "2024-001237", verificationStatus: "rejected", createdAt: new Date().toISOString() },
 ];
 
 export const DataManager = {

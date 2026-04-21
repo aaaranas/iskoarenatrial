@@ -1,130 +1,55 @@
 "use client";
-import React, { useState, useMemo, useEffect } from "react";
-import { AnalyticsCard } from "../teams/AnalyticsCard";
-import { CollegeTable } from "../teams/CollegeTable";
- 
-export interface College {
-  name: string;
-  established: string;
-  activeTeams: number;
-  sports: string[];
-  status: "Active" | "Pending" | "Inactive";
-}
- 
-const MOCK_COLLEGES: College[] = [
-  { name: "College of Engineering", established: "1910", activeTeams: 42, sports: ["Basketball", "Esports"], status: "Active" },
-  { name: "Arts & Sciences", established: "1908", activeTeams: 35, sports: ["Volleyball", "Debate"], status: "Active" },
-  { name: "Business School", established: "1922", activeTeams: 28, sports: ["Basketball", "Football"], status: "Pending" },
-  { name: "College of Medicine", established: "1915", activeTeams: 12, sports: ["Badminton", "Tennis"], status: "Active" },
-];
- 
-const ALL_SPORTS = Array.from(
-  new Set(MOCK_COLLEGES.flatMap((c) => c.sports))
-).sort();
- 
-const PAGE_SIZE = 2;
- 
-// ── Skeleton components ───────────────────────────────────────────────────────
-function SkeletonRow() {
-  return (
-    <tr className="border-b border-gray-800">
-      <td className="py-6">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-white/5 animate-pulse" />
-          <div className="space-y-2">
-            <div className="w-40 h-3 rounded bg-white/5 animate-pulse" />
-            <div className="w-20 h-2 rounded bg-white/5 animate-pulse" />
-          </div>
-        </div>
-      </td>
-      <td><div className="w-8 h-3 rounded bg-white/5 animate-pulse" /></td>
-      <td>
-        <div className="flex gap-2">
-          <div className="w-16 h-5 rounded bg-white/5 animate-pulse" />
-          <div className="w-16 h-5 rounded bg-white/5 animate-pulse" />
-        </div>
-      </td>
-      <td><div className="w-14 h-3 rounded bg-white/5 animate-pulse" /></td>
-    </tr>
-  );
-}
- 
-function TableSkeleton() {
-  return (
-    <div className="bg-[#111] border border-gray-800 rounded-3xl p-8">
-      <div className="flex justify-between items-center mb-8">
-        <div className="w-48 h-5 rounded bg-white/5 animate-pulse" />
-        <div className="w-32 h-8 rounded-full bg-white/5 animate-pulse" />
-      </div>
-      <table className="w-full text-left">
-        <thead>
-          <tr className="text-gray-500 text-[10px] uppercase tracking-widest border-b border-gray-800">
-            <th className="pb-4">College Name</th>
-            <th className="pb-4">Active Teams</th>
-            <th className="pb-4">Primary Sports</th>
-            <th className="pb-4">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from({ length: PAGE_SIZE }).map((_, i) => (
-            <SkeletonRow key={i} />
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
- 
-// ── Add Team Modal ────────────────────────────────────────────────────────────
-const EMPTY_FORM = { name: "", established: "", activeTeams: "", sports: "", status: "Active" as College["status"] };
- 
-function AddTeamModal({
+import React, { useState, useEffect } from "react";
+import { College } from "../teams/CollegeTable";
+import { CollegeCard } from "../teams/CollegeCard";
+import { CollegeProfilePage } from "../teams/CollegeProfilePage";
+import { supabase } from "@/lib/supabase/client";
+
+const EMPTY_FORM = {
+  name: "",
+  established: "",
+  activeTeams: "",
+  sports: "",
+  status: "Active" as College["status"],
+};
+
+function AddCollegeModal({
   colleges,
   onClose,
   onAdd,
 }: {
   colleges: College[];
   onClose: () => void;
-  onAdd: (college: College) => void;
+  onAdd: (c: College) => Promise<void>; // ✅ changed to Promise<void>
 }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<typeof EMPTY_FORM>>({});
- 
+
   const isDuplicate = (name: string) =>
-    colleges.some((c) => c.name.trim().toLowerCase() === name.trim().toLowerCase());
- 
+    colleges.some(
+      (c) => c.name.trim().toLowerCase() === name.trim().toLowerCase()
+    );
+
   const validate = () => {
-    const newErrors: Partial<typeof EMPTY_FORM> = {};
- 
-    if (!form.name.trim()) {
-      newErrors.name = "College name is required.";
-    } else if (isDuplicate(form.name)) {
-      newErrors.name = `"${form.name.trim()}" already exists. Duplicate entries are not allowed.`;
-    }
- 
-    if (!form.established.trim()) {
-      newErrors.established = "Year established is required.";
-    } else if (!/^\d{4}$/.test(form.established.trim())) {
-      newErrors.established = "Enter a valid 4-digit year.";
-    }
- 
-    if (!form.activeTeams.trim()) {
-      newErrors.activeTeams = "Active teams count is required.";
-    } else if (isNaN(Number(form.activeTeams)) || Number(form.activeTeams) < 0) {
-      newErrors.activeTeams = "Enter a valid number.";
-    }
- 
-    if (!form.sports.trim()) {
-      newErrors.sports = "At least one sport is required.";
-    }
- 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const e: Partial<typeof EMPTY_FORM> = {};
+    if (!form.name.trim()) e.name = "Required.";
+    else if (isDuplicate(form.name))
+      e.name = `"${form.name.trim()}" already exists.`;
+    if (!form.established.trim()) e.established = "Required.";
+    else if (!/^\d{4}$/.test(form.established.trim()))
+      e.established = "Enter a valid 4-digit year.";
+    if (!form.activeTeams.trim()) e.activeTeams = "Required.";
+    else if (isNaN(Number(form.activeTeams)) || Number(form.activeTeams) < 0)
+      e.activeTeams = "Invalid number.";
+    if (!form.sports.trim()) e.sports = "Required.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
- 
-  const handleSubmit = () => {
+
+  // ✅ now async, awaits onAdd before closing
+  const handleSubmit = async () => {
     if (!validate()) return;
-    onAdd({
+    await onAdd({
       name: form.name.trim(),
       established: form.established.trim(),
       activeTeams: Number(form.activeTeams),
@@ -133,444 +58,265 @@ function AddTeamModal({
     });
     onClose();
   };
- 
-  // Live duplicate check as user types
-  const liveDuplicate = form.name.trim() && isDuplicate(form.name);
- 
+
+  const inputCls = (err?: string) =>
+    `w-full bg-white/5 border rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/20 outline-none transition-all ${
+      err ? "border-[#A91D3A]" : "border-white/8 focus:border-[#A91D3A]/50"
+    }`;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#111] border border-gray-800 rounded-3xl p-8 w-full max-w-md shadow-2xl">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-black text-white tracking-tight">Add New Team</h2>
-          <button
-            onClick={onClose}
-            className="text-white/30 hover:text-white transition-colors text-xl leading-none"
-          >
-            ✕
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl w-full max-w-md shadow-2xl">
+        <div className="flex justify-between items-center px-6 py-5 border-b border-[#111]">
+          <div>
+            <h2 className="text-base font-bold text-white">Add New College</h2>
+            <p className="text-[#444] text-xs mt-0.5">Fill in the details below</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center text-[#444] hover:text-white text-sm">✕</button>
         </div>
- 
-        <div className="space-y-5">
-          {/* College Name */}
+
+        <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="text-white/40 text-[10px] uppercase tracking-widest font-bold block mb-1">
-              College Name
-            </label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => {
-                setForm((f) => ({ ...f, name: e.target.value }));
-                setErrors((er) => ({ ...er, name: undefined }));
-              }}
-              placeholder="e.g. College of Law"
-              className={`w-full bg-white/5 border rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/20 outline-none transition-all ${
-                errors.name
-                  ? "border-[#A91D3A] focus:border-[#A91D3A]"
-                  : liveDuplicate
-                  ? "border-yellow-500/60"
-                  : "border-white/10 focus:border-[#A91D3A]/60"
-              }`}
-            />
-            {/* Live duplicate warning before submit */}
-            {!errors.name && liveDuplicate && (
-              <p className="text-yellow-400 text-[11px] mt-1 flex items-center gap-1">
-                ⚠ A college with this name already exists.
-              </p>
-            )}
-            {/* Validation error after submit attempt */}
-            {errors.name && (
-              <p className="text-[#A91D3A] text-[11px] mt-1 flex items-center gap-1">
-                ✕ {errors.name}
-              </p>
-            )}
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-[#444] mb-1.5">College Name</label>
+            <input type="text" value={form.name} onChange={(e) => { setForm((f) => ({ ...f, name: e.target.value })); setErrors((er) => ({ ...er, name: undefined })); }} placeholder="e.g. College of Law" className={inputCls(errors.name)} />
+            {errors.name && <p className="mt-1.5 text-[11px] text-[#A91D3A]">✕ {errors.name}</p>}
           </div>
- 
-          {/* Year Established */}
-          <div>
-            <label className="text-white/40 text-[10px] uppercase tracking-widest font-bold block mb-1">
-              Year Established
-            </label>
-            <input
-              type="text"
-              value={form.established}
-              onChange={(e) => {
-                setForm((f) => ({ ...f, established: e.target.value }));
-                setErrors((er) => ({ ...er, established: undefined }));
-              }}
-              placeholder="e.g. 1945"
-              className={`w-full bg-white/5 border rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/20 outline-none transition-all ${
-                errors.established ? "border-[#A91D3A]" : "border-white/10 focus:border-[#A91D3A]/60"
-              }`}
-            />
-            {errors.established && (
-              <p className="text-[#A91D3A] text-[11px] mt-1">✕ {errors.established}</p>
-            )}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-[#444] mb-1.5">Year Established</label>
+              <input type="text" value={form.established} onChange={(e) => { setForm((f) => ({ ...f, established: e.target.value })); setErrors((er) => ({ ...er, established: undefined })); }} placeholder="e.g. 1945" className={inputCls(errors.established)} />
+              {errors.established && <p className="mt-1.5 text-[11px] text-[#A91D3A]">✕ {errors.established}</p>}
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-[#444] mb-1.5">Active Teams</label>
+              <input type="number" min={0} value={form.activeTeams} onChange={(e) => { setForm((f) => ({ ...f, activeTeams: e.target.value })); setErrors((er) => ({ ...er, activeTeams: undefined })); }} placeholder="e.g. 20" className={inputCls(errors.activeTeams)} />
+              {errors.activeTeams && <p className="mt-1.5 text-[11px] text-[#A91D3A]">✕ {errors.activeTeams}</p>}
+            </div>
           </div>
- 
-          {/* Active Teams */}
           <div>
-            <label className="text-white/40 text-[10px] uppercase tracking-widest font-bold block mb-1">
-              Active Teams
-            </label>
-            <input
-              type="number"
-              min={0}
-              value={form.activeTeams}
-              onChange={(e) => {
-                setForm((f) => ({ ...f, activeTeams: e.target.value }));
-                setErrors((er) => ({ ...er, activeTeams: undefined }));
-              }}
-              placeholder="e.g. 20"
-              className={`w-full bg-white/5 border rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/20 outline-none transition-all ${
-                errors.activeTeams ? "border-[#A91D3A]" : "border-white/10 focus:border-[#A91D3A]/60"
-              }`}
-            />
-            {errors.activeTeams && (
-              <p className="text-[#A91D3A] text-[11px] mt-1">✕ {errors.activeTeams}</p>
-            )}
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-[#444] mb-1.5">Sports (comma-separated)</label>
+            <input type="text" value={form.sports} onChange={(e) => { setForm((f) => ({ ...f, sports: e.target.value })); setErrors((er) => ({ ...er, sports: undefined })); }} placeholder="e.g. Basketball, Tennis" className={inputCls(errors.sports)} />
+            {errors.sports && <p className="mt-1.5 text-[11px] text-[#A91D3A]">✕ {errors.sports}</p>}
           </div>
- 
-          {/* Sports */}
           <div>
-            <label className="text-white/40 text-[10px] uppercase tracking-widest font-bold block mb-1">
-              Sports <span className="normal-case text-white/20">(comma-separated)</span>
-            </label>
-            <input
-              type="text"
-              value={form.sports}
-              onChange={(e) => {
-                setForm((f) => ({ ...f, sports: e.target.value }));
-                setErrors((er) => ({ ...er, sports: undefined }));
-              }}
-              placeholder="e.g. Basketball, Tennis"
-              className={`w-full bg-white/5 border rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/20 outline-none transition-all ${
-                errors.sports ? "border-[#A91D3A]" : "border-white/10 focus:border-[#A91D3A]/60"
-              }`}
-            />
-            {errors.sports && (
-              <p className="text-[#A91D3A] text-[11px] mt-1">✕ {errors.sports}</p>
-            )}
-          </div>
- 
-          {/* Status */}
-          <div>
-            <label className="text-white/40 text-[10px] uppercase tracking-widest font-bold block mb-1">
-              Status
-            </label>
-            <select
-              value={form.status}
-              onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as College["status"] }))}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white outline-none focus:border-[#A91D3A]/60 transition-all"
-            >
-              <option value="Active">Active</option>
-              <option value="Pending">Pending</option>
-              <option value="Inactive">Inactive</option>
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-[#444] mb-1.5">Status</label>
+            <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as College["status"] }))} className={inputCls()} style={{ backgroundColor: "#0a0a0a", color: "white" }}>
+              <option value="Active" style={{ backgroundColor: "#0a0a0a" }}>Active</option>
+              <option value="Pending" style={{ backgroundColor: "#0a0a0a" }}>Pending</option>
+              <option value="Inactive" style={{ backgroundColor: "#0a0a0a" }}>Inactive</option>
             </select>
           </div>
         </div>
- 
-        {/* Actions */}
-        <div className="flex gap-3 mt-8">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2 rounded-lg border border-white/10 text-white/50 text-sm font-semibold hover:border-white/30 hover:text-white transition-all"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="flex-1 py-2 rounded-lg bg-[#A91D3A] hover:bg-[#c4223f] text-white text-sm font-semibold transition-all shadow-[0_0_16px_rgba(169,29,58,0.4)]"
-          >
-            Add Team
-          </button>
+
+        <div className="flex gap-3 px-6 py-4 border-t border-[#111]">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-[#1a1a1a] text-[#444] text-sm font-semibold hover:border-[#333] hover:text-white transition-all">Cancel</button>
+          <button onClick={handleSubmit} className="flex-1 py-2.5 rounded-xl bg-[#A91D3A] hover:bg-[#c4223f] text-white text-sm font-semibold transition-all">Add College</button>
         </div>
       </div>
     </div>
   );
 }
- 
-// ── Delete Team Modal ─────────────────────────────────────────────────────────
-function DeleteTeamModal({
-  college,
-  onClose,
-  onConfirm,
-}: {
-  college: College;
-  onClose: () => void;
-  onConfirm: () => void;
-}) {
+
+function DeleteCollegeModal({ college, onClose, onConfirm }: { college: College; onClose: () => void; onConfirm: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#111] border border-gray-800 rounded-3xl p-8 w-full max-w-sm shadow-2xl">
-        {/* Icon */}
-        <div className="flex justify-center mb-5">
-          <div className="w-14 h-14 rounded-2xl bg-[#A91D3A]/10 border border-[#A91D3A]/20 flex items-center justify-center text-2xl">
-            🗑
-          </div>
-        </div>
- 
-        {/* Text */}
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-black text-white tracking-tight mb-2">Delete Team</h2>
-          <p className="text-white/40 text-sm leading-relaxed">
-            Are you sure you want to delete{" "}
-            <span className="text-white font-semibold">{college.name}</span>?
-            <br />
-            This action cannot be undone.
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl w-full max-w-sm shadow-2xl">
+        <div className="px-6 pt-6 pb-4 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-[#A91D3A]/10 border border-[#A91D3A]/20 flex items-center justify-center text-xl mx-auto mb-4">🗑</div>
+          <h2 className="text-base font-bold text-white mb-1">Delete College</h2>
+          <p className="text-[#444] text-sm leading-relaxed">
+            Are you sure you want to remove <span className="text-white font-semibold">{college.name}</span>? This cannot be undone.
           </p>
         </div>
- 
-        {/* College summary pill */}
-        <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#A91D3A]/20 flex items-center justify-center text-xs font-black text-[#A91D3A]">
-            {college.name.charAt(0)}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-semibold truncate">{college.name}</p>
-            <p className="text-white/30 text-[11px]">
-              Est. {college.established} · {college.activeTeams} teams
-            </p>
-          </div>
-          <span
-            className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${
-              college.status === "Active"
-                ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/10"
-                : college.status === "Pending"
-                ? "text-yellow-400 border-yellow-400/30 bg-yellow-400/10"
-                : "text-white/30 border-white/10 bg-white/5"
-            }`}
-          >
-            {college.status}
-          </span>
-        </div>
- 
-        {/* Actions */}
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2 rounded-lg border border-white/10 text-white/50 text-sm font-semibold hover:border-white/30 hover:text-white transition-all"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => {
-              onConfirm();
-              onClose();
-            }}
-            className="flex-1 py-2 rounded-lg bg-[#A91D3A] hover:bg-[#c4223f] text-white text-sm font-semibold transition-all shadow-[0_0_16px_rgba(169,29,58,0.4)]"
-          >
-            Delete
-          </button>
+        <div className="flex gap-3 px-6 pb-6">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-[#1a1a1a] text-[#444] text-sm font-semibold hover:border-[#333] hover:text-white transition-all">Cancel</button>
+          <button onClick={() => { onConfirm(); onClose(); }} className="flex-1 py-2.5 rounded-xl bg-[#A91D3A] hover:bg-[#c4223f] text-white text-sm font-semibold transition-all">Delete</button>
         </div>
       </div>
     </div>
   );
 }
- 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+
 export default function TeamsPage() {
-  const [search, setSearch] = useState("");
-  const [selectedSport, setSelectedSport] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [colleges, setColleges] = useState<College[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<College | null>(null);
- 
+  const [profileCollege, setProfileCollege] = useState<College | null>(null);
+
+  // ✅ Fetch from Supabase teams table
   useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setColleges(MOCK_COLLEGES);
+    async function loadColleges() {
+      const { data, error } = await (supabase as any)
+        .from("teams")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("❌ Error fetching:", error);
+      } else {
+        console.log("✅ Fetched data:", data);
+        setColleges(
+          data.map((t: any) => ({
+            name: t.college,
+            established: t.established ?? "N/A",
+            activeTeams: t.active_teams ?? 0,
+            sports: t.sports ?? [],
+            status: t.status ?? "Active",
+          }))
+        );
+      }
       setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
+    }
+    loadColleges();
   }, []);
- 
-  const handleAddCollege = (college: College) => {
+
+  // ✅ Add college — saves to Supabase so it persists
+  const handleAddCollege = async (college: College) => {
+    console.log("📤 Attempting to insert:", college);
+
+    const { data, error } = await (supabase as any)
+      .from("teams")
+      .insert({
+        college: college.name,
+        name: college.name,
+        established: college.established,
+        active_teams: college.activeTeams,
+        sports: college.sports,
+        status: college.status,
+        org: "",
+      })
+      .select();
+
+    console.log("📥 Insert result — data:", data, "error:", error);
+
+    if (error) {
+      console.error("❌ Error adding college:", error.message, error.details, error.hint);
+      return;
+    }
+
+    console.log("✅ Successfully added!");
     setColleges((prev) => [...prev, college]);
   };
- 
-  const handleDeleteCollege = (college: College) => {
-    setColleges((prev) => prev.filter((c) => c.name !== college.name));
+
+  // ✅ Delete college — removes from Supabase permanently
+  const handleDeleteCollege = async (collegeName: string) => {
+    const { error } = await (supabase as any)
+      .from("teams")
+      .delete()
+      .eq("college", collegeName);
+
+    if (error) {
+      console.error("❌ Error deleting:", error);
+      return;
+    }
+
+    setColleges((prev) => prev.filter((c) => c.name !== collegeName));
   };
- 
-  const filteredColleges = useMemo(() => {
-    setCurrentPage(1);
-    return colleges.filter((c) => {
-      const matchesSearch =
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.sports.some((s) => s.toLowerCase().includes(search.toLowerCase()));
-      const matchesSport = selectedSport ? c.sports.includes(selectedSport) : true;
-      return matchesSearch && matchesSport;
-    });
-  }, [search, selectedSport, colleges]);
- 
-  const totalPages = Math.ceil(filteredColleges.length / PAGE_SIZE);
-  const paginatedColleges = filteredColleges.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
+
+  const filtered = colleges.filter(
+    (c) =>
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.sports.some((s) => s.toLowerCase().includes(search.toLowerCase()))
   );
- 
+
+  if (profileCollege) {
+    return (
+      <div className="min-h-screen bg-[#050505]">
+        <CollegeProfilePage college={profileCollege} onBack={() => setProfileCollege(null)} />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#0A0A0A] p-8">
+    <div className="min-h-screen bg-[#050505]">
       {showModal && (
-        <AddTeamModal
+        <AddCollegeModal
           colleges={colleges}
           onClose={() => setShowModal(false)}
           onAdd={handleAddCollege}
         />
       )}
- 
       {deleteTarget && (
-        <DeleteTeamModal
+        <DeleteCollegeModal
           college={deleteTarget}
           onClose={() => setDeleteTarget(null)}
-          onConfirm={() => handleDeleteCollege(deleteTarget)}
+          onConfirm={() => handleDeleteCollege(deleteTarget.name)}
         />
       )}
- 
-      {/* Sticky header */}
-      <header className="sticky top-0 z-50 -mx-8 -mt-8 mb-8 bg-[#0A0A0A]/90 backdrop-blur-md border-b border-white/5 px-8 py-5">
-        <div className="max-w-[1600px] mx-auto flex justify-between items-center gap-4">
-          <h1 className="text-4xl font-black flex items-center gap-4 italic tracking-tight text-white">
-            <div className="w-2 h-10 bg-[#A91D3A] rounded-full shadow-[0_0_20px_rgba(169,29,58,0.6)]" />
-            TEAMS &amp; ORGANIZATIONS
-          </h1>
- 
-          <div className="flex items-center gap-3">
-            <input
-              type="text"
-              placeholder="Search colleges or sports..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              disabled={isLoading}
-              className="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/30 outline-none focus:border-[#A91D3A]/60 transition-all w-64 disabled:opacity-40 disabled:cursor-not-allowed"
-            />
-            <button
-              disabled={isLoading}
-              onClick={() => setShowModal(true)}
-              className="bg-[#A91D3A] hover:bg-[#c4223f] transition-colors text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-[0_0_16px_rgba(169,29,58,0.4)] disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              + Add Team
-            </button>
-          </div>
+
+      {/* Hero */}
+      <div className="px-10 pt-14 pb-12 text-center border-b border-[#0f0f0f]">
+        <h1 className="text-white text-6xl uppercase leading-none tracking-wide mb-3" style={{ fontFamily: "'Anton', sans-serif" }}>
+          Participating <span className="text-[#A91D3A]">Colleges</span>
+        </h1>
+        <p className="text-[#444] text-sm max-w-sm mx-auto mb-9 leading-relaxed">
+          Discover the colleges and universities competing in this season's league.
+        </p>
+        <div className="max-w-md mx-auto relative">
+          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#333] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search schools by name or sport..."
+            className="w-full bg-[#0f0f0f] border border-[#1a1a1a] rounded-full py-3.5 pl-11 pr-5 text-sm text-white placeholder:text-[#333] outline-none focus:border-[#A91D3A]/40 transition-all"
+          />
         </div>
-      </header>
- 
-      <div className="max-w-[1600px] mx-auto space-y-8">
-        <AnalyticsCard />
- 
-        {/* Sport Filter Chips */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-white/40 text-[10px] uppercase tracking-widest font-bold">Filter by Sport</span>
+      </div>
+
+      {/* Grid section */}
+      <div className="px-10 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <span className="text-[10px] font-bold text-[#333] uppercase tracking-widest">
+            {isLoading ? "Loading..." : `${filtered.length} College${filtered.length !== 1 ? "s" : ""}`}
+          </span>
           <button
-            onClick={() => setSelectedSport(null)}
-            disabled={isLoading}
-            className={`px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest border transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${
-              selectedSport === null
-                ? "bg-[#A91D3A] border-[#A91D3A] text-white shadow-[0_0_12px_rgba(169,29,58,0.5)]"
-                : "bg-white/5 border-white/10 text-white/50 hover:border-white/30 hover:text-white/80"
-            }`}
+            onClick={() => setShowModal(true)}
+            className="bg-[#A91D3A] hover:bg-[#c4223f] text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all flex items-center gap-1.5"
           >
-            All
+            + Add College
           </button>
-          {ALL_SPORTS.map((sport) => (
-            <button
-              key={sport}
-              onClick={() => setSelectedSport(selectedSport === sport ? null : sport)}
-              disabled={isLoading}
-              className={`px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest border transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${
-                selectedSport === sport
-                  ? "bg-[#A91D3A] border-[#A91D3A] text-white shadow-[0_0_12px_rgba(169,29,58,0.5)]"
-                  : "bg-white/5 border-white/10 text-white/50 hover:border-white/30 hover:text-white/80"
-              }`}
-            >
-              {sport}
-            </button>
-          ))}
         </div>
- 
-        {/* Active filter indicator */}
-        {!isLoading && selectedSport && (
-          <div className="flex items-center gap-2 text-sm text-white/40">
-            Showing colleges with
-            <span className="text-[#A91D3A] font-semibold">{selectedSport}</span>
-            <button
-              onClick={() => setSelectedSport(null)}
-              className="text-white/20 hover:text-white/60 transition-colors text-xs underline"
-            >
-              clear
-            </button>
-          </div>
-        )}
- 
-        {/* Loading skeleton */}
-        {isLoading && <TableSkeleton />}
- 
-        {/* Loaded content */}
-        {!isLoading && (
-          <>
-            {filteredColleges.length > 0 ? (
-              <>
-                <CollegeTable colleges={paginatedColleges} onDelete={(college) => setDeleteTarget(college)} />
- 
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between pt-2">
-                    <p className="text-white/30 text-xs">
-                      Showing{" "}
-                      <span className="text-white/60 font-semibold">
-                        {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredColleges.length)}
-                      </span>{" "}
-                      of{" "}
-                      <span className="text-white/60 font-semibold">{filteredColleges.length}</span> colleges
-                    </p>
- 
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest border border-white/10 text-white/50 hover:border-white/30 hover:text-white transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-                      >
-                        ← Prev
-                      </button>
- 
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-8 h-8 rounded-lg text-xs font-bold border transition-all duration-200 ${
-                            page === currentPage
-                              ? "bg-[#A91D3A] border-[#A91D3A] text-white shadow-[0_0_12px_rgba(169,29,58,0.5)]"
-                              : "bg-white/5 border-white/10 text-white/50 hover:border-white/30 hover:text-white"
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
- 
-                      <button
-                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest border border-white/10 text-white/50 hover:border-white/30 hover:text-white transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-                      >
-                        Next →
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="text-center py-20 text-white/30 text-sm">
-                {selectedSport && search
-                  ? `No colleges match "${search}" with sport "${selectedSport}"`
-                  : selectedSport
-                  ? `No colleges offer "${selectedSport}"`
-                  : `No colleges match "${search}"`}
+
+        {isLoading ? (
+          <div className="grid grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-[#0a0a0a] border border-[#111] rounded-xl overflow-hidden animate-pulse">
+                <div className="aspect-square bg-[#111]" />
+                <div className="p-4 space-y-3">
+                  <div className="h-3 bg-[#111] rounded-full w-3/4 mx-auto" />
+                  <div className="h-2 bg-[#111] rounded-full w-1/2 mx-auto" />
+                  <div className="h-8 bg-[#111] rounded-lg" />
+                </div>
               </div>
-            )}
-          </>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-24">
+            <p className="text-[#333] text-sm">No colleges match "{search}"</p>
+            <button onClick={() => setSearch("")} className="mt-3 text-[#A91D3A] text-xs hover:underline">Clear search</button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-4 gap-4">
+            {filtered.map((college) => (
+              <div key={college.name} className="relative group">
+                <CollegeCard college={college} onViewProfile={setProfileCollege} />
+                <button
+                  onClick={() => setDeleteTarget(college)}
+                  className="absolute top-2 right-2 w-7 h-7 bg-black/60 hover:bg-[#A91D3A] border border-white/10 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                  title="Delete"
+                >
+                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

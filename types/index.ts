@@ -13,6 +13,14 @@ export interface Admin {
   createdAt: string;
 }
 
+export interface College {
+  name: string;
+  established: string;
+  activeTeams: number;
+  sports: string[];
+  status: "Active" | "Pending" | "Inactive";
+}
+
 export interface Match {
   id: string;
   league: string; // Sport name
@@ -64,6 +72,9 @@ export interface Player {
   position: string;
   jersey: number;
   photo?: string | null;
+  studentId: string;
+  verificationStatus: 'unverified' | 'verified' | 'rejected';
+  verifiedAt?: string | null;
   createdAt: string;
 }
 

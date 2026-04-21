@@ -40,8 +40,9 @@ const navMain = [
 ];
 
 const manageItems = [
-  { label: "Media",    icon: ImageIcon, url: "/dashboard/media"    },
-  { label: "Teams",    icon: Users,     url: "/dashboard/teams"    },
+  { label: "Players", icon: Users, url: "/dashboard/players"   },
+  { label: "Media",   icon: ImageIcon, url: "/dashboard/media"    },
+  { label: "Teams",   icon: Users,     url: "/dashboard/teams"    },
   { label: "Archives", icon: Archive,   url: "/dashboard/archives" },
 ];
 
