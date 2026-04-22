@@ -2,163 +2,74 @@
 import * as React from "react"
 import Image from 'next/image';
 import {
-  LayoutDashboard,
-  BarChart3,
-  Image as ImageIcon,
-  Users,
-  Sword,
-  Archive,
-  LogOut,
-  User,
+  LayoutDashboard, BarChart3, Image as ImageIcon,
+  Users, Sword, Archive, User, Bell
 } from "lucide-react"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarRail,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent
-} from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+interface AppSidebarProps {
   onLogout: () => void;
   adminName: string;
 }
 
-const navMain = [
-  { label: "Dashboard",    icon: LayoutDashboard, url: "/dashboard"              },
-  { label: "Matches",      icon: Sword,           url: "/dashboard/matches"      },
-  { label: "Leaderboards", icon: BarChart3,        url: "/dashboard/leaderboards" },
+const allNavItems = [
+  { label: "Dashboard",    icon: LayoutDashboard, url: "/dashboard" },
+  { label: "Matches",      icon: Sword,           url: "/dashboard/matches" },
+  { label: "Leaderboards", icon: BarChart3,       url: "/dashboard/leaderboards" },
+  { label: "Media",        icon: ImageIcon,       url: "/dashboard/media" },
+  { label: "Teams",        icon: Users,           url: "/dashboard/teams" },
+  { label: "Archives",     icon: Archive,         url: "/dashboard/archives" },
 ];
 
-const manageItems = [
-  { label: "Media",    icon: ImageIcon, url: "/dashboard/media"    },
-  { label: "Teams",    icon: Users,     url: "/dashboard/teams"    },
-  { label: "Archives", icon: Archive,   url: "/dashboard/archives" },
-];
-
-export function AppSidebar({ onLogout, adminName, ...props }: AppSidebarProps) {
+export function AppSidebar({ onLogout, adminName }: AppSidebarProps) {
   const pathname = usePathname();
 
   return (
-    <Sidebar variant="inset" collapsible="icon" {...props} className="bg-background border-r border-border/50">
-      {/* Brand Header */}
-      <SidebarHeader className="h-14 bg-background flex items-center justify-center border-b border-border/50 px-4">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="hover:bg-transparent cursor-default">
-              <div className="flex size-8 items-center justify-center rounded-full bg-foreground text-background font-bold text-[10px] uppercase shadow-sm transition-all group-data-[collapsible=icon]:size-8">
-                <Image
-                  src="/logo.png"
-                  width={500}
-                  height={500}
-                  alt="IskoArena logo"
-                />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-semibold tracking-tight">IskoArena</span>
-                <span className="truncate text-[10px] text-muted-foreground uppercase font-medium tracking-tighter">Admin Console</span>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
+    <header className="fixed top-0 left-0 right-0 h-16 border-b border-zinc-800 bg-[#121212] z-50 flex items-center px-7">
+      {/* Logo Area */}
+      <div className="flex items-center gap-4 pr-6">
+        {/* Added border and background to logo for better visibility */}
+        <div className="p-1.5 rounded-full border border-white/10 bg-white/5 shadow-sm">
+          <Image src="/logo.png" width={32} height={32} alt="Logo" className="rounded-full" />
+        </div>
+        <h1 className="text-xl font-bold tracking-wide text-white">IskoArena</h1>
+      </div>
 
-      <SidebarContent className="gap-0 bg-background">
-        {/* Overview Group */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Overview</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navMain.map((item) => (
-                <SidebarMenuItem key={item.label}>
-                  <SidebarMenuButton
-                    asChild
-                    tooltip={item.label}
-                    isActive={pathname === item.url}
-                    className={cn(
-                      "transition-all hover:bg-zinc-900",
-                      pathname === item.url && "bg-zinc-900 text-[#C5A059] font-bold"
-                    )}
-                  >
-                    <Link href={item.url}>
-                      <item.icon className={cn(
-                        "w-4 h-4",
-                        pathname === item.url ? "text-[#C5A059]" : "text-zinc-500"
-                      )} />
-                      <span className="text-[11px] uppercase tracking-wider">{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      {/* Navigation - Flex Row */}
+      <nav className="flex-1 flex items-center justify-center gap-8 px-4">
+        {allNavItems.map((item) => (
+          <Link 
+            key={item.label}
+            href={item.url}
+            className={cn(
+              "transition-colors text-xs font-semibold uppercase tracking-wider py-1.5",
+              pathname === item.url 
+                ? "text-[#FF3300]" 
+                : "text-zinc-400 hover:text-white" 
+            )}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </nav>
 
-        {/* Management Group */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Management</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {manageItems.map((item) => (
-                <SidebarMenuItem key={item.label}>
-                  <SidebarMenuButton
-                    asChild
-                    tooltip={item.label}
-                    isActive={pathname === item.url}
-                    className={cn(
-                      "transition-all hover:bg-zinc-900",
-                      pathname === item.url && "bg-zinc-900 text-[#C5A059] font-bold"
-                    )}
-                  >
-                    <Link href={item.url}>
-                      <item.icon className={cn(
-                        "w-4 h-4",
-                        pathname === item.url ? "text-[#C5A059]" : "text-zinc-500"
-                      )} />
-                      <span className="text-[11px] uppercase tracking-wider">{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-
-      {/* User Footer */}
-      <SidebarFooter className="border-t border-border/50 p-2 bg-background">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              className="hover:bg-accent/50 group-data-[collapsible=icon]:justify-center px-2"
-              onClick={onLogout}
-            >
-              <div className="flex size-8 items-center justify-center rounded-full bg-muted border border-border">
-                <User className="size-4 text-muted-foreground" />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-semibold text-xs tracking-tight">{adminName}</span>
-                <div className="flex items-center gap-1.5">
-                  <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="truncate text-[10px] text-muted-foreground uppercase font-bold tracking-tight">Active</span>
-                </div>
-              </div>
-              <LogOut className="ml-auto size-3.5 text-muted-foreground group-data-[collapsible=icon]:hidden" />
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-      <SidebarRail />
-    </Sidebar>
+      {/* User Area (Right Section) */}
+      <div className="flex items-center gap-6 pl-4 border-l border-zinc-800/50 h-8">
+        <button className="text-zinc-400 hover:text-white transition-colors">
+          <Bell className="size-4.5" />
+        </button>
+        <div className="flex size-8 items-center justify-center rounded-full bg-zinc-800 border border-zinc-600 shadow-inner">
+          <User className="size-4 text-zinc-300" />
+        </div>
+        <button 
+          onClick={onLogout} 
+          className="text-xs font-semibold uppercase tracking-wider text-zinc-400 hover:text-white transition-colors"
+        >
+          Log out
+        </button>
+      </div>
+    </header>
   )
 }
