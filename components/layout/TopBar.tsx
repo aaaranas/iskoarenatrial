@@ -19,7 +19,6 @@ const titleMap: Record<string, string> = {
   results:   "Record Results",
   media:     "Media Library",
   teams:     "Teams & Players",
-  archives:  "Data Archives",
 };
 
 const navItems = [

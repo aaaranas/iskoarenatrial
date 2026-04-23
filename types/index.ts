@@ -126,5 +126,4 @@ export type PageName =
   | "results"
   | "stats"
   | "media"
-  | "teams"
-  | "archives";
+  | "teams";
