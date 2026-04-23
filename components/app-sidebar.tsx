@@ -20,7 +20,6 @@ const allNavItems = [
   { label: "Leaderboards", icon: BarChart3,       url: "/dashboard/leaderboards" },
   { label: "Media",        icon: ImageIcon,       url: "/dashboard/media" },
   { label: "Teams",        icon: Users,           url: "/dashboard/teams" },
-  { label: "Archives",     icon: Archive,         url: "/dashboard/archives" },
 ];
 
 export function AppSidebar({ onLogout, adminName }: AppSidebarProps) {

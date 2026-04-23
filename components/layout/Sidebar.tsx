@@ -31,7 +31,6 @@ const navItems: { page: PageName; icon: React.ElementType; label: string }[] = [
   { page: "stats", icon: BarChart3, label: "Stats" },
   { page: "media", icon: Image, label: "Media Upload" },
   { page: "teams", icon: Users, label: "Teams & Players" },
-  { page: "archives", icon: Archive, label: "Archives" },
 ];
 
 export default function Sidebar({ currentPage, onNavigate, onLogout, adminName }: SidebarProps) {
