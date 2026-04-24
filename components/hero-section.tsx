@@ -2,6 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
@@ -173,30 +174,32 @@ export default function HeroSection({ onLoginClick, onSignupClick }: HeroSection
                                 <ChevronRight className="ml-1 inline-block size-3" />
                             </Link>
                         </div>
+                        {/* TODO: Replace these placeholder logos with actual IskoArena
+                             partners/sponsors stored in /public/logos/             */}
                         <div className="group-hover:blur-xs mx-auto mt-12 grid max-w-2xl grid-cols-4 gap-x-12 gap-y-8 transition-all duration-500 group-hover:opacity-50 sm:gap-x-16 sm:gap-y-14">
                             <div className="flex">
-                                <img className="mx-auto h-5 w-fit dark:invert" src="https://html.tailus.io/blocks/customers/nvidia.svg" alt="Nvidia Logo" />
+                                <Image className="mx-auto dark:invert" src="https://html.tailus.io/blocks/customers/nvidia.svg" alt="Nvidia Logo" width={80} height={20} unoptimized />
                             </div>
                             <div className="flex">
-                                <img className="mx-auto h-4 w-fit dark:invert" src="https://html.tailus.io/blocks/customers/column.svg" alt="Column Logo" />
+                                <Image className="mx-auto dark:invert" src="https://html.tailus.io/blocks/customers/column.svg" alt="Column Logo" width={80} height={16} unoptimized />
                             </div>
                             <div className="flex">
-                                <img className="mx-auto h-4 w-fit dark:invert" src="https://html.tailus.io/blocks/customers/github.svg" alt="GitHub Logo" />
+                                <Image className="mx-auto dark:invert" src="https://html.tailus.io/blocks/customers/github.svg" alt="GitHub Logo" width={80} height={16} unoptimized />
                             </div>
                             <div className="flex">
-                                <img className="mx-auto h-5 w-fit dark:invert" src="https://html.tailus.io/blocks/customers/nike.svg" alt="Nike Logo" />
+                                <Image className="mx-auto dark:invert" src="https://html.tailus.io/blocks/customers/nike.svg" alt="Nike Logo" width={80} height={20} unoptimized />
                             </div>
                             <div className="flex">
-                                <img className="mx-auto h-5 w-fit dark:invert" src="https://html.tailus.io/blocks/customers/lemonsqueezy.svg" alt="Lemon Squeezy Logo" />
+                                <Image className="mx-auto dark:invert" src="https://html.tailus.io/blocks/customers/lemonsqueezy.svg" alt="Lemon Squeezy Logo" width={80} height={20} unoptimized />
                             </div>
                             <div className="flex">
-                                <img className="mx-auto h-4 w-fit dark:invert" src="https://html.tailus.io/blocks/customers/laravel.svg" alt="Laravel Logo" />
+                                <Image className="mx-auto dark:invert" src="https://html.tailus.io/blocks/customers/laravel.svg" alt="Laravel Logo" width={80} height={16} unoptimized />
                             </div>
                             <div className="flex">
-                                <img className="mx-auto h-7 w-fit dark:invert" src="https://html.tailus.io/blocks/customers/lilly.svg" alt="Lilly Logo" />
+                                <Image className="mx-auto dark:invert" src="https://html.tailus.io/blocks/customers/lilly.svg" alt="Lilly Logo" width={80} height={28} unoptimized />
                             </div>
                             <div className="flex">
-                                <img className="mx-auto h-6 w-fit dark:invert" src="https://html.tailus.io/blocks/customers/openai.svg" alt="OpenAI Logo" />
+                                <Image className="mx-auto dark:invert" src="https://html.tailus.io/blocks/customers/openai.svg" alt="OpenAI Logo" width={80} height={24} unoptimized />
                             </div>
                         </div>
                     </div>

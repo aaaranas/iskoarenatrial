@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { MatchCard } from "./MatchCard";
 import { Match } from "@/types"; // Ensure this points to your updated index.ts
@@ -23,12 +23,11 @@ import {
 import { AddMatchModal } from "./AddMatchModal";
 import { FinalizeMatchModal } from "./FinalizeMatchModal";
 
-const FILTER_OPTIONS = {
+const STATIC_FILTER_OPTIONS = {
   category: ["Men's", "Women's", "Men's Singles", "Men's Doubles", "Women's Singles", "Women's Doubles", "Mixed Singles", "Mixed Doubles"],
   location: ["UP High School Gymnasium", "AS Hall", "Admin Field", "SOM Court", "PAH"],
-  college: [ "CCAD Phoenix", "SOM Tycoons", "COS Scions", "CSS Stallions"],
-  sport: ["Badminton", "Basketball", "Volleyball", "Table Tennis", "Larong Pinoy", "Pickleball", "Petanque", "Mobile Legends (ESPORTS)", "DOTA 2 (ESPORTS)", "Valorant (ESPORTS)", "Football"],
-  status: ["Live", "Upcoming", "Concluded", "Postponed"]
+  college: ["CCAD Phoenix", "SOM Tycoons", "COS Scions", "CSS Stallions"],
+  status: ["Live", "Upcoming", "Concluded", "Postponed"],
 };
 
 const ITEMS_PER_PAGE = 8;
@@ -42,6 +41,18 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
 
   const { data: auth } = trpc.auth.getSession.useQuery();
 
+  // ✅ Dynamic sport options — populated from the DB via tRPC
+  const { data: sportsData } = trpc.sport.getAll.useQuery();
+  const sportOptions = useMemo(
+    () => (sportsData ?? []).map((s: { name: string }) => s.name),
+    [sportsData]
+  );
+
+  const FILTER_OPTIONS = {
+    ...STATIC_FILTER_OPTIONS,
+    sport: sportOptions,
+  };
+
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
@@ -51,9 +62,6 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
     sport: "Sport",
     status: "Status"
   });
-  
-  const [matchToEdit, setMatchToEdit] = useState<Match | null>(null);
-  const [matchToDelete, setMatchToDelete] = useState<Match | null>(null);  
 
 
   // 3. FILTERING LOGIC (Aligned with your Match interface)
@@ -85,8 +93,8 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
   const endIdx = startIdx + ITEMS_PER_PAGE;
   const paginatedMatches = filteredMatches.slice(startIdx, endIdx);
 
-  // Reset to page 1 when filters change
-  useMemo(() => {
+  // ✅ useEffect — correct hook for side effects (state updates on dependency change)
+  useEffect(() => {
     setCurrentPage(1);
   }, [search, filters]);
 
@@ -100,9 +108,42 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="text-lg font-black  tracking-[0.2em] text-[#C5A059] animate-pulse">
-          Initializing Compendium...
+      <div className="relative bg-[#050505] min-h-screen text-zinc-100 w-full overflow-x-hidden">
+        {/* Hero skeleton */}
+        <div className="absolute top-0 left-0 w-full h-[70vh] bg-zinc-900/60 animate-pulse" />
+
+        <div className="relative z-10 pt-[25vh] sm:pt-[30vh] lg:pt-[35vh]">
+          {/* Title skeleton */}
+          <div className="max-w-[1600px] mx-auto px-6 mb-12">
+            <div className="h-10 w-64 bg-zinc-800 rounded animate-pulse mb-3" />
+            <div className="h-4 w-48 bg-zinc-800/60 rounded animate-pulse" />
+          </div>
+
+          {/* Filter bar skeleton */}
+          <div className="max-w-[1600px] mx-auto mb-12 px-6 flex flex-wrap gap-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-8 w-28 bg-zinc-800 rounded-md animate-pulse" />
+            ))}
+            <div className="ml-auto h-8 w-40 bg-zinc-800/60 rounded-md animate-pulse" />
+          </div>
+
+          {/* Card grid skeleton */}
+          <section className="max-w-[1600px] mx-auto px-6 pb-16">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="relative rounded-xl overflow-hidden bg-zinc-900 animate-pulse" style={{ height: "340px" }}>
+                  {/* Card image area */}
+                  <div className="absolute inset-0 bg-zinc-800" />
+                  {/* Card content at the bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 p-5 space-y-2">
+                    <div className="h-3 w-16 bg-zinc-700 rounded" />
+                    <div className="h-5 w-32 bg-zinc-700 rounded" />
+                    <div className="h-3 w-24 bg-zinc-700/60 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
       </div>
     );
@@ -211,11 +252,12 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
               <CarouselContent className="-ml-4 sm:-ml-6">
                 {myMatches.map((match) => (
                   <CarouselItem key={match.id} className="pl-4 sm:pl-6 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-					<MatchCard 
-    key={match.id} 
-    match={match} 
-    onOpenDetails={() => onSelectMatch(match)} // Pass the function here
-  />
+                    <MatchCard
+                      key={match.id}
+                      match={match}
+                      onOpenDetails={() => onSelectMatch(match)}
+                      onFinalize={() => setMatchToFinalize(match)}
+                    />
                   </CarouselItem>
                 ))}
               </CarouselContent>
@@ -231,29 +273,12 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {paginatedMatches.map((match) => (
-             <div 
-            key={match.id} 
-            onClick={() => onSelectMatch(match)} 
-            className="cursor-pointer"
-          >
-
-	{matchToFinalize && (
-       <FinalizeMatchModal 
-         match={matchToFinalize} 
-         isOpen={!!matchToFinalize} 
-         onClose={() => setMatchToFinalize(null)} 
-       />
-    )}
-	
-	    <MatchCard 
-    key={match.id} 
-    match={match} 
-    onOpenDetails={() => onSelectMatch(match)}
-    onEdit={() => setMatchToEdit(match)}   
-    onFinalize={() => setMatchToFinalize(match)}
-    onDelete={() => setMatchToDelete(match)} 
-  />
-          </div> 
+              <MatchCard
+                key={match.id}
+                match={match}
+                onOpenDetails={() => onSelectMatch(match)}
+                onFinalize={() => setMatchToFinalize(match)}
+              />
             ))}
           </div>
 
@@ -301,6 +326,15 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
             </div>
           )}
         </section>
+
+        {/* ✅ Hoisted modals — rendered once, outside the loop */}
+        {matchToFinalize && (
+          <FinalizeMatchModal
+            match={matchToFinalize}
+            isOpen={!!matchToFinalize}
+            onClose={() => setMatchToFinalize(null)}
+          />
+        )}
       </div>
     </div>
   );

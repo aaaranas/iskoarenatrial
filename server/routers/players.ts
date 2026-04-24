@@ -1,10 +1,10 @@
 import { router, publicProcedure } from "../trpc";
-import { supabase } from "@/lib/supabase/client";
+import { TRPCError } from "@trpc/server";
 
 export const playersRouter = router({
-  getAll: publicProcedure.query(async () => {
-    const { data, error } = await supabase.from("players").select("*");
-    if (error) throw error;
+  getAll: publicProcedure.query(async ({ ctx }) => {
+    const { data, error } = await ctx.supabase.from("players").select("*");
+    if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
     return data || [];
   }),
 });

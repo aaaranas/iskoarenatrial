@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { Search, Eye, Play, ArrowRight } from "lucide-react";
 
 // --- 1. PREMIUM HEADER ---
@@ -59,16 +60,22 @@ export const ArchiveFilterSidebar = ({ categories }: { categories: Category[] })
         </div>
       </div>
     </div>
-    <div className="px-2">
-      <div className="rounded-xl overflow-hidden relative group cursor-pointer border border-white/5">
-        <img src="https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=400" className="w-full h-32 object-cover opacity-50 group-hover:scale-110 transition-transform duration-700" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
-        <div className="absolute bottom-3 left-3">
-          <p className="text-[8px] text-[#A91D3A] font-black uppercase tracking-widest">Editor's Choice</p>
-          <p className="text-xs font-bold text-white uppercase italic">Season Finals '23</p>
+      <div className="px-2">
+        <div className="rounded-xl overflow-hidden relative group cursor-pointer border border-white/5" style={{ height: "128px" }}>
+          <Image
+            src="https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=400"
+            alt="Editor's Choice"
+            fill
+            sizes="288px"
+            className="object-cover opacity-50 group-hover:scale-110 transition-transform duration-700"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
+          <div className="absolute bottom-3 left-3">
+            <p className="text-[8px] text-[#A91D3A] font-black uppercase tracking-widest">Editor's Choice</p>
+            <p className="text-xs font-bold text-white uppercase italic">Season Finals '23</p>
+          </div>
         </div>
       </div>
-    </div>
   </aside>
 );
 
@@ -86,11 +93,17 @@ interface ArchiveItem {
 export const ArchiveCard = ({ item }: { item: ArchiveItem }) => (
   <div className="group relative">
     <div className="relative aspect-[16/10] mb-5 overflow-hidden rounded-xl border border-white/5 bg-[#0A0A0A]">
-      <img
-        src={item.img}
-        alt={item.title}
-        className="w-full h-full object-cover opacity-40 group-hover:opacity-100 group-hover:scale-110 transition-all duration-1000 grayscale group-hover:grayscale-0"
-      />
+      {item.img ? (
+        <Image
+          src={item.img}
+          alt={item.title}
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+          className="object-cover opacity-40 group-hover:opacity-100 group-hover:scale-110 transition-all duration-1000 grayscale group-hover:grayscale-0"
+        />
+      ) : (
+        <div className="absolute inset-0 bg-zinc-800" />
+      )}
       <div className="absolute inset-0 bg-[#A91D3A]/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
       <div className="absolute top-4 left-4 flex flex-col gap-2">
         <span className="bg-white text-black text-[10px] font-black px-2 py-0.5 tracking-tighter uppercase rounded-sm self-start">

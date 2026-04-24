@@ -57,16 +57,14 @@ export async function middleware(request: NextRequest) {
   // IMPORTANT: Do not use getSession(). Use getUser() for security in middleware.
   const { data: { user } } = await supabase.auth.getUser()
 
-  // 1. Protect Compendium Page (Redirect to Landing if not logged in)
-  if (!user && request.nextUrl.pathname.startsWith('/compendium')) {
+  // 1. Protect Dashboard — redirect unauthenticated users to the landing page
+  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
-  // 2. Auth Page Redirect (If logged in, don't show login/signup modals/pages)
-  // Since your Auth is in Modals on the landing page, you might not need this, 
-  // but it's good for safety if you have dedicated /login paths.
+  // 2. If a logged-in user somehow hits /login or /signup, send them to the dashboard
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
-    return NextResponse.redirect(new URL('/compendium', request.url))
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   return response

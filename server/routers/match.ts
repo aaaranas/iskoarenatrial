@@ -1,11 +1,10 @@
 import { router, publicProcedure, adminProcedure } from "../trpc";
 import { z } from "zod";
-import { supabase } from "@/lib/supabase/client";
 import { TRPCError } from "@trpc/server";
 
 export const matchRouter = router({
-  getAll: publicProcedure.query(async () => {
-    const { data, error } = await supabase
+  getAll: publicProcedure.query(async ({ ctx }) => {
+    const { data, error } = await ctx.supabase
       .from("matches")
       .select(`
         id,
@@ -14,10 +13,10 @@ export const matchRouter = router({
         home_score,
         away_score,
         created_at,
-        home_team:home_team_id (id, name, college),
-        away_team:away_team_id (id, name, college),
-        sport:sport_id (id, name),
-        venue:venue_id (id, name, location)
+        home_team:teams!matches_home_team_id_fkey (id, name, college),
+        away_team:teams!matches_away_team_id_fkey (id, name, college),
+        sport:sports!matches_sport_id_fkey (id, name),
+        venue:venues!matches_venue_id_fkey (id, name, location)
       `)
       .order("match_date", { ascending: false });
 
@@ -49,8 +48,8 @@ export const matchRouter = router({
       venue_id: z.string(),
       status: z.string().default("upcoming"),
     }))
-    .mutation(async ({ input }) => {
-      const { data, error } = await supabase
+    .mutation(async ({ ctx, input }) => {
+      const { data, error } = await ctx.supabase
         .from("matches")
         .insert({
           sport_id: input.sport_id,
@@ -75,10 +74,10 @@ export const matchRouter = router({
       status: z.string().optional(),
       match_date: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { id, ...updateFields } = input;
 
-      const { data, error } = await supabase
+      const { data, error } = await ctx.supabase
         .from("matches")
         .update(updateFields)
         .eq("id", id)
@@ -91,8 +90,8 @@ export const matchRouter = router({
 
   deleteMatch: adminProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      const { data, error } = await supabase
+    .mutation(async ({ ctx, input }) => {
+      const { data, error } = await ctx.supabase
         .from("matches")
         .delete()
         .eq("id", input.id)
@@ -103,15 +102,14 @@ export const matchRouter = router({
       return data;
     }),
 
-  // ── Added: update scores ──────────────────────────────────────────────────
   updateScore: adminProcedure
     .input(z.object({
       id: z.string(),
       homeScore: z.number(),
       awayScore: z.number(),
     }))
-    .mutation(async ({ input }) => {
-      const { data, error } = await supabase
+    .mutation(async ({ ctx, input }) => {
+      const { data, error } = await ctx.supabase
         .from("matches")
         .update({
           home_score: input.homeScore,

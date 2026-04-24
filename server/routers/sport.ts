@@ -1,10 +1,9 @@
 import { router, publicProcedure } from "../trpc";
-import { supabase } from "@/lib/supabase/client";
 import { TRPCError } from "@trpc/server";
 
 export const sportRouter = router({
-  getAll: publicProcedure.query(async () => {
-    const { data, error } = await supabase
+  getAll: publicProcedure.query(async ({ ctx }) => {
+    const { data, error } = await ctx.supabase
       .from("sports")
       .select("id, name")
       .order("name", { ascending: true });

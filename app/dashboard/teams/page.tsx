@@ -2,6 +2,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { AnalyticsCard } from "@/components/teams/AnalyticsCard";
 import { CollegeTable } from "@/components/teams/CollegeTable";
+import { trpc } from "@/utils/trpc";
 
 export interface College {
   name: string;
@@ -10,17 +11,6 @@ export interface College {
   sports: string[];
   status: "Active" | "Pending" | "Inactive";
 }
-
-const MOCK_COLLEGES: College[] = [
-  { name: "College of Engineering", established: "1910", activeTeams: 42, sports: ["Basketball", "Esports"], status: "Active" },
-  { name: "Arts & Sciences", established: "1908", activeTeams: 35, sports: ["Volleyball", "Debate"], status: "Active" },
-  { name: "Business School", established: "1922", activeTeams: 28, sports: ["Basketball", "Football"], status: "Pending" },
-  { name: "College of Medicine", established: "1915", activeTeams: 12, sports: ["Badminton", "Tennis"], status: "Active" },
-];
-
-const ALL_SPORTS = Array.from(
-  new Set(MOCK_COLLEGES.flatMap((c) => c.sports))
-).sort();
 
 const PAGE_SIZE = 2;
 
@@ -310,30 +300,49 @@ export default function TeamsPage() {
   const [search, setSearch] = useState("");
   const [selectedSport, setSelectedSport] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [colleges, setColleges] = useState<College[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<College | null>(null);
+  // Local-only additions/deletions until addTeam/deleteTeam mutations are added to the router
+  const [localAdded, setLocalAdded] = useState<College[]>([]);
+  const [localDeleted, setLocalDeleted] = useState<string[]>([]);
 
-  useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setColleges(MOCK_COLLEGES);
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  // ── Real data from tRPC ───────────────────────────────────────────────────
+  const { data: teamsData, isLoading } = trpc.teams.getAll.useQuery();
+
+  // Map DB shape (id, name, org, logo_url) → College UI shape
+  const colleges: College[] = useMemo(() => {
+    const fromDB: College[] = (teamsData ?? [])
+      .filter((t: any) => !localDeleted.includes(t.name))
+      .map((t: any) => ({
+        name: t.name ?? "Unknown",
+        established: t.established ?? "—",
+        activeTeams: t.active_teams ?? 0,
+        sports: t.sports ?? [],
+        status: (t.status as College["status"]) ?? "Active",
+      }));
+    return [...fromDB, ...localAdded];
+  }, [teamsData, localAdded, localDeleted]);
+
+  const ALL_SPORTS = useMemo(
+    () => Array.from(new Set(colleges.flatMap((c) => c.sports))).sort(),
+    [colleges]
+  );
 
   const handleAddCollege = (college: College) => {
-    setColleges((prev) => [...prev, college]);
+    setLocalAdded((prev) => [...prev, college]);
   };
 
   const handleDeleteCollege = (college: College) => {
-    setColleges((prev) => prev.filter((c) => c.name !== college.name));
+    setLocalAdded((prev) => prev.filter((c) => c.name !== college.name));
+    setLocalDeleted((prev) => [...prev, college.name]);
   };
 
-  const filteredColleges = useMemo(() => {
+  // ✅ useEffect for side effect — reset page on filter change
+  useEffect(() => {
     setCurrentPage(1);
+  }, [search, selectedSport]);
+
+  const filteredColleges = useMemo(() => {
     return colleges.filter((c) => {
       const matchesSearch =
         c.name.toLowerCase().includes(search.toLowerCase()) ||

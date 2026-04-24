@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import Image from "next/image";
 import { Match } from "@/types";
 import { MapPin, Edit3, Trash2, Clock } from "lucide-react";
 import { DeleteMatchModal } from "./DeleteMatchModal";
@@ -7,11 +8,13 @@ import { EditMatchModal } from "./EditMatchModal";
 
 interface MatchCardProps {
   match: Match;
-  onOpenDetails: () => void; 
-  onFinalize: () => boolean;
+  onOpenDetails: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onFinalize?: () => void;
 }
 
-export const MatchCard = ({ match, onOpenDetails, onFinalize }: MatchCardProps) => {
+export const MatchCard = ({ match, onOpenDetails, onEdit, onDelete, onFinalize }: MatchCardProps) => {
   const isLive = match.statusType?.toLowerCase() === "live";
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -36,10 +39,13 @@ export const MatchCard = ({ match, onOpenDetails, onFinalize }: MatchCardProps) 
 
       {/* Cinematic Poster Layer */}
       <div className="absolute inset-0 z-0">
-        <img
+        <Image
           src={cardImage}
-          alt="Match Poster"
-          className="h-full w-full object-cover transition-all duration-1000 grayscale-[0.5] brightness-[0.5] contrast-[1.1] group-hover:scale-105 group-hover:grayscale-0 group-hover:brightness-[0.7]"
+          alt={`${match.homeTeam} vs ${match.awayTeam}`}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          className="object-cover transition-all duration-1000 grayscale-[0.5] brightness-[0.5] contrast-[1.1] group-hover:scale-105 group-hover:grayscale-0 group-hover:brightness-[0.7]"
+          priority={false}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/20 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent opacity-60" />
@@ -48,19 +54,27 @@ export const MatchCard = ({ match, onOpenDetails, onFinalize }: MatchCardProps) 
       {/* Admin Quick Actions */}
       <div className="absolute top-4 right-4 z-50 flex flex-col gap-2 translate-x-10 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300" onClick={(e) => e.stopPropagation()}>
 
-	{isLive && onFinalize && (
-          <button 
-            onClick={onFinalize} 
+        {isLive && onFinalize && (
+          <button
+            onClick={onFinalize}
             className="p-2.5 bg-[#C5A059]/20 backdrop-blur-md rounded-full border border-[#C5A059] text-[#C5A059] hover:bg-[#C5A059] hover:text-black transition-all"
             title="Finalize Match"
           >
             <span className="text-[8px] font-black uppercase">End</span>
           </button>
         )}
-        <button onClick={() => setEditDialogOpen(true)} className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#C5A059] hover:text-black transition-all">
+        <button
+          onClick={() => { onEdit ? onEdit() : setEditDialogOpen(true); }}
+          className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#C5A059] hover:text-black transition-all"
+          title="Edit Match"
+        >
           <Edit3 className="w-4 h-4" />
         </button>
-        <button onClick={() => setDeleteDialogOpen(true)} className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#A91D3A] transition-all">
+        <button
+          onClick={() => { onDelete ? onDelete() : setDeleteDialogOpen(true); }}
+          className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#A91D3A] transition-all"
+          title="Delete Match"
+        >
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
