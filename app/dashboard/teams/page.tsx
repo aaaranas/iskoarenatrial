@@ -307,7 +307,19 @@ export default function TeamsPage() {
   const [localDeleted, setLocalDeleted] = useState<string[]>([]);
 
   // ── Real data from tRPC ───────────────────────────────────────────────────
-  const { data: teamsData, isLoading } = trpc.teams.getAll.useQuery();
+  const { data: teamsData, isLoading, isError } = trpc.teams.getAll.useQuery();
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-[#141414] flex flex-col items-center justify-center gap-4 text-center px-6">
+        <p className="text-xl font-black text-white uppercase tracking-widest">Failed to Load Teams</p>
+        <p className="text-zinc-500 text-sm">Could not connect to the database. Please try again.</p>
+        <button onClick={() => window.location.reload()} className="mt-2 px-6 py-2 bg-[#C5A059] text-black text-xs font-black uppercase rounded-sm hover:opacity-90">
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   // Map DB shape (id, name, org, logo_url) → College UI shape
   const colleges: College[] = useMemo(() => {

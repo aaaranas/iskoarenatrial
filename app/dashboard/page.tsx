@@ -7,8 +7,20 @@ import { LeaderboardPodium } from "@/components/dashboard/LeaderboardPodium";
 import { trpc } from "@/utils/trpc";
 
 const DashboardPage = () => {
-  const { data: matchesData, isLoading } = trpc.match.getAll.useQuery();
+  const { data: matchesData, isLoading, isError } = trpc.match.getAll.useQuery();
   const { data: playersData } = trpc.players.getAll.useQuery();
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-[#141414] flex flex-col items-center justify-center gap-4 text-center px-6">
+        <p className="text-xl font-black text-white uppercase tracking-widest">Dashboard Unavailable</p>
+        <p className="text-zinc-500 text-sm">Could not load match data. Please try again.</p>
+        <button onClick={() => window.location.reload()} className="mt-2 px-6 py-2 bg-[#FF3300] text-white text-xs font-black uppercase rounded-sm hover:opacity-90">
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   // ── Derive stat counts from real data ──────────────────────────────────────
   const stats = useMemo(() => {

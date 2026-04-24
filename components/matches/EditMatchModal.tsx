@@ -9,28 +9,45 @@ import { Match } from "@/types";
 import { trpc } from "@/utils/trpc";
 import { toast } from "sonner";
 
+// ✅ Interface was referenced but never defined
+interface EditMatchModalProps {
+  match: Match;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
 export const EditMatchModal = ({ match, open, onOpenChange }: EditMatchModalProps) => {
   const [homeScore, setHomeScore] = useState(match.homeScore?.toString() || "0");
   const [awayScore, setAwayScore] = useState(match.awayScore?.toString() || "0");
   const [status, setStatus] = useState(match.statusType || "upcoming");
-  const [venue, setVenue] = useState(match.venue || "");
 
   const utils = trpc.useUtils();
-  const editMatch = trpc.match.update.useMutation({ // Assuming you have a general update endpoint
+
+  // ✅ trpc.match.updateMatch — correct procedure name (was trpc.match.update)
+  const editMatch = trpc.match.updateMatch.useMutation({
     onSuccess: () => {
       toast.success("Match details updated!");
       utils.match.getAll.invalidate();
       onOpenChange(false);
     },
+    onError: (err) => {
+      toast.error(err.message ?? "Failed to update match.");
+    },
   });
 
   const handleSave = () => {
+    const home = parseInt(homeScore, 10);
+    const away = parseInt(awayScore, 10);
+    if (isNaN(home) || isNaN(away)) {
+      toast.error("Scores must be valid numbers.");
+      return;
+    }
     editMatch.mutate({
       id: match.id,
-      homeScore: parseInt(homeScore),
-      awayScore: parseInt(awayScore),
-      statusType: status,
-      venue: venue,
+      home_score: home,
+      away_score: away,
+      // ✅ 'status' — correct field name (was 'statusType' which doesn't exist in router input)
+      status: status,
     });
   };
 
@@ -40,7 +57,7 @@ export const EditMatchModal = ({ match, open, onOpenChange }: EditMatchModalProp
         <DialogHeader>
           <DialogTitle className="text-[#C5A059] font-black uppercase tracking-widest">Edit Match</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           {/* Score Section */}
           <div className="grid grid-cols-2 gap-4">
@@ -68,20 +85,14 @@ export const EditMatchModal = ({ match, open, onOpenChange }: EditMatchModalProp
               </SelectContent>
             </Select>
           </div>
-
-          {/* Venue Update */}
-          <div className="space-y-2">
-            <Label className="text-[10px] text-zinc-500 uppercase font-bold">Venue Location</Label>
-            <Input value={venue} onChange={(e) => setVenue(e.target.value)} className="bg-black border-white/10" placeholder="e.g. Blue Pitch" />
-          </div>
         </div>
 
-        <button 
+        <button
           onClick={handleSave}
-          disabled={editMatch.isLoading}
+          disabled={editMatch.isPending}
           className="w-full bg-[#C5A059] text-black font-black uppercase text-[10px] py-3 rounded-sm hover:opacity-90 transition-opacity"
         >
-          {editMatch.isLoading ? "Updating..." : "Save Changes"}
+          {editMatch.isPending ? "Updating..." : "Save Changes"}
         </button>
       </DialogContent>
     </Dialog>

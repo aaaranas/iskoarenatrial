@@ -35,7 +35,7 @@ const ITEMS_PER_PAGE = 8;
 export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) => {
   // 1. DATA FETCHING (tRPC)
   // We cast the data to Match[] to ensure the UI properties exist
-  const { data: matchesData, isLoading } = trpc.match.getAll.useQuery();
+  const { data: matchesData, isLoading, isError } = trpc.match.getAll.useQuery();
   const matches = (matchesData as Match[]) || [];
   const [matchToFinalize, setMatchToFinalize] = useState<Match | null>(null);
 
@@ -149,7 +149,22 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
     );
   }
 
-  // Reusable Dropdown Component
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center gap-4 text-center px-6">
+        <p className="text-2xl font-black text-white uppercase tracking-widest">Unable to Load Matches</p>
+        <p className="text-zinc-500 text-sm max-w-sm">
+          Could not connect to the database. Check your internet connection or try again shortly.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-6 py-2 bg-[#C5A059] text-black text-xs font-black uppercase tracking-widest rounded-sm hover:opacity-90 transition-opacity"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
   const FilterDropdown = ({ 
     label, 
     options, 
