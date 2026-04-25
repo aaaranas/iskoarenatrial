@@ -159,6 +159,7 @@ export default function TeamsPage() {
         console.log("✅ Fetched data:", data);
         setColleges(
           data.map((t: any) => ({
+            id: t.id,
             name: t.college,
             established: t.established ?? "N/A",
             activeTeams: t.active_teams ?? 0,
@@ -197,22 +198,23 @@ export default function TeamsPage() {
     }
 
     console.log("✅ Successfully added!");
-    setColleges((prev) => [...prev, college]);
+    const inserted = data?.[0];
+    setColleges((prev) => [...prev, { ...college, id: inserted?.id }]);
   };
 
   // ✅ Delete college — removes from Supabase permanently
-  const handleDeleteCollege = async (collegeName: string) => {
+  const handleDeleteCollege = async (id: string) => {
     const { error } = await (supabase as any)
       .from("teams")
       .delete()
-      .eq("college", collegeName);
+      .eq("id", id);
 
     if (error) {
       console.error("❌ Error deleting:", error);
       return;
     }
 
-    setColleges((prev) => prev.filter((c) => c.name !== collegeName));
+    setColleges((prev) => prev.filter((c) => c.id !== id));
   };
 
   const filtered = colleges.filter(
@@ -242,7 +244,7 @@ export default function TeamsPage() {
         <DeleteCollegeModal
           college={deleteTarget}
           onClose={() => setDeleteTarget(null)}
-          onConfirm={() => handleDeleteCollege(deleteTarget.name)}
+          onConfirm={() => deleteTarget.id && handleDeleteCollege(deleteTarget.id)}
         />
       )}
 
@@ -302,8 +304,8 @@ export default function TeamsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-4 gap-4">
-            {filtered.map((college) => (
-              <div key={college.name} className="relative group">
+            {filtered.map((college, index) => (
+              <div key={college.id ?? `${college.name}-${index}`} className="relative group">
                 <CollegeCard college={college} onViewProfile={setProfileCollege} />
                 <button
                   onClick={() => setDeleteTarget(college)}
