@@ -33,14 +33,16 @@ const members = [
     },
 ]
 
+// Renamed from "Team" → "About Us" — the "Team" nav link now points to the Colleges section.
+// This component stays focused on the developer/UI-UX team that built IskoArena.
 export default function TeamSection() {
     return (
         <section className="bg-gray-50 py-16 md:py-32 dark:bg-transparent">
             <div className="mx-auto max-w-5xl border-t px-6">
-                <span className="text-caption -ml-6 -mt-3.5 block w-max bg-gray-50 px-6 dark:bg-gray-950">Team</span>
+                <span className="text-caption -ml-6 -mt-3.5 block w-max bg-gray-50 px-6 dark:bg-gray-950">About Us</span>
                 <div className="mt-12 gap-4 sm:grid sm:grid-cols-2 md:mt-24">
                     <div className="sm:w-2/5">
-                        <h2 className="text-3xl font-bold sm:text-4xl">The Dream Team</h2>
+                        <h2 className="text-3xl font-bold sm:text-4xl">Meet The Developers</h2>
                     </div>
                     <div className="mt-6 sm:mt-0">
 			<p>We are a team of student-developers dedicated to elevating the UP Cebu Iskolaro  experience. We aim to bridge the gap between athletes and the community, ensuring every game and milestone is celebrated across the campus.</p>

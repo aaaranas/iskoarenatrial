@@ -19,12 +19,15 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" className={`${dmSans.variable} ${spaceMono.variable}`} suppressHydrationWarning>
       <body>
+	 {/* IskoArena is designed dark-first (dashboard, login modal, embedded sections all hardcode dark colors).
+	     forcedTheme="dark" locks the app to dark mode so OS/system preference can't flip it to light, which
+	     would render the hero text unreadable against the dark background photo. */}
 	 <ThemeProvider
             attribute="class"
-            defaultTheme="system"
-            enableSystem
+            defaultTheme="dark"
+            forcedTheme="dark"
             disableTransitionOnChange
-          > 
+          >
 	  <TRPCProvider>
 	   {children}
 	  </TRPCProvider> 

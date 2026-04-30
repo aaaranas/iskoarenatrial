@@ -1,8 +1,7 @@
 "use client";
 
 import React from 'react'
-import Link from 'next/link'
-import { ArrowRight, ChevronRight } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 import { TextEffect } from '@/components/ui/text-effect'
@@ -32,18 +31,27 @@ const transitionVariants: {
   },
 };
 
+// Login-only public landing — signup removed (admins issue credentials).
 interface HeroSectionProps {
     onLoginClick: () => void;
-    onSignupClick: () => void;
 }
 
-export default function HeroSection({ onLoginClick, onSignupClick }: HeroSectionProps) {
+// Number of placeholder boxes shown until marketing supplies real sponsor logos.
+const SPONSOR_SLOT_COUNT = 8;
+
+// Smooth-scrolls to a section by id (used by hero pill + "View Schedules").
+const scrollToId = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+export default function HeroSection({ onLoginClick }: HeroSectionProps) {
     return (
         <>
-            {/* Pass the props to the Navigation Header */}
-            <HeroHeader onLoginClick={onLoginClick} onSignupClick={onSignupClick} />
-            
-            <main className="overflow-hidden relative">
+            <HeroHeader onLoginClick={onLoginClick} />
+
+            {/* id="top" — header logo click smooth-scrolls back here */}
+            <main id="top" className="overflow-hidden relative">
                 {/* Background Image Layer */}
                 <div className="pointer-events-none absolute inset-0 ">
                     <Image
@@ -66,7 +74,12 @@ export default function HeroSection({ onLoginClick, onSignupClick }: HeroSection
                         <div className="mx-auto max-w-7xl px-6">
                             <div className="text-center sm:mx-auto lg:mr-auto lg:mt-0">
                                 <AnimatedGroup variants={transitionVariants}>
-                                    <div className="hover:bg-background dark:hover:border-t-border bg-muted group mx-auto flex w-fit items-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-zinc-950/5 transition-colors duration-300 dark:border-t-white/5 dark:shadow-zinc-950 cursor-pointer">
+                                    {/* "Iskolaro Season Has Begun" — now scrolls to the News section */}
+                                    <button
+                                        type="button"
+                                        onClick={() => scrollToId('news')}
+                                        aria-label="Jump to latest news"
+                                        className="hover:bg-background dark:hover:border-t-border bg-muted group mx-auto flex w-fit items-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-zinc-950/5 transition-colors duration-300 dark:border-t-white/5 dark:shadow-zinc-950 cursor-pointer">
                                         <span className="text-foreground text-sm">Iskolaro Season Has Begun</span>
                                         <span className="dark:border-background block h-4 w-0.5 border-l bg-white dark:bg-zinc-700"></span>
                                         <div className="bg-background group-hover:bg-muted size-6 overflow-hidden rounded-full duration-500">
@@ -79,7 +92,7 @@ export default function HeroSection({ onLoginClick, onSignupClick }: HeroSection
                                                 </span>
                                             </div>
                                         </div>
-                                    </div>
+                                    </button>
                                 </AnimatedGroup>
 
                                 <TextEffect
@@ -89,7 +102,7 @@ export default function HeroSection({ onLoginClick, onSignupClick }: HeroSection
                                     className="mx-auto mt-8 max-w-4xl text-balance text-5xl max-md:font-semibold md:text-7xl lg:mt-16 xl:text-[5.25rem]">
                                     Elevating the UP Cebu Iskolaro Experience
                                 </TextEffect>
-                                
+
                                 <TextEffect
                                     per="line"
                                     preset="fade-in-blur"
@@ -100,6 +113,7 @@ export default function HeroSection({ onLoginClick, onSignupClick }: HeroSection
                                     Follow live scores, standings, and highlights from the UP Cebu Intramurals — anytime, anywhere.
                                 </TextEffect>
 
+                                {/* Hero CTAs: Login (admins only) + View Schedules (anchor) */}
                                 <AnimatedGroup
                                     variants={{
                                         container: {
@@ -113,19 +127,20 @@ export default function HeroSection({ onLoginClick, onSignupClick }: HeroSection
                                         ...transitionVariants,
                                     }}
                                     className="mt-12 flex flex-col items-center justify-center gap-2 md:flex-row">
-                                    
+
                                     <div key={1} className="bg-foreground/10 rounded-[calc(var(--radius-xl)+0.125rem)] border p-0.5">
+                                        {/* UP maroon (#7B1113) primary — landing page only */}
                                         <Button
-                                            onClick={onSignupClick}
+                                            onClick={onLoginClick}
                                             size="lg"
-                                            className="rounded-xl px-5 text-base">
-                                            <span className="text-nowrap">Join The Action</span>
+                                            className="rounded-xl px-5 text-base bg-[#7B1113] text-white hover:bg-[#5C0D0F]">
+                                            <span className="text-nowrap">Login</span>
                                         </Button>
                                     </div>
 
                                     <Button
                                         key={2}
-                                        onClick={onLoginClick}
+                                        onClick={() => scrollToId('schedules')}
                                         size="lg"
                                         variant="ghost"
                                         className="h-10.5 rounded-xl px-5">
@@ -135,69 +150,32 @@ export default function HeroSection({ onLoginClick, onSignupClick }: HeroSection
                             </div>
                         </div>
 
-                        {/* App Screenshot Section */}
-                        <AnimatedGroup
-                            variants={{
-                                container: {
-                                    visible: {
-                                        transition: {
-                                            staggerChildren: 0.05,
-                                            delayChildren: 0.75,
-                                        },
-                                    },
-                                },
-                                ...transitionVariants,
-                            }}>
-			    {/* Container: Moved the mask here for the 'Transition' effect */}
-			    <div className="relative mt-8 px-4 sm:mt-12 md:mt-20 z-20">
-    <div className="inset-shadow-2xs ring-background dark:inset-shadow-white/20 bg-background/20 relative mx-auto max-w-5xl overflow-hidden rounded-2xl border border-white/10 p-2 shadow-2xl ring-1">
-        <Image
-            className="aspect-15/8 relative rounded-xl [mask-image:linear-gradient(to_bottom,black_20%,transparent_90%))]"
-            src="/app_screenshot.png"
-            alt="IskoArena Dashboard"
-            width="2700"
-            height="1440"
-        />
-    </div>
-</div>
-                        </AnimatedGroup>
+                        {/* NOTE: Dashboard screenshot block removed (Task #4) — the embedded Schedules
+                            section in LandingPage shows real match data, so a fake preview is redundant. */}
                     </div>
                 </section>
 
-                {/* Customer Logo Section */}
-                <section className="bg-background pb-16 pt-16 md:pb-32">
-                    <div className="group relative m-auto max-w-5xl px-6">
-                        <div className="absolute inset-0 z-10 flex scale-95 items-center justify-center opacity-0 duration-500 group-hover:scale-100 group-hover:opacity-100">
-                            <Link href="/" className="block text-sm duration-150 hover:opacity-75">
-                                <span> Meet Our Partners</span>
-                                <ChevronRight className="ml-1 inline-block size-3" />
-                            </Link>
+                {/* Sponsors section — placeholder slots until marketing supplies real logos (Task #5) */}
+                <section id="sponsors" className="bg-background pb-16 pt-16 md:pb-32 scroll-mt-24">
+                    <div className="m-auto max-w-5xl px-6">
+                        <div className="text-center mb-10">
+                            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#7B1113] mb-3">
+                                <span className="w-6 h-0.5 bg-[#7B1113] inline-block" />
+                                Our Partners
+                            </span>
+                            <h2 className="text-3xl md:text-4xl font-semibold">Powered By Our Sponsors</h2>
+                            <p className="text-muted-foreground mt-3 text-sm">Sponsorship slots are open. Logos coming soon.</p>
                         </div>
-                        <div className="group-hover:blur-xs mx-auto mt-12 grid max-w-2xl grid-cols-4 gap-x-12 gap-y-8 transition-all duration-500 group-hover:opacity-50 sm:gap-x-16 sm:gap-y-14">
-                            <div className="flex">
-                                <img className="mx-auto h-5 w-fit dark:invert" src="https://html.tailus.io/blocks/customers/nvidia.svg" alt="Nvidia Logo" />
-                            </div>
-                            <div className="flex">
-                                <img className="mx-auto h-4 w-fit dark:invert" src="https://html.tailus.io/blocks/customers/column.svg" alt="Column Logo" />
-                            </div>
-                            <div className="flex">
-                                <img className="mx-auto h-4 w-fit dark:invert" src="https://html.tailus.io/blocks/customers/github.svg" alt="GitHub Logo" />
-                            </div>
-                            <div className="flex">
-                                <img className="mx-auto h-5 w-fit dark:invert" src="https://html.tailus.io/blocks/customers/nike.svg" alt="Nike Logo" />
-                            </div>
-                            <div className="flex">
-                                <img className="mx-auto h-5 w-fit dark:invert" src="https://html.tailus.io/blocks/customers/lemonsqueezy.svg" alt="Lemon Squeezy Logo" />
-                            </div>
-                            <div className="flex">
-                                <img className="mx-auto h-4 w-fit dark:invert" src="https://html.tailus.io/blocks/customers/laravel.svg" alt="Laravel Logo" />
-                            </div>
-                            <div className="flex">
-                                <img className="mx-auto h-7 w-fit dark:invert" src="https://html.tailus.io/blocks/customers/lilly.svg" alt="Lilly Logo" />
-                            </div>
-                            <div className="flex">
-                                <img className="mx-auto h-6 w-fit dark:invert" src="https://html.tailus.io/blocks/customers/openai.svg" alt="OpenAI Logo" />
-                            </div>
+                        {/* Dashed placeholder boxes — swap each for a real <img> when logos arrive */}
+                        <div className="mx-auto grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-4">
+                            {Array.from({ length: SPONSOR_SLOT_COUNT }).map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="flex h-20 items-center justify-center rounded-lg border border-dashed border-white/15 bg-white/[0.02] text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground"
+                                >
+                                    Sponsor Slot
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </section>

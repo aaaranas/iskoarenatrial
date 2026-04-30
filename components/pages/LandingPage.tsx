@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { supabase } from "@/lib/supabase/client"; // Your Supabase client
-import { trpc } from "@/utils/trpc"; // Your tRPC hooks
+import { supabase } from "@/lib/supabase/client";
+import { trpc } from "@/utils/trpc";
 import { useRouter } from "next/navigation";
 import type { Admin } from "@/types";
 
@@ -15,20 +15,24 @@ import FAQsThree from "@/components/faqs-3";
 import CallToAction from "@/components/call-to-action";
 import FooterSection from "@/components/footer";
 import LoginPage from "@/components/login";
-import SignupPage from "@/components/sign-up";
 import NewsCarousel from "@/components/news-carousel";
-import FadeInSection from "@/components/fade-in-section"; 
+import FadeInSection from "@/components/fade-in-section";
+
+// Embedded read-only sections (public view of admin-managed data).
+import PublicSchedules from "@/components/landing/PublicSchedules";
+import PublicColleges from "@/components/landing/PublicColleges";
 
 interface LandingPageProps {
   onLogin?: (admin: Admin) => void;
 }
 
+// Public landing page — admin-only login (no signup); embeds read-only matches & colleges.
 export default function LandingPage({ onLogin }: LandingPageProps) {
   const router = useRouter();
-  const utils = trpc.useUtils(); // Used to refresh auth state in tRPC cache
-  
+  const utils = trpc.useUtils();
+
+  // Only the login modal remains — signup removed (admins receive credentials directly).
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isSignupOpen, setIsSignupOpen] = useState(false);
 
   // --- SUPABASE LOGIN HANDLER ---
   const handleLoginSubmit = async (email: string, password: string) => {
@@ -40,63 +44,57 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
 
       if (error) throw error;
 
-      // 1. Refresh tRPC auth session cache
+      // Refresh tRPC auth session cache so the dashboard sees the new user.
       await utils.auth.getSession.invalidate();
 
-      // 2. Redirect to Compendium
+      // Redirect to dashboard after successful login.
       setIsLoginOpen(false);
-      router.push("/dashboard"); 
-      
+      router.push("/dashboard");
+
       return { success: true, message: "Initialization successful." };
     } catch (error: any) {
       return { success: false, message: error.message || "Invalid credentials." };
     }
   };
 
-  // --- SUPABASE SIGNUP HANDLER ---
-  const handleSignupSubmit = async (fullName: string, email: string, password: string, role: string) => {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role: role, // This triggers your SQL profile creation function
-          },
-        },
-      });
-
-      if (error) throw error;
-
-      // Logic: If user is created, show success and flip to login modal
-      setTimeout(() => {
-        setIsSignupOpen(false);
-        setIsLoginOpen(true);
-      }, 2000);
-
-      return { 
-        success: true, 
-        message: "Account initialized. Please check your email to verify." 
-      };
-    } catch (error: any) {
-      return { success: false, message: error.message };
-    }
-  };
-
   return (
     <div className="relative min-h-screen bg-neutral-950">
-      <HeroSection
-        onLoginClick={() => setIsLoginOpen(true)}
-        onSignupClick={() => setIsSignupOpen(true)}
-      />
-	
-      <FadeInSection><NewsCarousel /></FadeInSection>
+      {/* HeroSection wraps the header + hero copy + sponsors block (id="sponsors" is inside) */}
+      <HeroSection onLoginClick={() => setIsLoginOpen(true)} />
+
+      {/* id wrappers below give each section a stable anchor target for the topbar nav.
+          scroll-mt-24 reserves space for the fixed header so anchored sections aren't clipped. */}
+
+      {/* News & Updates — also the target of the hero "Iskolaro Season Has Begun" pill */}
+      <div id="news" className="scroll-mt-24">
+        <FadeInSection><NewsCarousel /></FadeInSection>
+      </div>
+
+      {/* Embedded read-only Schedules — main public view of admin-managed match data */}
+      <FadeInSection><PublicSchedules /></FadeInSection>
+
+      {/* Embedded read-only Colleges — public mirror of admin's TeamsPage (4 colleges only) */}
+      <FadeInSection><PublicColleges /></FadeInSection>
+
+      {/* Marketing sections — kept in place; no nav anchor */}
       <FadeInSection><Features /></FadeInSection>
       <FadeInSection><ContentSection /></FadeInSection>
-      <FadeInSection><FAQsThree /></FadeInSection>
-      <FadeInSection><TeamSection /></FadeInSection>
-      <FadeInSection><CallToAction /></FadeInSection>
+
+      {/* FAQ */}
+      <div id="faq" className="scroll-mt-24">
+        <FadeInSection><FAQsThree /></FadeInSection>
+      </div>
+
+      {/* About Us — the developer team behind IskoArena (renamed from "Team") */}
+      <div id="about" className="scroll-mt-24">
+        <FadeInSection><TeamSection /></FadeInSection>
+      </div>
+
+      {/* CTA — Login button (UP maroon) + View Schedules anchor */}
+      <FadeInSection>
+        <CallToAction onLoginClick={() => setIsLoginOpen(true)} />
+      </FadeInSection>
+
       <FadeInSection><FooterSection /></FadeInSection>
 
       {/* Decorative Bottom Blur */}
@@ -105,24 +103,11 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
         aria-hidden="true"
       />
 
-      {/* Auth Modals */}
+      {/* Login modal — the only auth modal on the public landing (no signup). */}
       <LoginPage
         isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
-        onSubmit={handleLoginSubmit} // Now Async/Supabase
-        onToggleSignup={() => {
-          setIsLoginOpen(false);
-          setIsSignupOpen(true);
-        }}
-      />
-      <SignupPage
-        isOpen={isSignupOpen}
-        onClose={() => setIsSignupOpen(false)}
-        onSubmit={handleSignupSubmit} // Now Async/Supabase + Role
-        onToggleLogin={() => {
-          setIsSignupOpen(false);
-          setIsLoginOpen(true);
-        }}
+        onSubmit={handleLoginSubmit}
       />
     </div>
   );

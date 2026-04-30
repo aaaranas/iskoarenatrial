@@ -5,6 +5,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Smooth in-page anchor scrolling for landing-page nav (Schedules / Sponsors / Team / FAQ / About Us). */
+html { scroll-behavior: smooth; }
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: #000000; }
