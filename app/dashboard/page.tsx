@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { RecentMatchesTable, MatchUI } from "@/components/dashboard/RecentMatchesTable";
 import { LeaderboardPodium } from "@/components/dashboard/LeaderboardPodium";
@@ -26,7 +25,7 @@ const DashboardPage = ({ matches = defaultMatches }: DashboardPageProps) => {
           <span className="text-white">MATCH </span> 
           <span className="text-[#FF3300]">SCHEDULE</span>
         </h1>
-        <p className="text-zinc-400 font-medium text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+        <p className="text-zinc-400 font-normal text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
           Follow all matches with real-time updates and live scores across all sports and categories.
         </p>
       </section>

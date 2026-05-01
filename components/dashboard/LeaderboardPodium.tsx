@@ -17,13 +17,13 @@ export const LeaderboardPodium = () => {
             </div>
           </div>
           <div className="text-center space-y-1.5 mt-5">
-            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">ARTSCOMM PHOENIX</p>
+            <p className="text-xs font-normal text-zinc-500 uppercase tracking-widest">ARTSCOMM PHOENIX</p>
           </div>
           <div className="text-center mt-2">
-            <p className="text-4xl font-black text-zinc-300 leading-none">2,840</p>
-            <p className="text-[11px] font-medium text-zinc-600 uppercase tracking-wider mt-1.5">TOTAL POINTS</p>
+            <p className="text-4xl font-normal text-zinc-300 leading-none">2,840</p>
+            <p className="text-[11px] font-normal text-zinc-600 uppercase tracking-wider mt-1.5">TOTAL POINTS</p>
           </div>
-          <div className="bg-zinc-800 px-5 py-1.5 rounded-full text-xs font-black text-zinc-400 mt-3">
+          <div className="bg-zinc-800 px-5 py-1.5 rounded-full text-xs font-normal text-zinc-400 mt-3">
             02
           </div>
         </div>
@@ -35,17 +35,17 @@ export const LeaderboardPodium = () => {
               <User className="size-10 text-white" />
             </div>
           </div>
-          <div className="absolute top-10 bg-[#FF3300] text-white px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
+          <div className="absolute top-10 bg-[#FF3300] text-white px-3 py-1 rounded text-[10px] font-normal uppercase tracking-wider">
             CURRENTLY LEADING
           </div>
           <div className="text-center space-y-1.5 mt-7">
-            <p className="text-xs font-semibold text-[#FF3300] uppercase tracking-widest">COS SCIONS</p>
+            <p className="text-xs font-normal text-[#FF3300] uppercase tracking-widest">COS SCIONS</p>
           </div>
           <div className="text-center mt-2">
-            <p className="text-6xl font-black text-white tracking-tighter leading-none">3,120</p>
-            <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider mt-2">TOTAL POINTS</p>
+            <p className="text-6xl font-normal text-white tracking-tighter leading-none">3,120</p>
+            <p className="text-[11px] font-normal text-zinc-400 uppercase tracking-wider mt-2">TOTAL POINTS</p>
           </div>
-          <div className="bg-[#FF3300] px-7 py-2 rounded-full text-sm font-black italic text-white mt-5 shadow-lg shadow-[#FF3300]/30">
+          <div className="bg-[#FF3300] px-7 py-2 rounded-full text-sm font-normal italic text-white mt-5 shadow-lg shadow-[#FF3300]/30">
             01
           </div>
           <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#FF3300] to-transparent"></div>
@@ -59,13 +59,13 @@ export const LeaderboardPodium = () => {
             </div>
           </div>
           <div className="text-center space-y-1.5 mt-5">
-            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">CSS STALLIONS</p>
+            <p className="text-xs font-normal text-zinc-500 uppercase tracking-widest">CSS STALLIONS</p>
           </div>
           <div className="text-center mt-2">
-            <p className="text-4xl font-black text-[#D67C52] leading-none">2,410</p>
-            <p className="text-[11px] font-medium text-zinc-600 uppercase tracking-wider mt-1.5">TOTAL POINTS</p>
+            <p className="text-4xl font-normal text-[#D67C52] leading-none">2,410</p>
+            <p className="text-[11px] font-normal text-zinc-600 uppercase tracking-wider mt-1.5">TOTAL POINTS</p>
           </div>
-          <div className="bg-[#3D251A] px-5 py-1.5 rounded-full text-xs font-black text-[#D67C52] mt-3">
+          <div className="bg-[#3D251A] px-5 py-1.5 rounded-full text-xs font-normal text-[#D67C52] mt-3">
             03
           </div>
         </div>

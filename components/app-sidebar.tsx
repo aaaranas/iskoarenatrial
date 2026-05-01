@@ -28,7 +28,7 @@ const manageItems = [
   { label: "Archives", icon: Archive,   url: "/dashboard/archives" },
 ];
 
-const allNavItems = [...navMain, ...manageItems];
+// const allNavItems = [...navMain, ...manageItems];
 
 export function AppSidebar({ onLogout, adminName }: AppSidebarProps) {
   const pathname = usePathname();
