@@ -2,6 +2,7 @@
 import React from "react";
 
 export interface College {
+  id?: string;
   name: string;
   established: string;
   activeTeams: number;
