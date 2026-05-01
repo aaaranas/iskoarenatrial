@@ -104,6 +104,14 @@ html { scroll-behavior: smooth; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .page-fade { animation: fadeIn 0.3s ease-in; }
 
+/* IskoArena landing-page motion spec — referenced by TopTicker, Sponsors carousel,
+   Matches Today carousel, live-badge pulse, hero scroll cue, and fade-in entrances. */
+@keyframes ticker          { from { transform: translateX(0); }              to { transform: translateX(-50%); } }
+@keyframes matchesScroll   { from { transform: translate3d(0, 0, 0); }       to { transform: translate3d(-50%, 0, 0); } }
+@keyframes pulseDot        { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@keyframes fadeInUp        { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes scrollPulse     { 0%, 100% { opacity: 0.3; transform: scaleY(0.6); } 50% { opacity: 1; transform: scaleY(1); } }
+
 
 @font-face {
   font-family: 'Material Symbols Outlined';
