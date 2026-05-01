@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 import { TextEffect } from '@/components/ui/text-effect'
 import { AnimatedGroup } from '@/components/ui/animated-group'
-import { HeroHeader } from './header'
 import type { Variants } from "motion/react";
+// HeroHeader removed: the new design's Nav (components/landing/Nav.tsx) is now
+// rendered at the LandingPage level. This whole file is slated for replacement
+// in Phase 3 of the rebuild.
 
 const transitionVariants: {
   item: Variants;
@@ -48,9 +50,7 @@ const scrollToId = (id: string) => {
 export default function HeroSection({ onLoginClick }: HeroSectionProps) {
     return (
         <>
-            <HeroHeader onLoginClick={onLoginClick} />
-
-            {/* id="top" — header logo click smooth-scrolls back here */}
+            {/* id="top" — Nav logo click smooth-scrolls back here */}
             <main id="top" className="overflow-hidden relative">
                 {/* Background Image Layer */}
                 <div className="pointer-events-none absolute inset-0 ">
