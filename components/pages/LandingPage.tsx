@@ -8,7 +8,6 @@ import type { Admin } from "@/types";
 
 // Existing landing components — being replaced phase by phase. Anything
 // still imported here is awaiting its replacement section.
-import HeroSection from "@/components/hero-section";
 import Features from "@/components/features-12";
 import ContentSection from "@/components/content-2";
 import TeamSection from "@/components/team";
@@ -17,15 +16,18 @@ import NewsCarousel from "@/components/news-carousel";
 import FadeInSection from "@/components/fade-in-section";
 
 // New design components from Phase 2 (Chrome) — Nav + Footer + LoginModal.
-// These replace the old header.tsx, footer.tsx, call-to-action.tsx, login.tsx.
+// Replaces the old header.tsx, footer.tsx, call-to-action.tsx, login.tsx.
 import Nav from "@/components/landing/Nav";
 import Footer from "@/components/landing/Footer";
 import LoginModal from "@/components/landing/LoginModal";
 
-// Embedded read-only sections (public view of admin-managed data) — kept until
-// Phases 3/4 replace them with the design's CompetingColleges / Matches Today.
+// New design components from Phase 3 — Hero + CompetingColleges.
+// Replaces the old hero-section.tsx and components/landing/PublicColleges.tsx.
+import Hero from "@/components/landing/Hero";
+import CompetingColleges from "@/components/landing/CompetingColleges";
+
+// Embedded read-only schedules — Phase 4 replaces with the Matches Today carousel.
 import PublicSchedules from "@/components/landing/PublicSchedules";
-import PublicColleges from "@/components/landing/PublicColleges";
 
 interface LandingPageProps {
   onLogin?: (admin: Admin) => void;
@@ -67,20 +69,19 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
       {/* Phase 2 chrome — fixed Nav at the top, opens LoginModal on Login click */}
       <Nav onLoginClick={() => setIsLoginOpen(true)} />
 
-      {/* HeroSection still rendering its existing copy (without its old internal header).
-          Phase 3 replaces this with the design's full-viewport Hero + CompetingColleges. */}
-      <HeroSection onLoginClick={() => setIsLoginOpen(true)} />
+      {/* Phase 3 — full-viewport Hero (no buttons; logo + ISKOARENA wordmark + scroll cue) */}
+      <Hero />
 
-      {/* News & Updates — anchor target for the hero "Iskolaro Season Has Begun" pill */}
+      {/* Phase 3 — Competing Colleges (4 large circular crests in one row) */}
+      <CompetingColleges />
+
+      {/* News & Updates — kept until Phase 5 builds the design's News masonry */}
       <div id="news" className="scroll-mt-24">
         <FadeInSection><NewsCarousel /></FadeInSection>
       </div>
 
       {/* Embedded read-only Schedules — Phase 4 replaces with Matches Today carousel */}
       <FadeInSection><PublicSchedules /></FadeInSection>
-
-      {/* Embedded read-only Colleges — Phase 3 replaces with CompetingColleges */}
-      <FadeInSection><PublicColleges /></FadeInSection>
 
       {/* Marketing sections kept temporarily — likely archived in Phase 7 */}
       <FadeInSection><Features /></FadeInSection>
