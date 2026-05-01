@@ -6,10 +6,7 @@ import { trpc } from "@/utils/trpc";
 import { useRouter } from "next/navigation";
 import type { Admin } from "@/types";
 
-// Existing landing components — only TeamSection (developers, #about) remains
-// from the old design; Phase 6 replaces it with the new editorial Team grid.
-// FadeInSection is still used to entrance-animate that one section.
-import TeamSection from "@/components/team";
+// FadeInSection still used to entrance-animate the Footer.
 import FadeInSection from "@/components/fade-in-section";
 
 // Phase 2 — Chrome (Nav + Footer + LoginModal).
@@ -31,6 +28,9 @@ import SpotlightSection from "@/components/landing/SpotlightSection";
 import NewsSection from "@/components/landing/NewsSection";
 import SportsSection from "@/components/landing/SportsSection";
 import RivalrySection from "@/components/landing/RivalrySection";
+
+// Phase 6 — Editorial Team grid (replaces the old developer team.tsx).
+import TeamSection from "@/components/landing/TeamSection";
 
 interface LandingPageProps {
   onLogin?: (admin: Admin) => void;
@@ -86,10 +86,9 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
       <SportsSection />
       <RivalrySection />
 
-      {/* Old developer "About Us" — Phase 6 replaces with the design's editorial Team grid */}
-      <div id="about" className="scroll-mt-24">
-        <FadeInSection><TeamSection /></FadeInSection>
-      </div>
+      {/* Phase 6 — editorial Team grid (5 members: Ako/Andre/Jonel/Rex/Dom).
+          Sits at id="team" so the Nav "Team" link finally has a target. */}
+      <TeamSection />
 
       {/* Phase 2 chrome — new elaborate Footer (CTA card + footer card + watermark) */}
       <FadeInSection>

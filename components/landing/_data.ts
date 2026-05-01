@@ -232,6 +232,28 @@ export interface SportItem {
   status: SportStatus;
 }
 
+// ---------------------------------------------------------------------------
+// TEAM (editorial team grid)
+// ---------------------------------------------------------------------------
+// The 5 students who built and run IskoArena. Roles are public-facing and
+// reflect Dominique's chosen mapping (2026-04-26): Ako=Team Leader,
+// Andre/Jonel/Rex=Frontend, Dom=Backend. This differs from internal real
+// roles — Dom is internally a UI/UX Designer doing full-stack work — but the
+// public team page displays the role each member self-identifies with.
+export interface TeamMember {
+  name: string;
+  role: string;
+  photo: string;  // path under /public — dev-team headshots already in repo
+}
+
+export const TEAM: TeamMember[] = [
+  { name: "Ako",    role: "Team Leader", photo: "/ako.jpg"   },
+  { name: "Andre",  role: "Frontend",    photo: "/andre.jpg" },
+  { name: "Jonel",  role: "Frontend",    photo: "/jonel.jpg" },
+  { name: "Rex",    role: "Frontend",    photo: "/rex.jpg"   },
+  { name: "Dom",    role: "Backend",     photo: "/dom.jpg"   },
+];
+
 // TODO real-data hook: trpc.sport.getAll returns 24 sports already (seeded).
 // Could merge real names with this static `cat` + `icon` + `status` map.
 export const SPORTS: SportItem[] = [
