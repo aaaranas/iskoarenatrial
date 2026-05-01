@@ -108,3 +108,155 @@ export const LIVE_MATCHES: LiveMatch[] = [
   { id: 5, sport: "Badminton",  home: "CSS Shuttlers", away: "COS Smashers", homeScore: null, awayScore: null, status: "5:00 PM", statusType: "upcoming", venue: "Gym C",    time: "5:00 PM", cat: "Traditional", homeCo: "CSS",  awayCo: "COS",  img: "/iskolarobadminton.jpg" },
   { id: 6, sport: "Valorant",   home: "SOM Sentinels", away: "COS Gamers",   homeScore: null, awayScore: null, status: "6:00 PM", statusType: "upcoming", venue: "Online",   time: "6:00 PM", cat: "Esports",     homeCo: "SOM",  awayCo: "COS",  img: null                     },
 ];
+
+// ---------------------------------------------------------------------------
+// STANDINGS (Standings table with sport tabs)
+// ---------------------------------------------------------------------------
+// Mock W-L-PCT-GB rows per sport. Object keyed by sport name so the section
+// can render tabs from Object.keys(STANDINGS) and switch active rows.
+export interface StandingsRow {
+  code: CollegeCode;
+  w: number;
+  l: number;
+  pct: string;     // pre-formatted (".800") so the display is mock-stable
+  gb: string;      // games-behind ("—" for the leader)
+}
+
+// TODO real-data hook: compute from trpc.match.getAll grouped by sport,
+// summing W/L per team. PCT = w / (w+l). GB = (leader.w - own.w + own.l - leader.l) / 2.
+export const STANDINGS: Record<string, StandingsRow[]> = {
+  Basketball: [
+    { code: "CSS",  w: 4, l: 1, pct: ".800", gb: "—"   },
+    { code: "COS",  w: 3, l: 2, pct: ".600", gb: "1.0" },
+    { code: "CCAD", w: 2, l: 3, pct: ".400", gb: "2.0" },
+    { code: "SOM",  w: 1, l: 4, pct: ".200", gb: "3.0" },
+  ],
+  Volleyball: [
+    { code: "CCAD", w: 5, l: 0, pct: "1.000", gb: "—"   },
+    { code: "SOM",  w: 3, l: 2, pct: ".600",  gb: "2.0" },
+    { code: "CSS",  w: 2, l: 3, pct: ".400",  gb: "3.0" },
+    { code: "COS",  w: 0, l: 5, pct: ".000",  gb: "5.0" },
+  ],
+  MLBB: [
+    { code: "CSS",  w: 6, l: 1, pct: ".857", gb: "—"   },
+    { code: "CCAD", w: 5, l: 2, pct: ".714", gb: "1.0" },
+    { code: "SOM",  w: 2, l: 5, pct: ".286", gb: "4.0" },
+    { code: "COS",  w: 1, l: 6, pct: ".143", gb: "5.0" },
+  ],
+  Chess: [
+    { code: "COS",  w: 4, l: 0, pct: "1.000", gb: "—"   },
+    { code: "SOM",  w: 3, l: 1, pct: ".750",  gb: "1.0" },
+    { code: "CSS",  w: 1, l: 3, pct: ".250",  gb: "3.0" },
+    { code: "CCAD", w: 0, l: 4, pct: ".000",  gb: "4.0" },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// PLAYER (Isko of the Week — Spotlight section)
+// ---------------------------------------------------------------------------
+// Single featured player, rotated weekly by the editorial team.
+export interface FeaturedPlayer {
+  name: string;
+  nickname: string;
+  college: CollegeCode;
+  collegeFull: string;
+  sport: string;
+  number: number;
+  year: string;
+  stats: Record<string, number | string>;  // small per-sport stat block (4-6 entries)
+  quote: string;
+  awards: string[];
+  photo: string;  // path under /public — uses dev-team headshots as placeholders
+}
+
+// TODO real-data hook: needs a featured_players or weekly_spotlight table in
+// Supabase. For v1, edited manually here. Photo is a dev-team headshot
+// placeholder (jonel.jpg) until real player photography arrives.
+export const PLAYER: FeaturedPlayer = {
+  name: "Marco Reyes",
+  nickname: "Laser",
+  college: "CSS",
+  collegeFull: "College of Social Sciences",
+  sport: "Basketball",
+  number: 23,
+  year: "3rd Year · BS Psychology",
+  stats: { PPG: 22.4, RPG: 8.1, APG: 5.3, STL: 2.1 },
+  quote: "Every game I play is for my college, my blockmates, my Isko family.",
+  awards: ["Top Scorer · Apr 20", "Player of the Week · Apr 13", "Most Assists · Apr 6"],
+  photo: "/jonel.jpg",
+};
+
+// ---------------------------------------------------------------------------
+// NEWS (News masonry section)
+// ---------------------------------------------------------------------------
+export interface NewsArticle {
+  id: number;
+  tag: string;       // matches a key in NEWS_TAG_COLORS
+  title: string;
+  author: string;
+  date: string;
+  read: string;      // e.g. "3 min"
+  img: string | null;
+}
+
+// Per-tag accent color used for the tag pill + the "no image" placeholder.
+// Most tags map to college brand colors; Feature uses gold; Frisbee gets pink.
+export const NEWS_TAG_COLORS: Record<string, string> = {
+  Basketball: "#3B82F6",
+  Esports:    "#A78BFA",
+  Volleyball: "#10B981",
+  Feature:    "#D4AF37",
+  Frisbee:    "#F472B6",
+};
+
+// TODO real-data hook: ingest from a CMS or a `news` table in Supabase.
+// Mock content kept in line with the design's Apr 2026 dating.
+export const NEWS: NewsArticle[] = [
+  { id: 1, tag: "Basketball", title: "CSS Stallions Dominate Finals Opener with Clutch Fourth Quarter Run",  author: "IskoArena Staff", date: "Apr 26", read: "3 min", img: "/iskolarobaseball.jpg" },
+  { id: 2, tag: "Esports",    title: "CCAD Digital Secures MLBB Championship with Flawless Series Sweep",   author: "Isko Media",      date: "Apr 25", read: "4 min", img: null },
+  { id: 3, tag: "Volleyball", title: "COS Scions End Three-Game Skid with Emphatic 3–0 Straight-Set Win",   author: "IskoArena Staff", date: "Apr 25", read: "2 min", img: "/iskolarovolley2.jpg" },
+  { id: 4, tag: "Feature",    title: "Inside IskoArena: Meet the Student Team Behind UP Cebu's Sports Hub", author: "Isko Media",      date: "Apr 24", read: "6 min", img: null },
+  { id: 5, tag: "Frisbee",    title: "CCAD Goes for Back-to-Back Crown as Frisbee Season Officially Opens", author: "IskoArena Staff", date: "Apr 23", read: "3 min", img: "/iskolarofrisbee.jpg" },
+];
+
+// ---------------------------------------------------------------------------
+// SPORTS (Sports categories grid)
+// ---------------------------------------------------------------------------
+export type SportStatus = "ongoing" | "upcoming";
+export type SportGroup = "Traditional" | "Esports" | "Mind & Culture";
+
+export interface SportItem {
+  name: string;
+  cat: SportGroup;
+  icon: string;       // emoji or single-glyph fallback (design uses emojis)
+  status: SportStatus;
+}
+
+// TODO real-data hook: trpc.sport.getAll returns 24 sports already (seeded).
+// Could merge real names with this static `cat` + `icon` + `status` map.
+export const SPORTS: SportItem[] = [
+  { name: "Basketball",        cat: "Traditional",    icon: "🏀", status: "ongoing"  },
+  { name: "Volleyball",        cat: "Traditional",    icon: "🏐", status: "ongoing"  },
+  { name: "Badminton",         cat: "Traditional",    icon: "🏸", status: "ongoing"  },
+  { name: "Table Tennis",      cat: "Traditional",    icon: "🏓", status: "upcoming" },
+  { name: "Soccer",            cat: "Traditional",    icon: "⚽", status: "upcoming" },
+  { name: "Softball",          cat: "Traditional",    icon: "🥎", status: "upcoming" },
+  { name: "Pickleball",        cat: "Traditional",    icon: "🎾", status: "upcoming" },
+  { name: "Petanque",          cat: "Traditional",    icon: "⚙️", status: "upcoming" },
+  { name: "Frisbee",           cat: "Traditional",    icon: "🥏", status: "ongoing"  },
+  { name: "MLBB",              cat: "Esports",        icon: "⚔️", status: "ongoing"  },
+  { name: "CODM",              cat: "Esports",        icon: "🎯", status: "ongoing"  },
+  { name: "Valorant",          cat: "Esports",        icon: "◈",  status: "upcoming" },
+  { name: "Dota 2",            cat: "Esports",        icon: "🔮", status: "upcoming" },
+  { name: "Chess",             cat: "Mind & Culture", icon: "♟️", status: "ongoing"  },
+  { name: "Scrabble",          cat: "Mind & Culture", icon: "🔤", status: "upcoming" },
+  { name: "Sudoku",            cat: "Mind & Culture", icon: "#",  status: "upcoming" },
+  { name: "Tetris",            cat: "Mind & Culture", icon: "▦",  status: "upcoming" },
+  { name: "Rubik's Cube",      cat: "Mind & Culture", icon: "⬛", status: "upcoming" },
+  { name: "Blockblast",        cat: "Mind & Culture", icon: "💥", status: "upcoming" },
+  { name: "Cosplay",           cat: "Mind & Culture", icon: "🎭", status: "upcoming" },
+  { name: "Dancesport",        cat: "Mind & Culture", icon: "💃", status: "ongoing"  },
+  { name: "Cheerdance",        cat: "Mind & Culture", icon: "📣", status: "upcoming" },
+  { name: "Mr. & Ms. Fitness", cat: "Mind & Culture", icon: "🏋", status: "upcoming" },
+  { name: "Pinoy Games",       cat: "Mind & Culture", icon: "🪅", status: "upcoming" },
+];

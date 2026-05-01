@@ -6,31 +6,31 @@ import { trpc } from "@/utils/trpc";
 import { useRouter } from "next/navigation";
 import type { Admin } from "@/types";
 
-// Existing landing components — being replaced phase by phase. Anything
-// still imported here is awaiting its replacement section.
-import Features from "@/components/features-12";
-import ContentSection from "@/components/content-2";
+// Existing landing components — only TeamSection (developers, #about) remains
+// from the old design; Phase 6 replaces it with the new editorial Team grid.
+// FadeInSection is still used to entrance-animate that one section.
 import TeamSection from "@/components/team";
-import FAQsThree from "@/components/faqs-3";
-import NewsCarousel from "@/components/news-carousel";
 import FadeInSection from "@/components/fade-in-section";
 
-// New design components from Phase 2 (Chrome) — Nav + Footer + LoginModal.
-// Replaces the old header.tsx, footer.tsx, call-to-action.tsx, login.tsx.
+// Phase 2 — Chrome (Nav + Footer + LoginModal).
 import Nav from "@/components/landing/Nav";
 import Footer from "@/components/landing/Footer";
 import LoginModal from "@/components/landing/LoginModal";
 
-// New design components from Phase 3 — Hero + CompetingColleges.
-// Replaces the old hero-section.tsx and components/landing/PublicColleges.tsx.
+// Phase 3 — Hero + CompetingColleges.
 import Hero from "@/components/landing/Hero";
 import CompetingColleges from "@/components/landing/CompetingColleges";
 
-// New design components from Phase 4 — Sponsors + Matches Today carousels.
-// Replaces components/landing/PublicSchedules.tsx and the placeholder sponsor
-// slots that used to live inside the old hero-section.tsx.
+// Phase 4 — Sponsors + Matches Today carousels.
 import SponsorsSection from "@/components/landing/SponsorsSection";
 import MatchesTodaySection from "@/components/landing/MatchesTodaySection";
+
+// Phase 5 — Standings, Spotlight, News, Sports, Rivalry.
+import StandingsSection from "@/components/landing/StandingsSection";
+import SpotlightSection from "@/components/landing/SpotlightSection";
+import NewsSection from "@/components/landing/NewsSection";
+import SportsSection from "@/components/landing/SportsSection";
+import RivalrySection from "@/components/landing/RivalrySection";
 
 interface LandingPageProps {
   onLogin?: (admin: Admin) => void;
@@ -72,39 +72,26 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
       {/* Phase 2 chrome — fixed Nav at the top, opens LoginModal on Login click */}
       <Nav onLoginClick={() => setIsLoginOpen(true)} />
 
-      {/* Phase 3 — full-viewport Hero (no buttons; logo + ISKOARENA wordmark + scroll cue) */}
+      {/* Section order matches the design's IskoArena.html App component:
+          Hero → Colleges → Sponsors → Matches → Standings → Spotlight →
+          News → Sports → Rivalry → (Team — Phase 6) → Footer */}
+
       <Hero />
-
-      {/* Phase 3 — Competing Colleges (4 large circular crests in one row) */}
       <CompetingColleges />
-
-      {/* Phase 4 — Sponsors infinite carousel (rAF + drag inertia, pause on hover) */}
       <SponsorsSection />
-
-      {/* Phase 4 — Matches Today auto-scroll ticker carousel (CSS keyframe driven) */}
       <MatchesTodaySection />
+      <StandingsSection />
+      <SpotlightSection />
+      <NewsSection />
+      <SportsSection />
+      <RivalrySection />
 
-      {/* News & Updates — kept until Phase 5 builds the design's News masonry */}
-      <div id="news" className="scroll-mt-24">
-        <FadeInSection><NewsCarousel /></FadeInSection>
-      </div>
-
-      {/* Marketing sections kept temporarily — likely archived in Phase 7 */}
-      <FadeInSection><Features /></FadeInSection>
-      <FadeInSection><ContentSection /></FadeInSection>
-
-      {/* FAQ — slated for archive in Phase 7 (not in the new design) */}
-      <div id="faq" className="scroll-mt-24">
-        <FadeInSection><FAQsThree /></FadeInSection>
-      </div>
-
-      {/* About Us — Phase 6 replaces with the new editorial Team grid */}
+      {/* Old developer "About Us" — Phase 6 replaces with the design's editorial Team grid */}
       <div id="about" className="scroll-mt-24">
         <FadeInSection><TeamSection /></FadeInSection>
       </div>
 
-      {/* Phase 2 chrome — new elaborate Footer (CTA card + footer card + watermark).
-          Replaces the old FooterSection + CallToAction; Login button lives inside it. */}
+      {/* Phase 2 chrome — new elaborate Footer (CTA card + footer card + watermark) */}
       <FadeInSection>
         <Footer onLoginClick={() => setIsLoginOpen(true)} />
       </FadeInSection>
