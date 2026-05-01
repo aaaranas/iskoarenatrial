@@ -26,8 +26,11 @@ import LoginModal from "@/components/landing/LoginModal";
 import Hero from "@/components/landing/Hero";
 import CompetingColleges from "@/components/landing/CompetingColleges";
 
-// Embedded read-only schedules — Phase 4 replaces with the Matches Today carousel.
-import PublicSchedules from "@/components/landing/PublicSchedules";
+// New design components from Phase 4 — Sponsors + Matches Today carousels.
+// Replaces components/landing/PublicSchedules.tsx and the placeholder sponsor
+// slots that used to live inside the old hero-section.tsx.
+import SponsorsSection from "@/components/landing/SponsorsSection";
+import MatchesTodaySection from "@/components/landing/MatchesTodaySection";
 
 interface LandingPageProps {
   onLogin?: (admin: Admin) => void;
@@ -75,13 +78,16 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
       {/* Phase 3 — Competing Colleges (4 large circular crests in one row) */}
       <CompetingColleges />
 
+      {/* Phase 4 — Sponsors infinite carousel (rAF + drag inertia, pause on hover) */}
+      <SponsorsSection />
+
+      {/* Phase 4 — Matches Today auto-scroll ticker carousel (CSS keyframe driven) */}
+      <MatchesTodaySection />
+
       {/* News & Updates — kept until Phase 5 builds the design's News masonry */}
       <div id="news" className="scroll-mt-24">
         <FadeInSection><NewsCarousel /></FadeInSection>
       </div>
-
-      {/* Embedded read-only Schedules — Phase 4 replaces with Matches Today carousel */}
-      <FadeInSection><PublicSchedules /></FadeInSection>
 
       {/* Marketing sections kept temporarily — likely archived in Phase 7 */}
       <FadeInSection><Features /></FadeInSection>
