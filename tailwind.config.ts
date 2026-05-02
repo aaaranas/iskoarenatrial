@@ -5,6 +5,10 @@ const config: Config = {
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    // Skip the archive: components/_legacy/* are orphaned files preserved for
+    // reference only. Excluding them here trims Tailwind's JIT scan and saves
+    // a chunk of compile time on cold starts.
+    "!./components/_legacy/**",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/**/*.{js,ts,jsx,tsx,mdx}", // Added src just in case
   ],
