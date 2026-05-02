@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< HEAD
 // Public signup modal — restored from _legacy and restyled to match the new
 // LoginModal (ia-card / ia-maroon / ia-gold tokens, Bebas wordmark).
 // Original structure (firstname/lastname/email/role/password) preserved from
@@ -21,6 +22,15 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+=======
+import React, { useState } from 'react';
+import { LogoIcon } from '@/components/logo';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+>>>>>>> c02196d (fix: added userview but still needs tweaking for teamspage. improved mediapage functionality)
 } from "@/components/ui/select";
 import { X, Loader2 } from "lucide-react";
 
@@ -32,6 +42,7 @@ type RoleChoice = "user" | "college_admin";
 interface SignupPageProps {
   isOpen: boolean;
   onClose: () => void;
+<<<<<<< HEAD
   // Callback signature mirrors the original from _legacy (Promise<{success,message}>).
   // Parent (LandingPage) wires this to the auth.signup tRPC mutation.
   onSubmit: (
@@ -41,22 +52,20 @@ interface SignupPageProps {
     role: RoleChoice
   ) => Promise<{ success: boolean; message: string }>;
   // Switches to LoginModal — for the "Already registered? Log in" footer link.
+=======
+  onSubmit: (fullName: string, email: string, password: string, role: string) => Promise<{ success: boolean; message: string }>;
+>>>>>>> c02196d (fix: added userview but still needs tweaking for teamspage. improved mediapage functionality)
   onToggleLogin: () => void;
 }
 
-export default function SignupPage({
-  isOpen,
-  onClose,
-  onSubmit,
-  onToggleLogin,
-}: SignupPageProps) {
+export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }: SignupPageProps) {
   const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState<RoleChoice>("user");
+  const [lastName,  setLastName]  = useState("");
+  const [email,     setEmail]     = useState("");
+  const [password,  setPassword]  = useState("");
+  const [role,      setRole]      = useState("user");
   const [isLoading, setIsLoading] = useState(false);
-  const [status, setStatus] = useState<{ text: string; success: boolean } | null>(null);
+  const [status,    setStatus]    = useState<{ text: string; success: boolean } | null>(null);
 
   if (!isOpen) return null;
 
@@ -64,6 +73,7 @@ export default function SignupPage({
     e.preventDefault();
     setStatus(null);
     setIsLoading(true);
+<<<<<<< HEAD
 
     const fullName = `${firstName} ${lastName}`.trim();
     try {
@@ -104,147 +114,190 @@ export default function SignupPage({
           <X className="h-5 w-5" />
         </button>
 
-        {/* Header: logo + IskoArena wordmark + CREATE ACCOUNT eyebrow */}
-        <div className="mb-6 flex items-center gap-3">
-          <Image
-            src="/logo.png"
-            alt="IskoArena"
-            width={42}
-            height={42}
-            // Silences Next's width/height-modified warning (see Hero for details)
-            style={{ width: "auto", height: "auto" }}
-            className="object-contain"
-          />
-          <div>
-            <div className="font-bebas text-2xl tracking-[2px] leading-none text-[#f0f0f0]">
-              IskoArena
-            </div>
-            <div className="mt-0.5 text-[11px] font-semibold tracking-[2px] text-ia-gold">
-              CREATE ACCOUNT
-            </div>
-          </div>
+                <form
+                    onSubmit={handleSubmit}
+                    className="bg-zinc-950 m-auto h-fit w-full rounded-xl border border-zinc-800 p-0.5 shadow-2xl"
+                >
+                    <div className="p-8 pb-6">
+                        <div className="mb-8">
+                            <LogoIcon />
+                            <h1 className="mb-1 mt-4 text-xl font-black uppercase tracking-[0.15em] text-white">Initialize Account</h1>
+                        </div>
+
+                        {status && (
+                            <div className={`mb-6 p-3 text-[10px] font-bold uppercase tracking-widest border rounded-sm ${
+                                status.success ? "text-green-400 bg-green-400/5 border-green-400/20" : "text-red-400 bg-red-400/5 border-red-400/20"
+                            }`}>
+                                {status.text}
+                            </div>
+                        )}
+
+                        <div className="space-y-5">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Firstname</Label>
+                                    <Input
+                                        type="text" required placeholder="Juan"
+                                        value={firstName} onChange={(e) => setFirstName(e.target.value)}
+                                        className="bg-zinc-900/40 border-zinc-800 text-white h-10 text-[11px]"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Lastname</Label>
+                                    <Input
+                                        type="text" required placeholder="Dela Cruz"
+                                        value={lastName} onChange={(e) => setLastName(e.target.value)}
+                                        className="bg-zinc-900/40 border-zinc-800 text-white h-10 text-[11px]"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Email Address</Label>
+                                <Input
+                                    type="email" required placeholder="personnel@up.edu.ph"
+                                    value={email} onChange={(e) => setEmail(e.target.value)}
+                                    className="bg-zinc-900/40 border-zinc-800 text-white h-10 text-[11px]"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Intended Role</Label>
+                                <Select
+                                    defaultValue="user"
+                                    onValueChange={(val) => setRole(val)}
+                                >
+                                    <SelectTrigger className="bg-zinc-900/40 border-zinc-800 text-white text-[13px] h-10">
+                                        <SelectValue placeholder="SELECT ROLE" />
+                                    </SelectTrigger>
+                                    <SelectContent
+                                        position="popper"
+                                        sideOffset={5}
+                                        className="z-[110] bg-zinc-950 border-zinc-800 text-white min-w-[var(--radix-select-trigger-width)]"
+                                    >
+                                        <SelectItem value="user" className="text-[10px] font-bold uppercase tracking-widest focus:bg-[#C5A059] focus:text-black cursor-pointer">
+                                            Viewer / User
+                                        </SelectItem>
+                                        <SelectItem value="moderator" className="text-[10px] font-bold uppercase tracking-widest focus:bg-[#C5A059] focus:text-black cursor-pointer">
+                                            Field Moderator
+                                        </SelectItem>
+                                        <SelectItem value="college_admin" className="text-[10px] font-bold uppercase tracking-widest focus:bg-[#C5A059] focus:text-black cursor-pointer">
+                                            College Admin
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Password</Label>
+                                <Input
+                                    type="password" required
+                                    value={password} onChange={(e) => setPassword(e.target.value)}
+                                    className="bg-zinc-900/40 border-zinc-800 text-white h-10 text-[11px] tracking-widest font-bold"
+                                />
+                            </div>
+
+                            <Button
+                                type="submit" disabled={isLoading}
+                                className="w-full bg-[#C5A059] text-black font-black uppercase tracking-[0.3em] text-[12px] hover:bg-[#D4B475] h-12 transition-all mt-4"
+                            >
+                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Account"}
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="bg-zinc-900/20 rounded-b-xl border-t border-zinc-800/50 p-4">
+                        <p className="text-zinc-600 text-center text-[12px]">
+                            Already Registered?
+                            <button
+                                type="button"
+                                className="ml-2 text-white hover:text-[#C5A059] transition-colors"
+                                onClick={onToggleLogin}
+                            >
+                                Sign In
+                            </button>
+                        </p>
+                    </div>
+                </form>
+            </section>
         </div>
+    );
+}
+=======
+    const fullName = `${firstName} ${lastName}`.trim();
+    try {
+      const result = await onSubmit(fullName, email, password, role);
+      setStatus({ text: result.message, success: result.success });
+      if (result.success) { setFirstName(""); setLastName(""); setEmail(""); setPassword(""); }
+    } catch {
+      setStatus({ text: "Initialization failed.", success: false });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-        <form onSubmit={handleSubmit}>
-          {/* Status banner — green on success, red on failure */}
-          {status && (
-            <div
-              className={`mb-5 rounded-md border p-3 text-[11px] font-bold uppercase tracking-widest ${
-                status.success
-                  ? "border-emerald-400/20 bg-emerald-400/5 text-emerald-400"
-                  : "border-red-400/20 bg-red-400/5 text-red-400"
-              }`}
-            >
-              {status.text}
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+      <section className="relative w-full max-w-md animate-in fade-in zoom-in duration-300">
+        <button type="button" onClick={onClose} className="absolute right-4 top-4 text-zinc-500 hover:text-white transition-colors z-[110]">
+          <X className="h-5 w-5" />
+        </button>
+        <form onSubmit={handleSubmit} className="bg-zinc-950 m-auto h-fit w-full rounded-xl border border-zinc-800 p-0.5 shadow-2xl">
+          <div className="p-8 pb-6">
+            <div className="mb-8">
+              <LogoIcon />
+              <h1 className="mb-1 mt-4 text-xl font-black uppercase tracking-[0.15em] text-white">Create Account</h1>
             </div>
-          )}
-
-          {/* First + Last name — side by side on a 2-col grid */}
-          <div className="mb-4 grid grid-cols-2 gap-3">
-            <div>
-              <Label className="mb-1.5 block text-[11px] font-bold tracking-[1.5px] text-white/60">
-                FIRSTNAME
-              </Label>
-              <Input
-                type="text"
-                required
-                placeholder="Juan"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="h-10 w-full rounded-lg border border-white/10 bg-ia-bg px-3.5 text-sm text-[#f0f0f0] outline-none placeholder:text-white/25 focus:border-ia-maroon/60"
-              />
-            </div>
-            <div>
-              <Label className="mb-1.5 block text-[11px] font-bold tracking-[1.5px] text-white/60">
-                LASTNAME
-              </Label>
-              <Input
-                type="text"
-                required
-                placeholder="Dela Cruz"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="h-10 w-full rounded-lg border border-white/10 bg-ia-bg px-3.5 text-sm text-[#f0f0f0] outline-none placeholder:text-white/25 focus:border-ia-maroon/60"
-              />
+            {status && (
+              <div className={`mb-6 p-3 text-[10px] font-bold uppercase tracking-widest border rounded-sm ${
+                status.success ? "text-green-400 bg-green-400/5 border-green-400/20" : "text-red-400 bg-red-400/5 border-red-400/20"
+              }`}>{status.text}</div>
+            )}
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Firstname</Label>
+                  <Input type="text" required placeholder="Juan" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="bg-zinc-900/40 border-zinc-800 text-white h-10 text-[11px]" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Lastname</Label>
+                  <Input type="text" required placeholder="Dela Cruz" value={lastName} onChange={(e) => setLastName(e.target.value)} className="bg-zinc-900/40 border-zinc-800 text-white h-10 text-[11px]" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Email Address</Label>
+                <Input type="email" required placeholder="juan@up.edu.ph" value={email} onChange={(e) => setEmail(e.target.value)} className="bg-zinc-900/40 border-zinc-800 text-white h-10 text-[11px]" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Role</Label>
+                <Select defaultValue="user" onValueChange={(val) => setRole(val)}>
+                  <SelectTrigger className="bg-zinc-900/40 border-zinc-800 text-white text-[13px] h-10">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={5} className="z-[110] bg-zinc-950 border-zinc-800 text-white min-w-[var(--radix-select-trigger-width)]">
+                    <SelectItem value="user" className="text-[10px] font-bold uppercase tracking-widest focus:bg-[#C5A059] focus:text-black cursor-pointer">Viewer</SelectItem>
+                    <SelectItem value="admin" className="text-[10px] font-bold uppercase tracking-widest focus:bg-[#C5A059] focus:text-black cursor-pointer">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Password</Label>
+                <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="bg-zinc-900/40 border-zinc-800 text-white h-10 text-[11px] tracking-widest font-bold" />
+              </div>
+              <Button type="submit" disabled={isLoading} className="w-full bg-[#C5A059] text-black font-black uppercase tracking-[0.3em] text-[12px] hover:bg-[#D4B475] h-12 transition-all mt-4">
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Account"}
+              </Button>
             </div>
           </div>
-
-          {/* Email */}
-          <Label className="mb-1.5 block text-[11px] font-bold tracking-[1.5px] text-white/60">
-            EMAIL
-          </Label>
-          <Input
-            type="email"
-            required
-            placeholder="you@up.edu.ph"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mb-4 h-10 w-full rounded-lg border border-white/10 bg-ia-bg px-3.5 text-sm text-[#f0f0f0] outline-none placeholder:text-white/25 focus:border-ia-maroon/60"
-          />
-
-          {/* Role — Select dropdown. position="popper" + z-[210] sits above the modal (z-200) */}
-          <Label className="mb-1.5 block text-[11px] font-bold tracking-[1.5px] text-white/60">
-            ROLE
-          </Label>
-          <Select value={role} onValueChange={(v) => setRole(v as RoleChoice)}>
-            <SelectTrigger className="mb-4 h-10 w-full rounded-lg border border-white/10 bg-ia-bg px-3.5 text-sm text-[#f0f0f0] outline-none focus:border-ia-maroon/60 focus:ring-0">
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent
-              position="popper"
-              sideOffset={5}
-              className="z-[210] min-w-[var(--radix-select-trigger-width)] border-white/10 bg-ia-card text-[#f0f0f0]"
-            >
-              <SelectItem
-                value="user"
-                className="cursor-pointer text-[12px] font-semibold focus:bg-ia-maroon/30 focus:text-[#f0f0f0]"
-              >
-                General User
-              </SelectItem>
-              <SelectItem
-                value="college_admin"
-                className="cursor-pointer text-[12px] font-semibold focus:bg-ia-maroon/30 focus:text-[#f0f0f0]"
-              >
-                College Admin
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Password */}
-          <Label className="mb-1.5 block text-[11px] font-bold tracking-[1.5px] text-white/60">
-            PASSWORD
-          </Label>
-          <Input
-            type="password"
-            required
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mb-6 h-10 w-full rounded-lg border border-white/10 bg-ia-bg px-3.5 text-sm text-[#f0f0f0] outline-none placeholder:text-white/25 focus:border-ia-maroon/60"
-          />
-
-          {/* Submit — UP maroon with subtle shadow glow, mirrors LoginModal */}
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-ia-maroon py-3.5 text-sm font-semibold tracking-wide text-white shadow-[0_8px_24px_rgba(128,0,0,0.35)] transition-colors hover:bg-[#5C0D0F] disabled:opacity-60"
-          >
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Create Account →</>}
-          </Button>
+          <div className="bg-zinc-900/20 rounded-b-xl border-t border-zinc-800/50 p-4">
+            <p className="text-zinc-600 text-center text-[12px]">
+              Already registered?
+              <button type="button" className="ml-2 text-white hover:text-[#C5A059] transition-colors" onClick={onToggleLogin}>Sign In</button>
+            </p>
+          </div>
         </form>
-
-        {/* Footer — switches to LoginModal */}
-        <p className="mt-5 text-center text-[12px] text-white/45">
-          Already registered?{" "}
-          <button
-            type="button"
-            onClick={onToggleLogin}
-            className="font-semibold text-ia-gold transition-colors hover:underline"
-          >
-            Sign in
-          </button>
-        </p>
-      </div>
+      </section>
     </div>
   );
 }
+>>>>>>> c02196d (fix: added userview but still needs tweaking for teamspage. improved mediapage functionality)

@@ -22,6 +22,13 @@ const allNavItems = [
   { label: "Teams",        icon: Users,           url: "/dashboard/teams" },
 ];
 
+const manageItems = [
+  { label: "Media",    icon: ImageIcon, url: "/dashboard/media"    },
+  { label: "Teams",    icon: Users,     url: "/dashboard/teams"    },
+];
+
+// const allNavItems = [...navMain, ...manageItems];
+
 export function AppSidebar({ onLogout, adminName }: AppSidebarProps) {
   const pathname = usePathname();
 
