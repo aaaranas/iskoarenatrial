@@ -4,6 +4,7 @@ import { College } from "@/components/teams/CollegeTable";
 import { CollegeCard } from "@/components/teams/CollegeCard";
 import { CollegeProfilePage } from "@/components/teams/CollegeProfilePage";
 import { supabase } from "@/lib/supabase/client";
+import { useRole } from "@/components/providers/role-provider";
 
 const EMPTY_FORM = {
   name: "",

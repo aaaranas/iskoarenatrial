@@ -1,5 +1,5 @@
 import { router, publicProcedure } from "../trpc";
-import { supabase } from "@/lib/supabase/client";
+import { supabaseAdmin as supabase } from "@/lib/supabase/server";
 import { TRPCError } from "@trpc/server";
 
 export const sportRouter = router({

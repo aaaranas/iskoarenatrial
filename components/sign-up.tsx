@@ -26,7 +26,7 @@ export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }:
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState(""); 
     const [password, setPassword] = useState("");
-    const [role, setRole] = useState("moderator");
+    const [role, setRole] = useState("user");
     
     const [isLoading, setIsLoading] = useState(false);
     const [status, setStatus] = useState<{ text: string; success: boolean } | null>(null);
@@ -90,7 +90,7 @@ export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }:
                                     <Input
                                         type="text" required placeholder="Juan"
                                         value={firstName} onChange={(e) => setFirstName(e.target.value)}
-                                        className="bg-zinc-900/40 border-zinc-800 text-white h-10  text-[11px] "
+                                        className="bg-zinc-900/40 border-zinc-800 text-white h-10 text-[11px]"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -98,7 +98,7 @@ export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }:
                                     <Input
                                         type="text" required placeholder="Dela Cruz"
                                         value={lastName} onChange={(e) => setLastName(e.target.value)}
-                                        className="bg-zinc-900/40 border-zinc-800 text-white h-10  text-[11px] "
+                                        className="bg-zinc-900/40 border-zinc-800 text-white h-10 text-[11px]"
                                     />
                                 </div>
                             </div>
@@ -108,31 +108,27 @@ export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }:
                                 <Input
                                     type="email" required placeholder="personnel@up.edu.ph"
                                     value={email} onChange={(e) => setEmail(e.target.value)}
-                                    className="bg-zinc-900/40 border-zinc-800 text-white h-10  text-[11px] "
+                                    className="bg-zinc-900/40 border-zinc-800 text-white h-10 text-[11px]"
                                 />
                             </div>
 
-                            {/* --- FIXED DROPDOWN --- */}
                             <div className="space-y-2">
                                 <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Intended Role</Label>
-                                <Select 
-                                    defaultValue="moderator" 
+                                <Select
+                                    defaultValue="user"
                                     onValueChange={(val) => setRole(val)}
                                 >
-                                    <SelectTrigger className="bg-zinc-900/40 border-zinc-800 text-white text-[13px]  h-10">
+                                    <SelectTrigger className="bg-zinc-900/40 border-zinc-800 text-white text-[13px] h-10">
                                         <SelectValue placeholder="SELECT ROLE" />
                                     </SelectTrigger>
-                                    
-                                    {/* 
-                                        IMPORTANT FIXES: 
-                                        1. position="popper" prevents layout jumping.
-                                        2. className="z-[110]" ensures it sits ABOVE the modal (z-100).
-                                    */}
-                                    <SelectContent 
-                                        position="popper" 
+                                    <SelectContent
+                                        position="popper"
                                         sideOffset={5}
                                         className="z-[110] bg-zinc-950 border-zinc-800 text-white min-w-[var(--radix-select-trigger-width)]"
                                     >
+                                        <SelectItem value="user" className="text-[10px] font-bold uppercase tracking-widest focus:bg-[#C5A059] focus:text-black cursor-pointer">
+                                            Viewer / User
+                                        </SelectItem>
                                         <SelectItem value="moderator" className="text-[10px] font-bold uppercase tracking-widest focus:bg-[#C5A059] focus:text-black cursor-pointer">
                                             Field Moderator
                                         </SelectItem>
@@ -152,7 +148,7 @@ export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }:
                                 />
                             </div>
 
-                            <Button 
+                            <Button
                                 type="submit" disabled={isLoading}
                                 className="w-full bg-[#C5A059] text-black font-black uppercase tracking-[0.3em] text-[12px] hover:bg-[#D4B475] h-12 transition-all mt-4"
                             >
@@ -162,14 +158,14 @@ export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }:
                     </div>
 
                     <div className="bg-zinc-900/20 rounded-b-xl border-t border-zinc-800/50 p-4">
-                        <p className="text-zinc-600 text-center text-[12px] ">
-                             Already Registered?
+                        <p className="text-zinc-600 text-center text-[12px]">
+                            Already Registered?
                             <button
                                 type="button"
                                 className="ml-2 text-white hover:text-[#C5A059] transition-colors"
                                 onClick={onToggleLogin}
                             >
-                                Sign In 
+                                Sign In
                             </button>
                         </p>
                     </div>
