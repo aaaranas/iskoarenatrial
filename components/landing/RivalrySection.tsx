@@ -96,6 +96,8 @@ export default function RivalrySection() {
                       src={c.logo}
                       alt=""
                       fill
+                      // Wrapper is a fixed 42px square at every breakpoint
+                      sizes="42px"
                       className="object-cover"
                     />
                   </div>

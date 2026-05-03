@@ -23,6 +23,9 @@ export default function Hero() {
           alt=""
           fill
           priority
+          // Hero photo is full-bleed at every breakpoint — tells Next to skip the
+          // "this might be 100vw, hedge with the largest variant" guess.
+          sizes="100vw"
           className="object-cover [filter:grayscale(0.6)_contrast(1.05)_brightness(0.35)]"
         />
         {/* Linear vertical fade to ia-bg + a maroon radial glow centered on the headline.
@@ -54,6 +57,9 @@ export default function Hero() {
           width={96}
           height={96}
           priority
+          // width:auto + height:auto silences Next's "you sized one but not the
+          // other" warning; the explicit width/height props still set the box.
+          style={{ width: "auto", height: "auto" }}
           className="mb-7 object-contain animate-[fadeInUp_0.8s_ease_both] drop-shadow-[0_8px_32px_rgba(0,0,0,0.6)]"
         />
 

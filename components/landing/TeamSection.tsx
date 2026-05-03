@@ -36,6 +36,9 @@ export default function TeamSection() {
                 src={m.photo}
                 alt={m.name}
                 fill
+                // Auto-fit columns of minmax(180px, 1fr) inside max-w-1100. Roughly
+                // half viewport on mobile, capped at ~220px on desktop.
+                sizes="(max-width: 768px) 50vw, 220px"
                 className="object-cover [filter:grayscale(0.2)] transition-[filter] duration-300 hover:[filter:grayscale(0)]"
               />
               {/* Vignette — fades the bottom 40% to black for legibility on hover */}

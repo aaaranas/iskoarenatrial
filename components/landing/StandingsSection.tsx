@@ -115,6 +115,8 @@ export default function StandingsSection() {
                         src={COLLEGE_LOGOS[row.code]}
                         alt=""
                         fill
+                        // Wrapper is a fixed 34px square at every breakpoint
+                        sizes="34px"
                         className="object-cover"
                       />
                     </div>

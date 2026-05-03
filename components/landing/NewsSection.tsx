@@ -30,6 +30,9 @@ function NewsCard({ article, featured = false }: { article: NewsArticle; feature
             src={article.img}
             alt={article.title}
             fill
+            // Cards span ~half viewport on desktop (1.4fr/1fr or 1fr/1fr grid
+            // inside max-w-1280), full viewport on mobile.
+            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 600px"
             className="object-cover [filter:grayscale(0.15)_brightness(0.85)] transition-transform duration-[600ms] group-hover:scale-105"
           />
         ) : (

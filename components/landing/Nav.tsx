@@ -78,6 +78,8 @@ export default function Nav({ onLoginClick }: NavProps) {
               alt=""
               width={36}
               height={36}
+              // Silences Next's width/height-modified warning (see Hero for details)
+              style={{ width: "auto", height: "auto" }}
               className="object-contain"
             />
             <span className="font-bebas text-[22px] tracking-[2px] text-[#f0f0f0]">

@@ -46,6 +46,9 @@ export default function SpotlightSection() {
                 src={p.photo}
                 alt={p.name}
                 fill
+                // Player card occupies the left col of a 1fr/1.1fr grid (max-w 1280) —
+                // ~half viewport on desktop, full width on mobile.
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover [filter:grayscale(0.2)_contrast(1.05)]"
               />
               {/* Vertical fade to card black + a college-tinted diagonal wash */}

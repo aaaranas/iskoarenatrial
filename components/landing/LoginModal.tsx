@@ -70,6 +70,8 @@ export default function LoginModal({ isOpen, onClose, onSubmit }: LoginModalProp
             alt="IskoArena"
             width={42}
             height={42}
+            // Silences Next's width/height-modified warning (see Hero for details)
+            style={{ width: "auto", height: "auto" }}
             className="object-contain"
           />
           <div>

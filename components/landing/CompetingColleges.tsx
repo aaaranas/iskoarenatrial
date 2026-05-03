@@ -63,6 +63,8 @@ export default function CompetingColleges() {
                   src={c.logo}
                   alt={`${c.code} crest`}
                   fill
+                  // Crest size is clamp(120px, 16vw, 180px) — matches the wrapper above.
+                  sizes="(max-width: 768px) 120px, 180px"
                   className="rounded-full object-contain"
                 />
               </div>

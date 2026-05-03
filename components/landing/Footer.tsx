@@ -132,6 +132,8 @@ export default function Footer({ onLoginClick }: FooterProps) {
                 alt=""
                 width={34}
                 height={34}
+                // Silences Next's width/height-modified warning (see Hero for details)
+                style={{ width: "auto", height: "auto" }}
                 className="object-contain"
               />
               <span className="font-bebas text-[22px] tracking-[2.5px] text-[#f0f0f0]">
