@@ -3,3 +3,6 @@ node_modules
 .env
 
 *.tsbuildinfo
+
+NPMRUNDEV.md
+ISKOARENABUGS1.0.md

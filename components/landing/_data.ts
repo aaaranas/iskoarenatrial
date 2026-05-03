@@ -103,10 +103,10 @@ export interface LiveMatch {
 export const LIVE_MATCHES: LiveMatch[] = [
   { id: 1, sport: "Basketball", home: "CSS Stallions", away: "COS Scions",   homeScore: 67,   awayScore: 54,   status: "LIVE",     statusType: "live",     venue: "Gym A",    time: "Q3 8:42", cat: "Traditional", homeCo: "CSS",  awayCo: "COS",  img: "/iskolarobaseball.jpg" },
   { id: 2, sport: "Volleyball", home: "CCAD Phoenix",  away: "SOM Tycoons",  homeScore: 2,    awayScore: 1,    status: "LIVE",     statusType: "live",     venue: "Gym B",    time: "Set 3",   cat: "Traditional", homeCo: "CCAD", awayCo: "SOM",  img: "/iskolarovolley.jpg"   },
-  { id: 3, sport: "MLBB",       home: "CSS Esports",   away: "CCAD Digital", homeScore: 4,    awayScore: 2,    status: "LIVE",     statusType: "live",     venue: "Online",   time: "Game 7",  cat: "Esports",     homeCo: "CSS",  awayCo: "CCAD", img: null                     },
-  { id: 4, sport: "Chess",      home: "COS Knights",   away: "SOM Tacticians", homeScore: null, awayScore: null, status: "4:30 PM", statusType: "upcoming", venue: "Room 101", time: "4:30 PM", cat: "Mind",        homeCo: "COS",  awayCo: "SOM",  img: null                     },
-  { id: 5, sport: "Badminton",  home: "CSS Shuttlers", away: "COS Smashers", homeScore: null, awayScore: null, status: "5:00 PM", statusType: "upcoming", venue: "Gym C",    time: "5:00 PM", cat: "Traditional", homeCo: "CSS",  awayCo: "COS",  img: "/iskolarobadminton.jpg" },
-  { id: 6, sport: "Valorant",   home: "SOM Sentinels", away: "COS Gamers",   homeScore: null, awayScore: null, status: "6:00 PM", statusType: "upcoming", venue: "Online",   time: "6:00 PM", cat: "Esports",     homeCo: "SOM",  awayCo: "COS",  img: null                     },
+  { id: 3, sport: "MLBB",       home: "CSS Stallions",   away: "CCAD Phoenix", homeScore: 4,    awayScore: 2,    status: "LIVE",     statusType: "live",     venue: "Online",   time: "Game 7",  cat: "Esports",     homeCo: "CSS",  awayCo: "CCAD", img: null                     },
+  { id: 4, sport: "Chess",      home: "COS Scions",   away: "SOM Tycoons", homeScore: null, awayScore: null, status: "4:30 PM", statusType: "upcoming", venue: "Room 101", time: "4:30 PM", cat: "Mind",        homeCo: "COS",  awayCo: "SOM",  img: null                     },
+  { id: 5, sport: "Badminton",  home: "CSS Stallions", away: "COS Scions", homeScore: null, awayScore: null, status: "5:00 PM", statusType: "upcoming", venue: "Gym C",    time: "5:00 PM", cat: "Traditional", homeCo: "CSS",  awayCo: "COS",  img: "/iskolarobadminton.jpg" },
+  { id: 6, sport: "Valorant",   home: "SOM Tycoons", away: "COS Scions",   homeScore: null, awayScore: null, status: "6:00 PM", statusType: "upcoming", venue: "Online",   time: "6:00 PM", cat: "Esports",     homeCo: "SOM",  awayCo: "COS",  img: null                     },
 ];
 
 // ---------------------------------------------------------------------------
