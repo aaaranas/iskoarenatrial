@@ -1,9 +1,10 @@
 import React from "react";
 import { Match } from "@/types";
-import { MapPin, Clock, Trophy, Target, Shield, Users, Activity } from "lucide-react";
+import { MapPin, Clock, Trophy, Target, Activity } from "lucide-react";
+import { SheetTitle } from "@/components/ui/sheet"; // Adjust path if needed
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 export const MatchDetailsView = ({ match }: { match: Match }) => {
-  // Mock data structure - replace these with actual match properties from your DB
   const stats = { possession: [60, 40], shots: [15, 8], fouls: [4, 7] };
   const events = [
     { time: "12'", type: "goal", player: "Juan Dela Cruz", team: "Home" },
@@ -12,6 +13,11 @@ export const MatchDetailsView = ({ match }: { match: Match }) => {
 
   return (
     <div className="flex flex-col h-full bg-[#050505] text-white">
+      {/* Fixes the accessibility warning */}
+      <VisuallyHidden>
+        <SheetTitle>Match Details: {match.homeTeam} vs {match.awayTeam}</SheetTitle>
+      </VisuallyHidden>
+
       {/* 1. Header Section */}
       <div className="p-8 bg-gradient-to-b from-[#111] to-transparent border-b border-white/10">
         <div className="flex items-center gap-2 text-[#C5A059] mb-4">
@@ -71,7 +77,6 @@ export const MatchDetailsView = ({ match }: { match: Match }) => {
   );
 };
 
-// Helper components for layout
 const StatRow = ({ label, values }: { label: string; values: number[] }) => (
   <div className="space-y-1">
     <div className="flex justify-between text-[10px] uppercase font-bold text-zinc-400">
