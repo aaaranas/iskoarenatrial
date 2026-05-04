@@ -15,9 +15,11 @@ interface LoginModalProps {
   onClose: () => void;
   // Same signature as the old LoginPage so LandingPage's handler is unchanged.
   onSubmit: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  // Switches to SignupModal — wired by LandingPage's cross-link handler.
+  onSwitchToSignup: () => void;
 }
 
-export default function LoginModal({ isOpen, onClose, onSubmit }: LoginModalProps) {
+export default function LoginModal({ isOpen, onClose, onSubmit, onSwitchToSignup }: LoginModalProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -79,14 +81,14 @@ export default function LoginModal({ isOpen, onClose, onSubmit }: LoginModalProp
               IskoArena
             </div>
             <div className="mt-0.5 text-[11px] font-semibold tracking-[2px] text-ia-gold">
-              ADMIN LOGIN
+              LOGIN
             </div>
           </div>
         </div>
 
-        {/* Disclaimer: makes the public-vs-admin split explicit in the copy */}
+        {/* Disclaimer — public signup is back, so this no longer says "admin-only" */}
         <p className="mb-6 text-[13px] leading-relaxed text-white/50">
-          Admin-only access. Public users can view schedules and standings without logging in.
+          Sign in to manage your college, post results, or follow your favorite teams.
         </p>
 
         <form onSubmit={handleSubmit}>
@@ -133,9 +135,16 @@ export default function LoginModal({ isOpen, onClose, onSubmit }: LoginModalProp
           </button>
         </form>
 
-        {/* Public-vs-admin disclaimer footer */}
-        <p className="mt-5 text-center text-[11px] text-white/35">
-          No account? Admins receive credentials directly.
+        {/* Footer cross-link — opens SignupModal via LandingPage's cross-link handler */}
+        <p className="mt-5 text-center text-[12px] text-white/45">
+          No account?{" "}
+          <button
+            type="button"
+            onClick={onSwitchToSignup}
+            className="font-semibold text-ia-gold transition-colors hover:underline"
+          >
+            Sign up
+          </button>
         </p>
       </div>
     </div>

@@ -14,6 +14,11 @@ import Nav from "@/components/landing/Nav";
 import Footer from "@/components/landing/Footer";
 import LoginModal from "@/components/landing/LoginModal";
 
+// Public signup modal — restored from _legacy and restyled to match LoginModal.
+// Lives at components/ root rather than components/landing/ to preserve the
+// teammate's original file location and git history.
+import SignupPage from "@/components/sign-up";
+
 // Phase 3 — Hero + CompetingColleges.
 import Hero from "@/components/landing/Hero";
 import CompetingColleges from "@/components/landing/CompetingColleges";
@@ -41,8 +46,14 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
   const router = useRouter();
   const utils = trpc.useUtils();
 
-  // Only the login modal remains — signup removed (admins receive credentials directly).
+  // Login + signup modals. Signup was reinstated per team agreement; v1 is
+  // self-grant (whatever role the user picks gets stored). See sign-up.tsx
+  // and server/routers/auth.ts for the security caveat.
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isSignupOpen, setIsSignupOpen] = useState(false);
+
+  // tRPC mutation hook used by handleSignupSubmit below.
+  const signupMutation = trpc.auth.signup.useMutation();
 
   // --- SUPABASE LOGIN HANDLER ---
   const handleLoginSubmit = async (email: string, password: string) => {
@@ -64,6 +75,31 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
       return { success: true, message: "Initialization successful." };
     } catch (error: any) {
       return { success: false, message: error.message || "Invalid credentials." };
+    }
+  };
+
+  // --- SUPABASE SIGNUP HANDLER ---
+  // Adapter between SignupPage's onSubmit signature (positional args, legacy
+  // shape) and the tRPC auth.signup procedure (structured input).
+  const handleSignupSubmit = async (
+    fullName: string,
+    email: string,
+    password: string,
+    role: "user" | "college_admin",
+  ) => {
+    try {
+      await signupMutation.mutateAsync({
+        full_name: fullName,
+        email,
+        password,
+        role_choice: role,
+      });
+      // Stay on the landing page after signup — new users have no privileged
+      // role yet, so we don't auto-redirect to /dashboard. They can click
+      // Login when they're ready.
+      return { success: true, message: "Account created. You can now sign in." };
+    } catch (error: any) {
+      return { success: false, message: error?.message || "Signup failed. Please try again." };
     }
   };
 
@@ -101,11 +137,26 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
         aria-hidden="true"
       />
 
-      {/* New design's LoginModal — only auth modal on the public landing (no signup) */}
+      {/* LoginModal — clicking "Sign up" in its footer closes Login and opens Signup */}
       <LoginModal
         isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
         onSubmit={handleLoginSubmit}
+        onSwitchToSignup={() => {
+          setIsLoginOpen(false);
+          setIsSignupOpen(true);
+        }}
+      />
+
+      {/* SignupModal — clicking "Sign in" in its footer reverses the swap */}
+      <SignupPage
+        isOpen={isSignupOpen}
+        onClose={() => setIsSignupOpen(false)}
+        onSubmit={handleSignupSubmit}
+        onToggleLogin={() => {
+          setIsSignupOpen(false);
+          setIsLoginOpen(true);
+        }}
       />
     </div>
   );
