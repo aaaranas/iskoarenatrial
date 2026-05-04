@@ -1,3 +1,4 @@
+//app/dashboard/teams/page.tsx
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { College } from "@/components/teams/CollegeTable";

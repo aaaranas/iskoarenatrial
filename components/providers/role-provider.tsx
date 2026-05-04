@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
-type Role = "moderator" | "college_admin" | "user" | null;
+type Role = "admin" | "user" | null;
 
 interface RoleContextValue {
   role: Role;
@@ -39,7 +39,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     fetchRole();
   }, []);
 
-  const isAdmin = role === "moderator" || role === "college_admin";
+  const isAdmin = !loading && role === "admin";
 
   return (
     <RoleContext.Provider value={{ role, isAdmin, loading }}>

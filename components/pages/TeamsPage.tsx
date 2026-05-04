@@ -1,3 +1,4 @@
+//components/pages/TeamsPage.tsx
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { College } from "../teams/CollegeTable";
@@ -5,6 +6,22 @@ import { CollegeCard } from "../teams/CollegeCard";
 import { CollegeProfilePage } from "../teams/CollegeProfilePage";
 import { supabase } from "@/lib/supabase/client";
 import { useRole } from "@/components/providers/role-provider";
+
+// Direct role fetch hook — bypasses context timing issues
+function useIsAdmin() {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [ready,   setReady]   = useState(false);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) { setReady(true); return; }
+      supabase.from("profiles").select("role").eq("id", user.id).single().then(({ data }) => {
+        setIsAdmin(data?.role === "admin");
+        setReady(true);
+      });
+    });
+  }, []);
+  return { isAdmin, ready };
+}
 
 const EMPTY_FORM = {
   name: "",
@@ -357,7 +374,7 @@ function ImportCSVModal({ colleges, onClose, onImport }: {
 }
 
 export default function TeamsPage() {
-  const { isAdmin } = useRole();
+  const { isAdmin, ready } = useIsAdmin();
   const [colleges, setColleges] = useState<College[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -452,13 +469,13 @@ export default function TeamsPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Modals — admin only */}
-      {isAdmin && showImportModal && (
+      {ready && isAdmin && showImportModal && (
         <ImportCSVModal colleges={colleges} onClose={() => setShowImportModal(false)} onImport={handleImportCSV} />
       )}
-      {isAdmin && showModal && (
+      {ready && isAdmin && showModal && (
         <AddCollegeModal colleges={colleges} onClose={() => setShowModal(false)} onAdd={handleAddCollege} onMerge={handleMergeCollege} />
       )}
-      {isAdmin && deleteTarget && (
+      {ready && isAdmin && deleteTarget && (
         <DeleteCollegeModal college={deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={() => handleDeleteCollege(deleteTarget.name)} />
       )}
 
@@ -497,7 +514,7 @@ export default function TeamsPage() {
         <div className="flex items-center gap-3 flex-shrink-0">
           {!isLoading && <span className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-widest">{filtered.length} {filtered.length === 1 ? "result" : "results"}</span>}
           {/* Admin-only buttons */}
-          {isAdmin && (
+          {ready && isAdmin && (
             <>
               <button onClick={() => setShowImportModal(true)} className="bg-card hover:bg-card/80 border border-border text-muted-foreground text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all flex items-center gap-1.5 hover:text-white">
                 ↑ Import CSV
@@ -549,7 +566,7 @@ export default function TeamsPage() {
               <div key={college.id ?? college.name} className="relative group">
                 <CollegeCard college={college} onViewProfile={setProfileCollege} />
                 {/* Delete button — admin only */}
-                {isAdmin && (
+                {ready && isAdmin && (
                   <button
                     onClick={() => setDeleteTarget(college)}
                     className="absolute top-2 right-2 w-7 h-7 bg-black/60 hover:bg-primary border border-white/10 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
