@@ -7,15 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { X, Loader2 } from "lucide-react";
 
+// Public landing is login-only — no signup toggle prop (admins issue credentials).
 interface LoginPageProps {
     isOpen: boolean;
     onClose: () => void;
-    // Updated signature: email instead of username, and returns a Promise
     onSubmit: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
-    onToggleSignup: () => void;
+    onToggleSignup?: () => void; // Kept optional for backwards compatibility; unused.
 }
 
-export default function LoginPage({ isOpen, onClose, onSubmit, onToggleSignup }: LoginPageProps) {
+export default function LoginPage({ isOpen, onClose, onSubmit }: LoginPageProps) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -134,16 +134,10 @@ export default function LoginPage({ isOpen, onClose, onSubmit, onToggleSignup }:
                         </div>
                     </div>
 
+                    {/* Footer note — signup removed; admins issue credentials directly. */}
                     <div className="bg-zinc-900/20 rounded-b-xl border-t border-zinc-800/50 p-4">
-                        <p className="text-zinc-600 text-center text-[12px] ">
-                            No Account Yet?
-                            <button
-                                type="button"
-                                className="ml-2 text-white hover:text-[#C5A059] transition-colors font-black"
-                                onClick={onToggleSignup}
-                            >
-                                Sign Up
-                            </button>
+                        <p className="text-zinc-600 text-center text-[11px] tracking-wider">
+                            Admin access only. Contact the Iskolaro Committee for credentials.
                         </p>
                     </div>
                 </form>
