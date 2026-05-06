@@ -174,14 +174,6 @@ export default function LeaderboardPage() {
           <section>
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12 mb-20">
               <h3 className="text-9xl font-black uppercase italic tracking-tighter">Standings</h3>
-              <div className="flex bg-[#0A0A0A] p-1.5 border border-white/5">
-                <button onClick={() => setViewMode("players")} className={`px-14 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${viewMode === "players" ? "bg-[#A91D3A] text-white" : "text-zinc-600"}`}>
-                  Players
-                </button>
-                <button onClick={() => setViewMode("teams")} className={`px-14 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${viewMode === "teams" ? "bg-[#A91D3A] text-white" : "text-zinc-600"}`}>
-                  Teams
-                </button>
-              </div>
             </div>
             <AnimatePresence mode="wait">
               <motion.div
