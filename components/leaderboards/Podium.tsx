@@ -8,6 +8,15 @@ import {
 import { LeaderboardSideUserCardSection } from "./LeaderboardSideUserCard";
 import { LeaderboardToggleSection } from "./LeaderboardToggle";
 
+// ✅ shadcn select
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 interface Performer {
   id: string;
   name: string;
@@ -24,7 +33,9 @@ const PodiumBlock = ({ height, targetValue, performerId }: { height: string; tar
   const ref = useRef(null);
   const isInView = useInView(ref, { once: false, amount: 0.5 });
   const count = useMotionValue(0);
-  const rounded = useTransform(count, (latest) => Math.round(latest).toLocaleString());
+  const rounded = useTransform(count, (latest) =>
+    Math.round(latest).toLocaleString()
+  );
 
   useEffect(() => {
     if (isInView) {
@@ -127,6 +138,13 @@ export const Podium = ({ performers }: { performers: Performer[] }) => {
           <PodiumBlock performerId={right.id} height="110px" targetValue={right.value} />
         </div>
       </div>
+
+      {/* Empty state */}
+      {filteredPerformers.length === 0 && (
+        <div className="text-white/50 text-sm">
+          No performers found for selected filters.
+        </div>
+      )}
     </div>
   );
 };

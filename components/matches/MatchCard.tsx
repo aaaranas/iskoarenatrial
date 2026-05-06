@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Match } from "@/types";
 import { MapPin, Edit3, Trash2, Clock } from "lucide-react";
 import { DeleteMatchModal } from "./DeleteMatchModal";
@@ -7,16 +7,17 @@ import { EditMatchModal } from "./EditMatchModal";
 
 interface MatchCardProps {
   match: Match;
-  onOpenDetails: () => void; 
-  onFinalize: () => boolean;
+  onOpenDetails: () => void;
+  onFinalize?: () => void;
 }
 
 export const MatchCard = ({ match, onOpenDetails, onFinalize }: MatchCardProps) => {
   const isLive = match.statusType?.toLowerCase() === "live";
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const suppressNextClick = useRef(false);
 
-
+  const idHash = match.id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
   const fallbackImages = [
     "/iskolarobaseball.jpg",
     "/iskolarofrisbee.jpg",
@@ -24,17 +25,40 @@ export const MatchCard = ({ match, onOpenDetails, onFinalize }: MatchCardProps) 
     "/iskolarofrisbee2.jpg",
     "/iskolarovolley.jpg"
   ];
-
-  // id is a string (UUID) — use a hash to pick a fallback image
-  const idHash = match.id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
   const cardImage = fallbackImages[idHash % fallbackImages.length];
 
-  return (
-    <div className="group relative h-[350px] sm:h-[420px] lg:h-[480px] w-full bg-[#050505] rounded-sm overflow-hidden border border-white/5 transition-all duration-500 hover:border-[#C5A059]/40 hover:shadow-2xl hover:shadow-[#A91D3A]/10" >
-      <div className="absolute inset-0 z-10" onClick={onOpenDetails} />     
-      
+  const handleEditOpenChange = (open: boolean) => {
+    if (!open) {
+      suppressNextClick.current = true;
+      setTimeout(() => {
+        suppressNextClick.current = false;
+      }, 300);
+    }
+    setEditDialogOpen(open);
+  };
 
-      {/* Cinematic Poster Layer */}
+  const handleDeleteOpenChange = (open: boolean) => {
+    if (!open) {
+      suppressNextClick.current = true;
+      setTimeout(() => {
+        suppressNextClick.current = false;
+      }, 300);
+    }
+    setDeleteDialogOpen(open);
+  };
+
+  const handleCardClick = () => {
+    if (suppressNextClick.current) {
+      return;
+    }
+    onOpenDetails();
+  };
+
+  return (
+    <div
+      className="group relative h-[350px] sm:h-[420px] lg:h-[480px] w-full bg-[#050505] rounded-sm overflow-hidden border border-white/5 transition-all duration-500 hover:border-[#C5A059]/40 hover:shadow-2xl hover:shadow-[#A91D3A]/10 cursor-pointer"
+      onClick={handleCardClick}
+    >
       <div className="absolute inset-0 z-0">
         <img
           src={cardImage}
@@ -45,31 +69,35 @@ export const MatchCard = ({ match, onOpenDetails, onFinalize }: MatchCardProps) 
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent opacity-60" />
       </div>
 
-      {/* Admin Quick Actions */}
-      <div className="absolute top-4 right-4 z-50 flex flex-col gap-2 translate-x-10 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300" onClick={(e) => e.stopPropagation()}>
-
-	{isLive && onFinalize && (
-          <button 
-            onClick={onFinalize} 
+      <div
+        className="absolute top-4 right-4 z-50 flex flex-col gap-2 translate-x-10 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {isLive && onFinalize && (
+          <button
+            onClick={onFinalize}
             className="p-2.5 bg-[#C5A059]/20 backdrop-blur-md rounded-full border border-[#C5A059] text-[#C5A059] hover:bg-[#C5A059] hover:text-black transition-all"
             title="Finalize Match"
           >
             <span className="text-[8px] font-black uppercase">End</span>
           </button>
         )}
-        <button onClick={() => setEditDialogOpen(true)} className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#C5A059] hover:text-black transition-all">
+        <button
+          onClick={() => setEditDialogOpen(true)}
+          className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#C5A059] hover:text-black transition-all"
+        >
           <Edit3 className="w-4 h-4" />
         </button>
-        <button onClick={() => setDeleteDialogOpen(true)} className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#A91D3A] transition-all">
+        <button
+          onClick={() => setDeleteDialogOpen(true)}
+          className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#A91D3A] transition-all"
+        >
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
-      
-      
-      
-      {/* Card Content */}
-      <div className="relative z-10 h-full p-6 flex flex-col justify-between">
-        <div className="flex justify-between items-start">
+
+      <div className="relative z-10 h-full p-6 flex flex-col justify-between pointer-events-none">
+        <div className="flex justify-between items-start pointer-events-auto">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059]" />
@@ -112,8 +140,8 @@ export const MatchCard = ({ match, onOpenDetails, onFinalize }: MatchCardProps) 
 
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
 
-      <EditMatchModal match={match} open={editDialogOpen} onOpenChange={setEditDialogOpen} />
-      <DeleteMatchModal match={match} open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} />
+      <EditMatchModal match={match} open={editDialogOpen} onOpenChange={handleEditOpenChange} />
+      <DeleteMatchModal match={match} open={deleteDialogOpen} onOpenChange={handleDeleteOpenChange} />
     </div>
   );
 };
