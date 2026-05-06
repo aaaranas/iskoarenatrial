@@ -1,18 +1,18 @@
-// src/app/dashboard/layout.tsx
 "use client";
 
 import React from "react";
 import { trpc } from "@/utils/trpc";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { AppSidebar } from "@/components/app-sidebar"; // This is your new custom Topbar
+import { TopBar } from "@/components/topbar";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const utils = trpc.useUtils();
-  
+
   const { data: auth, isLoading } = trpc.auth.getSession.useQuery();
 
   const handleLogout = async () => {
@@ -24,23 +24,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (isLoading) {
     return (
-      <div className="h-screen bg-[#050505] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#C5A059] animate-spin" />
+      <div className="h-screen bg-surface-page flex items-center justify-center">
+        <Loader2
+          className="w-8 h-8 animate-spin"
+          style={{ color: "var(--accent-maroon)" }}
+        />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Pass the real data here: */}
-      <AppSidebar 
-        adminName={auth?.profile?.full_name || "Operator"} 
-        onLogout={handleLogout} 
-      />
-      
-      <main className="flex-1 w-full pt-16 bg-[#050505]">
+    <div className="flex flex-col min-h-screen bg-surface-page">
+      <TopBar onLogout={handleLogout} />
+      <main className="flex-1 w-full pt-16">
         {children}
       </main>
+      <ThemeToggle />
       <Toaster />
     </div>
   );

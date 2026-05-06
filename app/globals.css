@@ -5,103 +5,13 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Scrollbar */
+/* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #000000; }
-::-webkit-scrollbar-thumb { background: #450a0a; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #800000; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
-@layer base {
-  :root {
-    /* Brand Colors for Light Mode (If used) */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    
-    /* Maroon: #800000 */
-    --primary: 0 100% 25%; 
-    --primary-foreground: 0 0% 98%;
-    
-    /* Gold: #D4AF37 */
-    --secondary: 46 65% 52%;
-    --secondary-foreground: 0 0% 0%;
-
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 46 65% 52%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 100% 25%;
-    --radius: 0.5rem;
-    --font-heading: "Maroons Strong", sans-serif;
-  }
-
-  .dark {
-    /* Pure Black Background */
-    --background: 0 0% 0%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-
-    /* Maroon Primary */
-    --primary: 0 100% 25%;
-    --primary-foreground: 0 0% 98%;
-
-    /* Gold Secondary */
-    --secondary: 46 65% 52%;
-    --secondary-foreground: 0 0% 0%;
-
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 100% 25%;
-  }
-}
-
-@layer components {
-  /* The Custom Glass Effects from your HTML Design */
-  .glass-panel {
-    @apply backdrop-blur-md border border-white/10 bg-black/40;
-  }
-
-  .glass-panel-maroon {
-    background: linear-gradient(135deg, rgba(128, 0, 0, 0.8), rgba(65, 0, 2, 0.85));
-    @apply backdrop-blur-lg border border-white/20 shadow-2xl;
-  }
-
-  .bg-gradient-dark {
-    background: radial-gradient(circle at top right, #1a0001, #000000);
-  }
-}
-
-@layer base {
-  * { @apply border-border; }
-  body { 
-    @apply bg-background text-foreground; 
-    background: radial-gradient(circle at top right, #1a0001, #000000);
-    min-height: 100vh;
-  }
-  h1, h2, h3, h4, h5, h6 { font-family: "Maroons Strong", sans-serif; }
-}
-
-/* Animations and Material Symbols remain same as your provided code */
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-.page-fade { animation: fadeIn 0.3s ease-in; }
-
-
+/* ─── Font face ─────────────────────────────────────────────────────────────── */
 @font-face {
   font-family: 'Material Symbols Outlined';
   src: url('/fonts/font.woff2') format('woff2');
@@ -113,7 +23,7 @@
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
   font-style: normal;
-  font-size: 24px;  /* Preferred icon size */
+  font-size: 24px;
   display: inline-block;
   line-height: 1;
   text-transform: none;
@@ -122,3 +32,230 @@
   white-space: nowrap;
   direction: ltr;
 }
+
+/* ─── Design tokens ─────────────────────────────────────────────────────────── */
+@layer base {
+  :root {
+    /*
+     * Light mode
+     * Background:  #faf1f0  — warm rosy off-white
+     * Text:        #140708  — near-black with warm red undertone
+     * Primary:     #7b1113  — deep maroon
+     * Secondary:   #9adc9e  — sage green
+     * Accent:      #6dccba  — soft teal
+     */
+
+    --background:           6 50% 96%;    /* #faf1f0 */
+    --foreground:           355 48% 5%;   /* #140708 */
+    --card:                 0 0% 100%;
+    --card-foreground:      355 48% 5%;
+    --popover:              0 0% 100%;
+    --popover-foreground:   355 48% 5%;
+    --primary:              359 76% 27%;  /* #7b1113 */
+    --primary-foreground:   358 33% 97%;
+    --secondary:            124 49% 73%;  /* #9adc9e sage green */
+    --secondary-foreground: 355 48% 5%;
+    --muted:                350 20% 92%;  /* #ede4e3 */
+    --muted-foreground:     350 18% 42%;  /* #7a5a5c */
+    --accent:               169 48% 61%;  /* #6dccba teal */
+    --accent-foreground:    355 48% 5%;
+    --destructive:          0 72% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --border:               350 22% 84%;  /* #ddd0d1 */
+    --input:                350 22% 84%;
+    --ring:                 359 76% 27%;
+    --radius:               0.5rem;
+
+    /* ── Topbar ── */
+    --topbar-bg:            0 0% 100%;
+    --topbar-border:        350 20% 89%;  /* #e8dfe0 */
+    --topbar-text:          355 48% 5%;
+    --topbar-active:        #7b1113;
+
+    /* ── Semantic surface tokens ── */
+    --surface-page:         #faf1f0;
+    --surface-card:         #ede4e3;      
+    --surface-card-alt:     #f5ecea;
+    --surface-raised:       #ffffff;
+    --surface-sunken:       rgba(154, 220, 158, 0.2);
+    --surface-overlay:      #f2e8e7;
+
+    /* ── Text tokens ── */
+    --text:         #140708;
+    --accent-text:  #7b1113;
+    --text-inverse:         #faf1f0;
+
+    /* ── Border tokens ── */
+    --border-strong:        #c8b0b1;
+    --border-default:       #ddd0d1;
+    --border-subtle:        #ede4e3;
+    --border-ghost:         rgba(123,17,19,0.06);
+
+    /* ── Brand accents ── */
+    --accent-maroon:        #7b1113;
+    --accent-maroon1:      rgba(123,17,19,0.05);
+    --accent-maroon2:      rgba(123,17,19,0.2);
+    --accent-maroon-deep:   #450a0a;
+    --accent-maroon-mid:    #9b1416;
+    --accent-secondary:     #9adc9e;      /* sage green */
+    --accent-teal:          #6dccba;      /* teal accent */
+    --accent-gold:          #B8962E;      /* kept for any legacy usage */
+    --accent-gold-muted:    #A07C20;
+
+    /* Live/alert */
+    --accent-live:          #b91c1c;
+    --accent-live-bg:       #fef2f2;
+    --accent-live-border:   rgba(185,28,28,0.18);
+    --upcoming-bg:          #6dccbb30;
+    --upcoming-text:        #140708;
+    --finished-bg:          #fef2f2;  
+    --finished-text:        #9f9c9c;
+
+    /* ── Scrollbar ── */
+    --scrollbar-track:      #faf1f0;
+    --scrollbar-thumb:      #c8b0b1;
+    --scrollbar-thumb-hover: #7b1113;
+
+    /* ── Page gradient ── */
+    --page-bg-gradient: radial-gradient(ellipse 75% 55% at top right, #f0d4d5, #faf1f0 58%);
+
+    --font-heading: "Maroons Strong", sans-serif;
+  }
+
+  /* ── Dark mode ── */
+  .dark {
+    /*
+     * Dark mode
+     * Background:  #100505  — very dark maroon-black
+     * Text:        #f1efef  — near-white with warm pink undertone
+     * Primary:     #7b1113  — deep maroon (used at #c1282b on dark for contrast)
+     * Secondary:   #7c3535  — muted brick red
+     * Accent:      #d8973e  — warm amber/gold
+     */
+
+    --background:           0 52% 4%;    /* #100505 */
+    --foreground:           0 7% 94%;    /* #f1efef */
+    --card:                 0 28% 8%;    /* #1a0c0c */
+    --card-foreground:      0 7% 94%;
+    --popover:              0 28% 8%;
+    --popover-foreground:   0 7% 94%;
+    --primary:              359 76% 27%; /* #7b1113 */
+    --primary-foreground:   0 7% 94%;
+    --secondary:            0 40% 35%;   /* #7c3535 brick red */
+    --secondary-foreground: 0 7% 94%;
+    --muted:                0 28% 12%;   /* #261010 */
+    --muted-foreground:     0 14% 58%;   /* #a88888 */
+    --accent:               35 66% 55%;  /* #d8973e amber */
+    --accent-foreground:    0 52% 4%;
+    --destructive:          0 63% 31%;
+    --destructive-foreground: 0 0% 98%;
+    --border:               0 28% 14%;   /* #2e1010 */
+    --input:                0 28% 14%;
+    --ring:                 359 76% 38%; /* #c1282b — brighter for focus rings */
+
+    /* ── Topbar ── */
+    --topbar-bg:            0 30% 6%;    /* #1a0808 */
+    --topbar-border:        0 28% 12%;   /* #260e0e */
+    --topbar-text:          #f1efef;   /* #9e8080 — 3.4:1 on topbar-bg */
+    --topbar-active:        #d8973e;     /* brightened maroon, 4.6:1 on topbar-bg */
+
+    /* ── Semantic surface tokens ── */
+    --surface-page:         #100505;
+    --surface-card:         rgba(123, 17, 19, 0.05);
+    --surface-card-alt:     #200e0e;
+    --surface-raised:       #2a1212;
+    --surface-sunken:       rgba(123, 17, 19, 0.05);
+    --surface-overlay:      #160909;
+
+    /* ── Text tokens ── */
+    --text:         #f1efef;
+    --accent-text:  #d8973e;
+    --text-inverse:         #b8962e;
+
+    /* ── Border tokens ── */
+    --border-strong:        rgba(241,239,239,0.12);
+    --border-default:       rgba(241,239,239,0.07);
+    --border-subtle:        rgba(241,239,239,0.04);
+    --border-ghost:         rgba(241,239,239,0.02);
+
+    /* ── Brand accents ── */
+    --accent-maroon:        #7b1113;     /* brightened for dark-bg visibility */
+    --accent-maroon1:      rgba(123,17,19,0.2);
+    --accent-maroon2:      rgba(123,17,19,0.2);
+    --accent-maroon-deep:   #450a0a;
+    --accent-maroon-mid:    #7b1113;
+    --accent-secondary:     #7c3535;     /* brick red secondary */
+    --accent-teal:          #6dccba;     /* kept from light for any shared usage */
+    --accent-gold:          #d8973e;     /* amber replaces gold in dark */
+    --accent-gold-muted:    #b8962e;
+
+    /* Live/alert */
+    --accent-live:          #e03030;
+    --accent-live-bg:       #1e0808;
+    --accent-live-border:   rgba(224,48,48,0.22);
+    --upcoming-bg:          #160909;
+    --upcoming-text:        #6dccba;
+    --finished-bg:          #160909;
+    --finished-text:        #9f9c9c;
+
+    /* ── Scrollbar ── */
+    --scrollbar-track:      #0a0202;
+    --scrollbar-thumb:      #450a0a;
+    --scrollbar-thumb-hover: #7b1113;
+
+    /* ── Page gradient ── */
+    --page-bg-gradient: radial-gradient(ellipse 65% 45% at top right, #2e0808, #100505 52%);
+  }
+}
+
+/* ─── Base styles ────────────────────────────────────────────────────────────── */
+@layer base {
+  * { @apply border-border; }
+
+  body {
+    @apply text-foreground;
+    background-color: var(--surface-page);
+    background-image: var(--page-bg-gradient);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+/* ─── Semantic utility classes ───────────────────────────────────────────────── */
+@layer utilities {
+  .font-heading        { font-family: var(--font-heading); }
+
+  .bg-surface-page     { background-color: var(--surface-page); }
+  .bg-surface-card     { background-color: var(--surface-card); }
+  .bg-surface-card-alt { background-color: var(--surface-card-alt); }
+  .bg-surface-raised   { background-color: var(--surface-raised); }
+  .bg-surface-sunken   { background-color: var(--surface-sunken); }
+  .bg-surface-overlay  { background-color: var(--surface-overlay); }
+
+  .text-base-primary   { color: var(--text-primary); }
+  .text-base-secondary { color: var(--text-secondary); }
+  .text-base-tertiary  { color: var(--text-tertiary); }
+  .text-base-disabled  { color: var(--text-disabled); }
+
+  .border-strong       { border-color: var(--border-strong); }
+  .border-default      { border-color: var(--border-default); }
+  .border-subtle       { border-color: var(--border-subtle); }
+  .border-ghost        { border-color: var(--border-ghost); }
+
+  .text-maroon         { color: var(--accent-maroon); }
+  .text-secondary-brand { color: var(--accent-secondary); }
+  .text-teal           { color: var(--accent-teal); }
+  .text-gold           { color: var(--accent-gold); }
+  .text-gold-muted     { color: var(--accent-gold-muted); }
+  .text-live           { color: var(--accent-live); }
+  .bg-live             { background-color: var(--accent-live-bg); }
+  .border-live         { border-color: var(--accent-live-border); }
+}
+
+/* ─── Animations ─────────────────────────────────────────────────────────────── */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.page-fade { animation: fadeIn 0.3s ease-in; }
