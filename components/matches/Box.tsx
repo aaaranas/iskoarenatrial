@@ -3,9 +3,10 @@
 import React, { useState, useMemo } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { MatchCard } from "./MatchCard";
-import { Match } from "@/types"; // Ensure this points to your updated index.ts
+import { Match } from "@/types";
 import { Plus, Search, ChevronDown } from "lucide-react";
 import { trpc } from '@/utils/trpc';
+import { useRole } from "@/components/providers/role-provider";
 
 import {
   DropdownMenu,
@@ -28,7 +29,7 @@ import { EditMatchModal } from "./EditMatchModal";
 const FILTER_OPTIONS = {
   category: ["Men's", "Women's", "Men's Singles", "Men's Doubles", "Women's Singles", "Women's Doubles", "Mixed Singles", "Mixed Doubles"],
   location: ["UP High School Gymnasium", "AS Hall", "Admin Field", "SOM Court", "PAH"],
-  college: [ "CCAD Phoenix", "SOM Tycoons", "COS Scions", "CSS Stallions"],
+  college: ["CCAD Phoenix", "SOM Tycoons", "COS Scions", "CSS Stallions"],
   sport: ["Badminton", "Basketball", "Volleyball", "Table Tennis", "Larong Pinoy", "Pickleball", "Petanque", "Mobile Legends (ESPORTS)", "DOTA 2 (ESPORTS)", "Valorant (ESPORTS)", "Football"],
   status: ["Live", "Upcoming", "Concluded", "Postponed"]
 };
@@ -36,11 +37,10 @@ const FILTER_OPTIONS = {
 const ITEMS_PER_PAGE = 8;
 
 export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) => {
-  // 1. DATA FETCHING (tRPC)
-  // We cast the data to Match[] to ensure the UI properties exist
   const { data: matchesData, isLoading } = trpc.match.getAll.useQuery();
   const matches = (matchesData as Match[]) || [];
   const [matchToFinalize, setMatchToFinalize] = useState<Match | null>(null);
+  const { isAdmin } = useRole();
 
   const { data: auth } = trpc.auth.getSession.useQuery();
 
@@ -53,49 +53,31 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
     sport: "Sport",
     status: "Status"
   });
-  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null); 
+
   const [matchToEdit, setMatchToEdit] = useState<Match | null>(null);
-  const [matchToDelete, setMatchToDelete] = useState<Match | null>(null);  
+  const [matchToDelete, setMatchToDelete] = useState<Match | null>(null);
 
-
-  // 3. FILTERING LOGIC (Aligned with your Match interface)
   const filteredMatches = useMemo(() => {
     return matches.filter((m) => {
       const searchStr = search.toLowerCase();
-
-      // Property Mapping:
-      // league = Sport Name
-      // homeTeam/awayTeam = College Name
       const matchesSearch =
         (m.league ?? '').toLowerCase().includes(searchStr) ||
         (m.homeTeam ?? '').toLowerCase().includes(searchStr) ||
         (m.awayTeam ?? '').toLowerCase().includes(searchStr);
-
       const matchesSport = filters.sport === "Sport" || m.league === filters.sport;
       const matchesStatus = filters.status === "Status" || m.statusType === filters.status.toLowerCase();
       const matchesCollege = filters.college === "College" || m.homeTeam === filters.college || m.awayTeam === filters.college;
-
-      // Note: If 'category' or 'location' aren't in your Match interface yet,
-      // you'll need to add them to your tRPC mapper and the Match interface in index.ts
       return matchesSearch && matchesSport && matchesStatus && matchesCollege;
     });
   }, [matches, search, filters]);
 
-  // 4. PAGINATION LOGIC
   const totalPages = Math.ceil(filteredMatches.length / ITEMS_PER_PAGE);
   const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIdx = startIdx + ITEMS_PER_PAGE;
-  const paginatedMatches = filteredMatches.slice(startIdx, endIdx);
+  const paginatedMatches = filteredMatches.slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
-  // Reset to page 1 when filters change
-  useMemo(() => {
-    setCurrentPage(1);
-  }, [search, filters]);
+  useMemo(() => { setCurrentPage(1); }, [search, filters]);
 
-  // Use the 'isOwner' property we defined in the Match interface
-  const myMatches = useMemo(() => {
-    return matches.filter((m) => m.isOwner);
-  }, [matches]);
+  const myMatches = useMemo(() => matches.filter((m) => m.isOwner), [matches]);
 
   const { scrollY } = useScroll();
   const bgOpacity = useTransform(scrollY, [0, 400], [1, 0]);
@@ -103,26 +85,17 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="text-lg font-black  tracking-[0.2em] text-[#C5A059] animate-pulse">
+        <div className="text-lg font-black tracking-[0.2em] text-[#C5A059] animate-pulse">
           Initializing Compendium...
         </div>
       </div>
     );
   }
 
-  // Reusable Dropdown Component
-  const FilterDropdown = ({ 
-    label, 
-    options, 
-    value, 
-    onSelect, 
-    isSecondary = false 
-  }: { 
-    label: string, 
-    options: string[], 
-    value: string, 
-    onSelect: (val: string) => void, 
-    isSecondary?: boolean 
+  const FilterDropdown = ({
+    label, options, value, onSelect, isSecondary = false
+  }: {
+    label: string; options: string[]; value: string; onSelect: (val: string) => void; isSecondary?: boolean;
   }) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -135,9 +108,9 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
         <DropdownMenuLabel className="text-[9px] uppercase tracking-widest text-zinc-600 px-2 py-1.5 font-black">Select {label}</DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-zinc-800" />
         {options.map((option) => (
-          <DropdownMenuItem 
-            key={option} 
-            onClick={() => onSelect(option)} 
+          <DropdownMenuItem
+            key={option}
+            onClick={() => onSelect(option)}
             className="text-[10px] uppercase tracking-widest font-bold focus:bg-[#C5A059]/10 focus:text-[#C5A059] cursor-pointer py-2"
           >
             {option}
@@ -151,7 +124,7 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
 
   return (
     <div className="relative bg-[#050505] min-h-screen text-zinc-100 w-full overflow-x-hidden">
-      
+
       <motion.div style={{ opacity: bgOpacity }} className="absolute top-0 left-0 w-full h-[70vh] z-0 pointer-events-none">
         <div className="absolute inset-0 bg-[url('/iskolarobadminton.jpg')] bg-cover bg-center grayscale-[0.4] brightness-[0.6]" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-[#050505] opacity-80" />
@@ -159,8 +132,8 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
       </motion.div>
 
       <div className="relative z-10 pt-[25vh] sm:pt-[30vh] lg:pt-[35vh]">
-        
-        {/* 2. FILTER & ACTION BAR */}
+
+        {/* FILTER & ACTION BAR */}
         <motion.div className="max-w-[1600px] mx-auto mb-12 px-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 lg:gap-10">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 w-full lg:w-auto">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full">
@@ -176,12 +149,15 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 shrink-0 w-full sm:w-auto">
+            {/* Add Match — admin only */}
+            {isAdmin && (
               <AddMatchModal>
                 <button className="flex items-center gap-2 px-5 h-9 bg-[#C5A059]/5 border border-[#C5A059]/20 hover:border-[#C5A059]/60 hover:bg-[#C5A059]/10 rounded-md transition-all group w-full sm:w-auto justify-center">
                   <Plus className="w-3.5 h-3.5 text-[#C5A059]" />
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#C5A059]">Add Match</span>
                 </button>
               </AddMatchModal>
+            )}
             <div className="hidden sm:block h-4 w-px bg-white/10 mx-1" />
             <div className="relative w-full sm:w-[280px]">
               <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-600" />
@@ -194,16 +170,16 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
           </div>
         </motion.div>
 
-        {/* 3. TITLE SECTION */}
+        {/* TITLE */}
         <section className="max-w-[1600px] mx-auto px-6 mb-12 sm:mb-16">
-           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white mb-4">The Match Compendium</h1>
-           <p className="text-zinc-400 max-w-2xl text-xs sm:text-sm leading-relaxed">
-             A live-updated catalog of the intramural landscape. Featuring every active entry and future showdown across all campus divisions.
-           </p>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white mb-4">The Match Compendium</h1>
+          <p className="text-zinc-400 max-w-2xl text-xs sm:text-sm leading-relaxed">
+            A live-updated catalog of the intramural landscape. Featuring every active entry and future showdown across all campus divisions.
+          </p>
         </section>
 
-        {/* 4. MANAGED MATCHES */}
-        {myMatches.length > 0 && (
+        {/* MANAGED MATCHES — admin only */}
+        {isAdmin && myMatches.length > 0 && (
           <section className="mb-16 sm:mb-24 max-w-[1600px] mx-auto px-6">
             <div className="flex items-center gap-4 sm:gap-6 mb-6 sm:mb-8">
               <h2 className="text-xs sm:text-sm font-black uppercase tracking-[0.3em] text-[#C5A059] whitespace-nowrap">Initialized Entries</h2>
@@ -213,11 +189,11 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
               <CarouselContent className="-ml-4 sm:-ml-6">
                 {myMatches.map((match) => (
                   <CarouselItem key={match.id} className="pl-4 sm:pl-6 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-					<MatchCard 
-    key={match.id} 
-    match={match} 
-    onOpenDetails={() => onSelectMatch(match)} // Pass the function here
-  />
+                    <MatchCard
+                      key={match.id}
+                      match={match}
+                      onOpenDetails={() => onSelectMatch(match)}
+                    />
                   </CarouselItem>
                 ))}
               </CarouselContent>
@@ -225,7 +201,7 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
           </section>
         )}
 
-		{/* 5. GLOBAL GRID */}
+        {/* GLOBAL GRID */}
         <section className="max-w-[1600px] mx-auto px-6 pb-16 sm:pb-20">
           <div className="flex items-center gap-4 sm:gap-6 mb-6 sm:mb-8">
             <h2 className="text-xs sm:text-sm font-black uppercase tracking-[0.3em] text-zinc-500 whitespace-nowrap">Global Repository</h2>
@@ -234,43 +210,26 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {paginatedMatches.map((match) => (
-              <MatchCard 
-                key={match.id} 
-                match={match} 
-                onOpenDetails={() => onSelectMatch(match)}
-                onEdit={() => setMatchToEdit(match)}   
-                onFinalize={() => setMatchToFinalize(match)}
-                onDelete={() => setMatchToDelete(match)} 
-              />
+              <div key={match.id} onClick={() => onSelectMatch(match)} className="cursor-pointer">
+                {matchToFinalize && (
+                  <FinalizeMatchModal
+                    match={matchToFinalize}
+                    isOpen={!!matchToFinalize}
+                    onClose={() => setMatchToFinalize(null)}
+                  />
+                )}
+                <MatchCard
+                  match={match}
+                  onOpenDetails={() => onSelectMatch(match)}
+                  onEdit={isAdmin ? () => setMatchToEdit(match) : undefined}
+                  onFinalize={isAdmin ? () => setMatchToFinalize(match) : undefined}
+                  onDelete={isAdmin ? () => setMatchToDelete(match) : undefined}
+                />
+              </div>
             ))}
           </div>
 
-          {/* MODALS MOVED OUTSIDE THE MAP LOOP */}
-          {matchToEdit && (
-            <EditMatchModal 
-              match={matchToEdit} 
-              open={!!matchToEdit} 
-              onOpenChange={(open) => !open && setMatchToEdit(null)} 
-            />
-          )}
-
-          {matchToFinalize && (
-            <FinalizeMatchModal 
-              match={matchToFinalize} 
-              isOpen={!!matchToFinalize} 
-              onClose={() => setMatchToFinalize(null)} 
-            />
-          )}
-
-          {matchToDelete && (
-            <DeleteMatchModal 
-              match={matchToDelete} 
-              open={!!matchToDelete} 
-              onOpenChange={(open) => !open && setMatchToDelete(null)} 
-            />
-          )}
-
-          {/* PAGINATION CONTROLS */}
+          {/* PAGINATION */}
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8 sm:mt-12 pt-8 border-t border-white/5">
               <button
@@ -280,23 +239,19 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
               >
                 ← Previous
               </button>
-
               <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-center">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
                     className={`w-7 h-7 sm:w-8 sm:h-8 text-xs font-bold rounded transition-all ${
-                      currentPage === page
-                        ? "bg-[#C5A059] text-black"
-                        : "border border-zinc-800 text-zinc-500 hover:border-[#C5A059] hover:text-[#C5A059]"
+                      currentPage === page ? "bg-[#C5A059] text-black" : "border border-zinc-800 text-zinc-500 hover:border-[#C5A059] hover:text-[#C5A059]"
                     }`}
                   >
                     {page}
                   </button>
                 ))}
               </div>
-
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}

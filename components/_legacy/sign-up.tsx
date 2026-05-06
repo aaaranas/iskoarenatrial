@@ -10,11 +10,6 @@ import {
 } from "@/components/ui/select";
 import { X, Loader2 } from "lucide-react";
 
-// Role labels — matches team agreement (college_admin or user). Note: "user"
-// is mapped to NULL in the DB (admin_role enum has no "user" value), handled
-// server-side in the signup tRPC procedure.
-type RoleChoice = "user" | "college_admin";
-
 interface SignupPageProps {
   isOpen: boolean;
   onClose: () => void;

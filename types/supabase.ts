@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 export type Json =
   | string
   | number
@@ -504,4 +502,3 @@ export const Constants = {
     },
   },
 } as const
->>>>>>> 766324b54f63030e992543a71b1357c4c2c53f93

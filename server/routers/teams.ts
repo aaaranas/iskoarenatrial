@@ -1,3 +1,4 @@
+//server/routers/teams.ts
 import { router, publicProcedure } from "../trpc";
 import { supabase } from "@/lib/supabase/client";
 import { TRPCError } from "@trpc/server";
