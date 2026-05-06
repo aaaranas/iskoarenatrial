@@ -1,5 +1,4 @@
 "use client";
-
 import React from "react";
 import { trpc } from "@/utils/trpc";
 import { supabase } from "@/lib/supabase/client";
@@ -8,6 +7,7 @@ import { TopBar } from "@/components/topbar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
+import { RoleProvider } from "@/components/providers/role-provider";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();

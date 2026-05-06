@@ -1,13 +1,24 @@
-import { DM_Sans, Space_Mono } from "next/font/google";
+import { DM_Sans, JetBrains_Mono, Bebas_Neue } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TRPCProvider } from "@/components/providers/trpc-provider";
 import './globals.css';
 
+// Body / UI text — DM Sans
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
-const spaceMono = Space_Mono({
+
+// Numerics, scores, timestamps — JetBrains Mono with tabular-nums.
+// Replaced Space Mono per the new design's typography spec.
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["400", "500", "700"],
   variable: "--font-mono",
+});
+
+// Display headlines — Bebas Neue (the design uses it for ISKOARENA wordmark + section titles).
+const bebasNeue = Bebas_Neue({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-bebas",
 });
 
 interface RootLayoutProps {
@@ -15,48 +26,23 @@ interface RootLayoutProps {
 }
 
 export default function RootLayout({ children }: RootLayoutProps) {
+  // Font CSS variables exposed to Tailwind via tailwind.config.ts → fontFamily.bebas / mono / sans
   return (
-    <html
-      lang="en"
-      className={`${dmSans.variable} ${spaceMono.variable} dark`}
-      suppressHydrationWarning
-    >
-      <head>
-        {/*
-         * Runs before React hydrates — reads localStorage and applies the
-         * correct class to <html> instantly to prevent flash of wrong theme.
-         * The `dark` class on <html> above is the SSR default.
-         */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var stored = localStorage.getItem('theme');
-                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  var useDark = stored ? stored === 'dark' : prefersDark;
-                  if (!useDark) {
-                    document.documentElement.classList.remove('dark');
-                  } else {
-                    document.documentElement.classList.add('dark');
-                  }
-                } catch(e) {}
-              })();
-            `,
-          }}
-        />
-      </head>
+    <html lang="en" className={`${dmSans.variable} ${jetbrainsMono.variable} ${bebasNeue.variable}`} suppressHydrationWarning>
       <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <TRPCProvider>
-            {children}
-          </TRPCProvider>
-        </ThemeProvider>
+	 {/* IskoArena is designed dark-first (dashboard, login modal, embedded sections all hardcode dark colors).
+	     forcedTheme="dark" locks the app to dark mode so OS/system preference can't flip it to light, which
+	     would render the hero text unreadable against the dark background photo. */}
+	 <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            forcedTheme="dark"
+            disableTransitionOnChange
+          >
+	  <TRPCProvider>
+	   {children}
+	  </TRPCProvider> 
+	 </ThemeProvider>
       </body>
     </html>
   );

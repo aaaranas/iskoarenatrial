@@ -1,9 +1,11 @@
+//app/dashboard/teams/page.tsx
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { College } from "@/components/teams/CollegeTable";
 import { CollegeCard } from "@/components/teams/CollegeCard";
 import { CollegeProfilePage } from "@/components/teams/CollegeProfilePage";
 import { supabase } from "@/lib/supabase/client";
+import { useRole } from "@/components/providers/role-provider";
 
 const EMPTY_FORM = {
   name: "",
@@ -518,78 +520,24 @@ export default function TeamsPage() {
       return;
     }
 
-    setColleges((prev) => [...prev, { ...college, id: data.id }]);
+    console.log("✅ Successfully added!");
+    const inserted = data?.[0];
+    setColleges((prev) => [...prev, { ...college, id: inserted?.id }]);
   };
 
-  // ✅ Merge sports into existing college — UPDATE instead of INSERT
-  const handleMergeCollege = async (existing: College, newSports: string[]) => {
-    const mergedSports = [...new Set([...existing.sports, ...newSports])];
-    const newActiveTeams = mergedSports.length;
-
-    const { error } = await (supabase as any)
-      .from("teams")
-      .update({ sports: mergedSports, active_teams: newActiveTeams })
-      .eq("college", existing.name);
-
-    if (error) {
-      console.error("❌ Error merging:", error.message);
-      return;
-    }
-
-    const updatedCollege = { ...existing, sports: mergedSports, activeTeams: newActiveTeams };
-
-    // Update colleges list
-    setColleges((prev) =>
-      prev.map((c) => c.name === existing.name ? updatedCollege : c)
-    );
-
-    // Sync profileCollege if it's the same college
-    if (profileCollege?.name === existing.name) {
-      setProfileCollege(updatedCollege);
-    }
-  };
-
-  // ✅ Bulk import from CSV
-  const handleImportCSV = async (rows: CSVRow[]) => {
-    for (const row of rows) {
-      const sports = row.sport.split(";").map((s) => s.trim()).filter(Boolean);
-      const existing = colleges.find((c) => c.name.trim().toLowerCase() === row.college.trim().toLowerCase());
-      if (existing) {
-        const mergedSports = [...new Set([...existing.sports, ...sports])];
-        const { error } = await (supabase as any).from("teams").update({ sports: mergedSports }).eq("college", existing.name);
-        if (!error) setColleges((prev) => prev.map((c) => c.name === existing.name ? { ...c, sports: mergedSports } : c));
-      } else {
-        const newCollege: College = {
-          name: row.college.trim(),
-          established: row.established || "N/A",
-          activeTeams: sports.length,
-          sports,
-          status: (row.status as College["status"]) || "Active",
-        };
-        const { data, error } = await (supabase as any).from("teams").insert([{
-          college: newCollege.name,
-          established: newCollege.established,
-          active_teams: newCollege.activeTeams,
-          sports: newCollege.sports,
-          status: newCollege.status,
-        }]).select().single();
-        if (!error && data) setColleges((prev) => [...prev, { ...newCollege, id: data.id }]);
-      }
-    }
-  };
-
-  // ✅ Delete college
-  const handleDeleteCollege = async (collegeName: string) => {
+  // ✅ Delete college — removes from Supabase permanently
+  const handleDeleteCollege = async (id: string) => {
     const { error } = await (supabase as any)
       .from("teams")
       .delete()
-      .eq("college", collegeName);
+      .eq("id", id);
 
     if (error) {
       console.error("❌ Error deleting:", error);
       return;
     }
-    setColleges((prev) => prev.filter((c) => c.name !== collegeName));
+
+    setColleges((prev) => prev.filter((c) => c.id !== id));
   };
 
   const allSports = [
@@ -677,7 +625,7 @@ export default function TeamsPage() {
         <DeleteCollegeModal
           college={deleteTarget}
           onClose={() => setDeleteTarget(null)}
-          onConfirm={() => handleDeleteCollege(deleteTarget.name)}
+          onConfirm={() => deleteTarget.id && handleDeleteCollege(deleteTarget.id)}
         />
       )}
 
@@ -772,8 +720,8 @@ export default function TeamsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-4 gap-4">
-            {filtered.map((college) => (
-              <div key={college.id ?? college.name} className="relative group">
+            {filtered.map((college, index) => (
+              <div key={college.id ?? `${college.name}-${index}`} className="relative group">
                 <CollegeCard college={college} onViewProfile={setProfileCollege} />
                 <button
                   onClick={() => setDeleteTarget(college)}
