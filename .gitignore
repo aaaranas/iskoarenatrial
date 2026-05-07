@@ -1,6 +1,15 @@
 node_modules
 .next
 .env
+.env.local
+
+*.tsbuildinfo
+
+NPMRUNDEV.md
+ISKOARENABUGS1.0.md
+
+.claude
+_design-import
 
 *.tsbuildinfo
 

@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/carousel";
 import { AddMatchModal } from "./AddMatchModal";
 import { FinalizeMatchModal } from "./FinalizeMatchModal";
+import { DeleteMatchModal } from "./DeleteMatchModal";
+import { EditMatchModal } from "./EditMatchModal";
 
 const FILTER_OPTIONS = {
   category: ["Men's", "Women's", "Men's Singles", "Men's Doubles", "Women's Singles", "Women's Doubles", "Mixed Singles", "Mixed Doubles"],
@@ -205,6 +207,7 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
             <h2 className="text-xs sm:text-sm font-black uppercase tracking-[0.3em] text-zinc-500 whitespace-nowrap">Global Repository</h2>
             <div className="h-px flex-1 bg-white/5" />
           </div>
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {paginatedMatches.map((match) => (
               <div key={match.id} onClick={() => onSelectMatch(match)} className="cursor-pointer">
