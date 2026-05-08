@@ -1,6 +1,6 @@
 # Claude Code Prompt — IskoArena (Software Engineering Final Project)
 
-> Save this file as `CLAUDE.md` in the root of the IskoArena repository so Claude Code picks it up automatically at the start of every session.
+> Save this file as `ISKOARENA_CLAUDE.md` in the root of the IskoArena repository so Claude Code picks it up automatically at the start of every session.
 
 ---
 
