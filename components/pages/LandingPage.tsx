@@ -85,14 +85,13 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
     fullName: string,
     email: string,
     password: string,
-    role: "user" | "college_admin",
+    _role: string, // unused — server always sets role = null on public signup
   ) => {
     try {
       await signupMutation.mutateAsync({
         full_name: fullName,
         email,
         password,
-        role_choice: role,
       });
       // Stay on the landing page after signup — new users have no privileged
       // role yet, so we don't auto-redirect to /dashboard. They can click

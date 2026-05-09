@@ -1,38 +1,4 @@
-import type { Admin, AppData, Match, Player, Stat, Team, Result, MediaItem } from "@/types";
-
-// ============================================
-// Auth Manager
-// ============================================
-export const AuthManager = {
-  initializeAdmins(): void {
-    if (typeof window === "undefined") return;
-    if (!localStorage.getItem("iskoarenaAdmins")) {
-      const defaultAdmins: Admin[] = [
-        {
-          id: "1",
-          email: "admin@iskoarena.com",
-          role: "super_admin",
-          fullName: "Administrator",
-          createdAt: new Date().toISOString(),
-        },
-      ];
-      localStorage.setItem("iskoarenaAdmins", JSON.stringify(defaultAdmins));
-    }
-  },
-
-  getAllAdmins(): Admin[] {
-    if (typeof window === "undefined") return [];
-    return JSON.parse(localStorage.getItem("iskoarenaAdmins") || "[]");
-  },
-
-  usernameExists(email: string): boolean {
-    return this.getAllAdmins().some((a) => a.email === email);
-  },
-
-  verifyLogin(email: string, password: string): Admin | null {
-    return this.getAllAdmins().find((a) => a.email === email) || null;
-  },
-};
+import type { AppData, Match, Player, Stat, Team, Result, MediaItem } from "@/types";
 
 // ============================================
 // Data Manager

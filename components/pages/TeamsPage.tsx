@@ -7,21 +7,6 @@ import { CollegeProfilePage } from "../teams/CollegeProfilePage";
 import { supabase } from "@/lib/supabase/client";
 import { useRole } from "@/components/providers/role-provider";
 
-// Direct role fetch hook — bypasses context timing issues
-function useIsAdmin() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [ready,   setReady]   = useState(false);
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) { setReady(true); return; }
-      supabase.from("profiles").select("role").eq("id", user.id).single().then(({ data }) => {
-        setIsAdmin(data?.role === "admin");
-        setReady(true);
-      });
-    });
-  }, []);
-  return { isAdmin, ready };
-}
 
 const EMPTY_FORM = {
   name: "",
@@ -374,7 +359,8 @@ function ImportCSVModal({ colleges, onClose, onImport }: {
 }
 
 export default function TeamsPage() {
-  const { isAdmin, ready } = useIsAdmin();
+  const { isAdmin, loading } = useRole();
+  const ready = !loading; // true once role fetch resolves
   const [colleges, setColleges] = useState<College[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");

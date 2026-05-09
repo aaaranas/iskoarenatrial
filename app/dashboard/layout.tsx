@@ -1,6 +1,6 @@
 // src/app/dashboard/layout.tsx
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { trpc } from "@/utils/trpc";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -22,6 +22,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push("/");
   };
 
+  // Redirect unauthenticated visitors; runs after the session query resolves
+  useEffect(() => {
+    if (!isLoading && !auth) router.push("/");
+  }, [auth, isLoading, router]);
+
   if (isLoading) {
     return (
       <div className="h-screen bg-[#050505] flex items-center justify-center">
@@ -29,6 +34,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
     );
   }
+
+  // Render nothing while the redirect is in flight
+  if (!auth) return null;
 
   return (
     <RoleProvider>

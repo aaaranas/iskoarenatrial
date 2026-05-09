@@ -5,16 +5,10 @@ import { LogoIcon } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
-} from "@/components/ui/select";
 import { X, Loader2 } from "lucide-react";
 
-// Role labels — matches team agreement (college_admin or user). Note: "user"
-// is mapped to NULL in the DB (admin_role enum has no "user" value), handled
-// server-side in the signup tRPC procedure.
-type RoleChoice = "user" | "college_admin";
-
+// Role picker removed — public signup always creates a viewer (null role).
+// Admins are promoted post-registration via trpc.auth.promoteToAdmin (admin-only).
 interface SignupPageProps {
   isOpen: boolean;
   onClose: () => void;
@@ -27,7 +21,6 @@ export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }:
   const [lastName,  setLastName]  = useState("");
   const [email,     setEmail]     = useState("");
   const [password,  setPassword]  = useState("");
-  const [role,      setRole]      = useState("user");
   const [isLoading, setIsLoading] = useState(false);
   const [status,    setStatus]    = useState<{ text: string; success: boolean } | null>(null);
 
@@ -39,7 +32,8 @@ export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }:
     setIsLoading(true);
     const fullName = `${firstName} ${lastName}`.trim();
     try {
-      const result = await onSubmit(fullName, email, password, role);
+      // Always passes "user" — role is ignored by the server (hardcoded to null)
+      const result = await onSubmit(fullName, email, password, "user");
       setStatus({ text: result.message, success: result.success });
       if (result.success) { setFirstName(""); setLastName(""); setEmail(""); setPassword(""); }
     } catch {
@@ -80,18 +74,6 @@ export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }:
               <div className="space-y-2">
                 <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Email Address</Label>
                 <Input type="email" required placeholder="juan@up.edu.ph" value={email} onChange={(e) => setEmail(e.target.value)} className="bg-zinc-900/40 border-zinc-800 text-white h-10 text-[11px]" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Role</Label>
-                <Select defaultValue="user" onValueChange={(val) => setRole(val)}>
-                  <SelectTrigger className="bg-zinc-900/40 border-zinc-800 text-white text-[13px] h-10">
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={5} className="z-[110] bg-zinc-950 border-zinc-800 text-white min-w-[var(--radix-select-trigger-width)]">
-                    <SelectItem value="user" className="text-[10px] font-bold uppercase tracking-widest focus:bg-[#C5A059] focus:text-black cursor-pointer">Viewer</SelectItem>
-                    <SelectItem value="admin" className="text-[10px] font-bold uppercase tracking-widest focus:bg-[#C5A059] focus:text-black cursor-pointer">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
               <div className="space-y-2">
                 <Label className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 ml-1">Password</Label>

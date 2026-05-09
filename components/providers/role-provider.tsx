@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
+// Matches actual DB values: "admin" | "user". null = unauthenticated or no row.
 type Role = "admin" | "user" | null;
 
 interface RoleContextValue {
@@ -32,7 +33,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
         .eq("id", user.id)
         .single();
 
-      setRole((profile?.role as Role) ?? "user");
+      setRole((profile?.role as Role) ?? null);
       setLoading(false);
     };
 
