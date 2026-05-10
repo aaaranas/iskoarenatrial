@@ -55,14 +55,19 @@ export const authRouter = router({
       // If profile insert fails, delete the orphan auth user so the email
       // isn't permanently blocked from re-signing-up.
       const userId = created.user.id;
-      const { error: profileErr } = await supabaseAdmin.from("profiles").insert({
+      // Upsert (not insert) because Supabase has an on_auth_user_created trigger
+      // that auto-creates a profile row. We update it with full_name/email/role
+      // rather than inserting a duplicate (which would violate profiles_pkey).
+      const { error: profileErr } = await supabaseAdmin.from("profiles").upsert({
         id: userId,
         email: input.email,
         full_name: input.full_name,
-        role: "user" as any, // new signups are always viewers
-      });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        role: "user" as any, // DB enum includes "user" as the default viewer role
+      }, { onConflict: "id" });
 
       if (profileErr) {
+        console.error("Profile insert error:", profileErr.message);
         await supabaseAdmin.auth.admin.deleteUser(userId);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",

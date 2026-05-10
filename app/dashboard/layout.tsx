@@ -1,13 +1,13 @@
-// src/app/dashboard/layout.tsx
+﻿// src/app/dashboard/layout.tsx
 "use client";
 import React, { useEffect } from "react";
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/lib/trpc";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
-import { RoleProvider } from "@/components/providers/role-provider";
+import { RoleProvider } from "@/providers/RoleProvider";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -22,10 +22,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push("/");
   };
 
-  // Redirect unauthenticated visitors; runs after the session query resolves
+  // Client-side session check — reads localStorage where signInWithPassword stores
+  // the session. The tRPC getSession query reads cookies (server-side), which are
+  // empty because the browser client uses localStorage, so we can't use auth===null
+  // as the redirect signal without falsely kicking out every logged-in user.
   useEffect(() => {
-    if (!isLoading && !auth) router.push("/");
-  }, [auth, isLoading, router]);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) router.push("/");
+    });
+  }, [router]);
 
   if (isLoading) {
     return (
@@ -34,9 +39,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
     );
   }
-
-  // Render nothing while the redirect is in flight
-  if (!auth) return null;
 
   return (
     <RoleProvider>
