@@ -26,7 +26,10 @@ export const statsRouter = router({
       if (input.type === "teams") query = query.not("team_id", "is", null);
 
       const { data, error } = await query;
-      if (error) throw error;
+      // Return empty array instead of throwing so the leaderboards page
+      // renders with an empty state rather than a 500 when the stats table
+      // has no data or is not yet populated (TM3 owns the stats data layer)
+      if (error) { console.error("stats.getLeaderboard:", error.message); return []; }
       return data || [];
     }),
 });
