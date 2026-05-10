@@ -1,11 +1,11 @@
-//app/dashboard/teams/page.tsx
+﻿//app/dashboard/teams/page.tsx
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { College } from "@/components/teams/CollegeTable";
-import { CollegeCard } from "@/components/teams/CollegeCard";
-import { CollegeProfilePage } from "@/components/teams/CollegeProfilePage";
+import { College } from "@/features/teams/components/CollegeTable";
+import { CollegeCard } from "@/features/teams/components/CollegeCard";
+import { CollegeProfilePage } from "@/features/teams/components/CollegeProfilePage";
 import { supabase } from "@/lib/supabase/client";
-import { useRole } from "@/components/providers/role-provider";
+import { useRole } from "@/providers/RoleProvider";
 
 const EMPTY_FORM = {
   name: "",

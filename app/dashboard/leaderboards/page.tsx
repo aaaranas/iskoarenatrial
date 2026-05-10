@@ -1,5 +1,5 @@
-"use client";
-import LeaderboardPage from "@/components/pages/StatsPage";
+﻿"use client";
+import LeaderboardPage from "@/features/leaderboards/StatsPage";
 
 export default function LeaderboardsRoute() {
   return <LeaderboardPage />;

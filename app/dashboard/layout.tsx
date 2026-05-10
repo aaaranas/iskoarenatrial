@@ -1,13 +1,13 @@
+﻿// src/app/dashboard/layout.tsx
 "use client";
-import React from "react";
-import { trpc } from "@/utils/trpc";
+import React, { useEffect } from "react";
+import { trpc } from "@/lib/trpc";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { TopBar } from "@/components/topbar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
-import { RoleProvider } from "@/components/providers/role-provider";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -22,6 +22,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push("/");
   };
 
+  // Client-side session check — reads localStorage where signInWithPassword stores
+  // the session. The tRPC getSession query reads cookies (server-side), which are
+  // empty because the browser client uses localStorage, so we can't use auth===null
+  // as the redirect signal without falsely kicking out every logged-in user.
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) router.push("/");
+    });
+  }, [router]);
+
   if (isLoading) {
     return (
       <div className="h-screen bg-surface-page flex items-center justify-center">
@@ -32,6 +42,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
     );
   }
+
+  // Render nothing while the redirect is in flight
+  if (!auth) return null;
 
   return (
     <div className="flex flex-col min-h-screen bg-surface-page">
