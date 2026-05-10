@@ -32,16 +32,11 @@ export const authRouter = router({
         full_name: z.string().trim().min(2).max(80),
         email: z.string().email().toLowerCase(),
         password: z.string().min(6).max(72), // 72 = bcrypt max
-        role_choice: z.enum(["user", "college_admin"]),
+        role_choice: z.enum(["user", "admin"]),
       }),
     )
     .mutation(async ({ input }) => {
-      // Map "user" → NULL since admin_role enum doesn't have a "user" value.
-      // adminProcedure already rejects null roles, so the absence is what makes
-      // a "user" account non-privileged. Casting to any is needed because the
-      // generated profiles type insists role is non-null (audit bug #6).
-      const dbRole =
-        input.role_choice === "college_admin" ? "college_admin" : null;
+      const dbRole = input.role_choice === "admin" ? "admin" : "user";
 
       // 1. Create the auth user. email_confirm:true skips Supabase's verification
       //    email (out of scope for v1; flip to false later when we wire templates).
@@ -74,8 +69,7 @@ export const authRouter = router({
         id: userId,
         email: input.email,
         full_name: input.full_name,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        role: dbRole as any,
+        role: dbRole,
       });
 
       if (profileErr) {

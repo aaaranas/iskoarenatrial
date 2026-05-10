@@ -11,7 +11,7 @@ export const AuthManager = {
         {
           id: "1",
           email: "admin@iskoarena.com",
-          role: "super_admin",
+          role: "admin",
           fullName: "Administrator",
           createdAt: new Date().toISOString(),
         },

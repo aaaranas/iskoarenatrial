@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
-type Role = "moderator" | "college_admin" | null;
+type Role = "admin" | "user" | null;
 
 export function useRole() {
   const [role, setRole]       = useState<Role>(null);
@@ -21,14 +21,14 @@ export function useRole() {
         .eq("id", user.id)
         .single();
 
-      setRole((profile?.role as Role) ?? null);
+      setRole((profile?.role as Role) ?? "user");
       setLoading(false);
     };
 
     fetchRole();
   }, []);
 
-  const isAdmin = role === "moderator";
+  const isAdmin = !loading && role === "admin";
 
   return { role, isAdmin, loading };
 }

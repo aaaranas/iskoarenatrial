@@ -85,7 +85,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
     fullName: string,
     email: string,
     password: string,
-    role: "user" | "college_admin",
+    role: "user" | "admin",
   ) => {
     try {
       await signupMutation.mutateAsync({

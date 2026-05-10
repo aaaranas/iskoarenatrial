@@ -30,8 +30,7 @@ export const adminProcedure = t.procedure.use(async ({ ctx, next }) => {
     .eq('id', user.id)
     .single();
 
-  const adminRoles = ['admin', 'super_admin', 'college_admin'];
-  if (!adminRoles.includes(profile?.role)) {
+  if (profile?.role !== 'admin') {
     throw new TRPCError({ code: 'FORBIDDEN', message: "Insufficient permissions" });
   }
 
