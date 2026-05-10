@@ -36,6 +36,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <AppSidebar
           adminName={auth?.profile?.full_name || "Operator"}
           onLogout={handleLogout}
+          profile={auth ? {
+            id:         auth.user.id,
+            full_name:  auth.profile?.full_name || (auth.user.user_metadata as any)?.full_name || "",
+            email:      auth.profile?.email     || auth.user.email || "",
+            avatar_url: auth.profile?.avatar_url ?? null,
+          } : null}
+          onProfileSaved={() => utils.auth.getSession.invalidate()}
         />
         <main className="flex-1 w-full pt-16 bg-[#050505]">
           {children}

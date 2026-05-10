@@ -8,7 +8,7 @@ export const mediaRouter = router({
     const { data, error } = await supabase
       .from("media")
       .select(`
-        id, title, type, url, file_name, tag, size, created_at,
+        id, title, type, url, file_name, images, caption, tag, size, created_at,
         sport:sport_id ( id, name ),
         match:match_id ( id )
       `)
@@ -23,6 +23,8 @@ export const mediaRouter = router({
       type:      item.type as "image" | "video",
       url:       item.url,
       fileName:  item.file_name,
+      images:    (item.images as any[] ?? []).map((img: any) => ({ url: img.url, fileName: img.fileName ?? img.file_name ?? "" })),
+      caption:   item.caption     ?? null,
       tag:       item.tag         ?? null,
       size:      item.size        ?? null,
       sport:     item.sport?.name ?? null,
