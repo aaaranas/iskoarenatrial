@@ -8,20 +8,6 @@ import { supabase } from "@/lib/supabase/client";
 import { useRole } from "@/components/providers/role-provider";
 
 // Direct role fetch hook — bypasses context timing issues
-function useIsAdmin() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [ready,   setReady]   = useState(false);
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) { setReady(true); return; }
-      supabase.from("profiles").select("role").eq("id", user.id).single().then(({ data }) => {
-        setIsAdmin(data?.role === "admin");
-        setReady(true);
-      });
-    });
-  }, []);
-  return { isAdmin, ready };
-}
 
 const EMPTY_FORM = {
   name: "",
@@ -374,20 +360,21 @@ function ImportCSVModal({ colleges, onClose, onImport }: {
 }
 
 export default function TeamsPage() {
-  const { isAdmin, ready } = useIsAdmin();
+  const { isAdmin, isLoading: roleLoading = false } = useRole() as any;
+  const ready = !roleLoading;
   const [colleges, setColleges] = useState<College[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [showModal, setShowModal] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<College | null>(null);
   const [profileCollege, setProfileCollege] = useState<College | null>(null);
   const [selectedSports, setSelectedSports] = useState<Set<string>>(new Set());
   const [selectedColleges, setSelectedColleges] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+  const FIXED_COLLEGES = ["College of Science", "College of Social Science", "Communication Arts and Design", "School of Management"];
+
     async function loadColleges() {
-      const { data, error } = await (supabase as any).from("teams").select("*").order("created_at", { ascending: true });
+      const { data, error } = await (supabase as any).from("teams").select("*").in("college", FIXED_COLLEGES);
       if (error) { console.error("❌ Error fetching:", error); }
       else {
         setColleges(data.map((t: any) => ({
@@ -469,12 +456,6 @@ export default function TeamsPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Modals — admin only */}
-      {ready && isAdmin && showImportModal && (
-        <ImportCSVModal colleges={colleges} onClose={() => setShowImportModal(false)} onImport={handleImportCSV} />
-      )}
-      {ready && isAdmin && showModal && (
-        <AddCollegeModal colleges={colleges} onClose={() => setShowModal(false)} onAdd={handleAddCollege} onMerge={handleMergeCollege} />
-      )}
       {ready && isAdmin && deleteTarget && (
         <DeleteCollegeModal college={deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={() => handleDeleteCollege(deleteTarget.name)} />
       )}
@@ -513,17 +494,6 @@ export default function TeamsPage() {
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
           {!isLoading && <span className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-widest">{filtered.length} {filtered.length === 1 ? "result" : "results"}</span>}
-          {/* Admin-only buttons */}
-          {ready && isAdmin && (
-            <>
-              <button onClick={() => setShowImportModal(true)} className="bg-card hover:bg-card/80 border border-border text-muted-foreground text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all flex items-center gap-1.5 hover:text-white">
-                ↑ Import CSV
-              </button>
-              <button onClick={() => setShowModal(true)} className="bg-primary hover:bg-primary/90 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all flex items-center gap-1.5">
-                + Add College
-              </button>
-            </>
-          )}
         </div>
       </div>
 

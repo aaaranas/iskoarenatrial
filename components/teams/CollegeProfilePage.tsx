@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { College } from "./CollegeRow";
 import { supabase } from "@/lib/supabase/client";
 
@@ -86,18 +87,34 @@ function SportLineupModal({
   async function handleAdd() {
     if (!form.name.trim()) return;
     setIsSaving(true);
-    const { data, error } = await (supabase as any)
+    const { data } = await supabase.auth.getSession();
+    console.log(data.session);
+    const { data: insertData, error } = await (supabase as any)
       .from("players")
       .insert([{ name: form.name.trim(), college: college.name, sport, position: form.position.trim(), jersey_number: form.jersey_number.trim(), photo_url: form.photo_url.trim() }])
       .select().single();
-    if (!error && data) { setPlayers((p) => [...p, data]); setForm({ name: "", position: "", jersey_number: "", photo_url: "" }); setShowForm(false); onPlayerChange?.(); }
+    if (!error && insertData) {
+      setPlayers((p) => [...p, insertData]);
+      setForm({ name: "", position: "", jersey_number: "", photo_url: "" });
+      setShowForm(false);
+      onPlayerChange?.();
+      toast.success(`${form.name.trim()} added to ${sport}`);
+    } else {
+      toast.error("Failed to add player" + (error ? `: ${error.message}` : ""));
+    }
     setIsSaving(false);
   }
 
   async function handleDelete(id: string) {
-    await (supabase as any).from("players").delete().eq("id", id);
-    setPlayers((p) => p.filter((x) => x.id !== id));
-    onPlayerChange?.();
+    const player = players.find((p) => p.id === id);
+    const { error } = await (supabase as any).from("players").delete().eq("id", id);
+    if (!error) {
+      setPlayers((p) => p.filter((x) => x.id !== id));
+      onPlayerChange?.();
+      toast.success(`${player?.name ?? "Player"} removed`);
+    } else {
+      toast.error("Failed to remove player: " + error.message);
+    }
   }
 
   const inp = "w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-white placeholder:text-muted-foreground/60 outline-none focus:border-primary/40 transition-all";
@@ -398,6 +415,7 @@ export function CollegeProfilePage({
   const [selectedSport, setSelectedSport] = useState<string | null>(null);
   const [showCSV, setShowCSV] = useState(false);
   const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({});
+  const [allSports, setAllSports] = useState<string[]>([]);
 
   const fetchCounts = async () => {
     const { data } = await (supabase as any)
@@ -415,20 +433,37 @@ export function CollegeProfilePage({
 
   useEffect(() => { fetchCounts(); }, [college.name]);
 
+  useEffect(() => {
+    async function fetchSports() {
+      const { data, error } = await (supabase as any)
+        .from("sports")
+        .select("name")
+        .order("name", { ascending: true });
+      if (!error && data) setAllSports(data.map((s: { name: string }) => s.name));
+    }
+    fetchSports();
+  }, []);
+
   const handleImportPlayers = async (rows: PlayerCSVRow[]) => {
+    let imported = 0;
+    let failed = 0;
     for (const row of rows) {
-      await (supabase as any).from("players").insert([{
+      const { error } = await (supabase as any).from("players").insert([{
         name: row.name,
         college: college.name,
         sport: row.sport,
         position: row.position,
         jersey_number: row.jersey_number,
       }]);
+      if (!error) imported++;
+      else failed++;
     }
     fetchCounts();
+    if (imported > 0) toast.success(`Imported ${imported} player${imported !== 1 ? "s" : ""} successfully`);
+    if (failed > 0) toast.error(`${failed} player${failed !== 1 ? "s" : ""} failed to import`);
   };
 
-  const sportGroups = college.sports.map((sport) => ({
+  const sportGroups = allSports.map((sport) => ({
     name: sport,
     playerCount: playerCounts[sport] || 0,
   }));
@@ -491,7 +526,7 @@ export function CollegeProfilePage({
             {[
               { val: totalPlayers, label: "Players" },
               { val: college.activeTeams, label: "Teams" },
-              { val: college.sports.length, label: "Sports", accent: true },
+              { val: allSports.length, label: "Sports", accent: true },
               { val: 3, label: "Wins" },
             ].map(({ val, label, accent }, i) => (
               <div key={label} className={`px-5 py-4 bg-card/80 text-center ${i < 3 ? "border-r border-border/60" : ""}`}>
@@ -507,9 +542,9 @@ export function CollegeProfilePage({
       <div className="flex flex-1">
         <div className="flex-1 px-9 py-7 border-r border-border/60 min-w-0">
           <p className="text-muted-foreground/60 text-[10px] font-bold uppercase tracking-widest mb-4">
-            Sports <span className="text-primary">{college.sports.length}</span>
+            Sports <span className="text-primary">{allSports.length}</span>
           </p>
-          <div className="grid grid-cols-2 gap-3 mb-8">
+          <div className="grid grid-cols-3 gap-3 mb-8">
             {sportGroups.map((s) => (
               <button
                 key={s.name}
@@ -541,7 +576,7 @@ export function CollegeProfilePage({
             {[
               { key: "Established", val: college.established },
               { key: "Active Teams", val: college.activeTeams },
-              { key: "Sports", val: college.sports.length },
+              { key: "Sports", val: allSports.length },
             ].map(({ key, val }, i) => (
               <div key={key} className={`flex items-center justify-between px-4 py-3 ${i < 2 ? "border-b border-border/40" : ""}`}>
                 <span className="text-[10px] text-muted-foreground font-semibold">{key}</span>
