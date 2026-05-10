@@ -25,7 +25,6 @@ interface RootLayoutProps {
   children: React.ReactNode;
 }
 
-
 export default function RootLayout({ children }: RootLayoutProps) {
   // Font CSS variables exposed to Tailwind via tailwind.config.ts → fontFamily.bebas / mono / sans
   return (
