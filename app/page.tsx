@@ -1,9 +1,9 @@
-// src/app/page.tsx
+﻿// src/app/page.tsx
 "use client";
 
-import LandingPage from "@/components/pages/LandingPage";
+import LandingPage from "@/features/landing/LandingPage";
 import { supabase } from "@/lib/supabase/client";
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/lib/trpc";
 import { useRouter } from "next/navigation";
 import { Toaster } from "@/components/ui/sonner";
 

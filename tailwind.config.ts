@@ -3,10 +3,10 @@ import type { Config } from "tailwindcss";
 const config: Config = {
   darkMode: ["class"],
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/**/*.{js,ts,jsx,tsx,mdx}", // Added src just in case
+    "./features/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./providers/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
@@ -52,6 +52,24 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))'
         },
+        // IskoArena design tokens — landing-page only.
+        // Prefixed with `ia-` to avoid clashing with shadcn's --accent (neutral gray) etc.
+        ia: {
+          maroon:   '#800000',  // Primary brand — official UP Maroon
+          accent:   '#A91D3A',  // Live/urgent accent (pulsing badges, hot CTAs)
+          gold:     '#D4AF37',  // Secondary — eyebrows, dividers
+          bg:       '#060606',  // page background
+          'bg-alt': '#080808',  // alternating section
+          card:     '#0a0a0a',  // card surface
+          'card-elev': '#0d0d0d', // footer card / focus card
+        },
+        // Per-college team colors used in standings, crests, match cards.
+        college: {
+          cos:  '#3B82F6', // College of Science (Scions)
+          css:  '#10B981', // College of Social Sciences (Stallions)
+          ccad: '#A78BFA', // College of Communication, Art and Design (Phoenix)
+          som:  '#F59E0B', // School of Management (Tycoons)
+        },
       },
       borderRadius: {
         xl: 'calc(var(--radius) + 4px)',
@@ -62,6 +80,9 @@ const config: Config = {
       fontFamily: {
         sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui'],
         maroons: ["Maroons Strong", "sans-serif"],
+        // Design-spec fonts for the new landing page.
+        bebas: ['var(--font-bebas)', 'sans-serif'],   // Display headlines (ISKOARENA, section heads)
+        mono:  ['var(--font-mono)', 'ui-monospace'],  // JetBrains Mono — scores/timestamps with tabular-nums
       }
     }
   },

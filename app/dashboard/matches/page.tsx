@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
-import { Box } from "@/components/matches/Box";
+import { Box } from "@/features/matches/components/Box";
 import { Match } from "@/types";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { MatchDetailsView } from "@/components/matches/MatchDetailsView";
+import { MatchDetailsView } from "@/features/matches/components/MatchDetailsView";
 
 export default function MatchesPage() {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
