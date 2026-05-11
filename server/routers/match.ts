@@ -31,6 +31,11 @@ export const matchRouter = router({
       awayScore: match.away_score,
       league: match.sport?.name || "Unknown Sport",
       venue: match.venue?.name || "TBD",
+      // rawDate: raw ISO string for locale-safe date filtering on the client.
+      // Clients must use this for isToday() comparisons — toLocaleDateString()
+      // is server-locale-dependent and silently breaks for users in other locales.
+      rawDate: match.match_date ?? null,
+      // date/time remain locale-formatted strings for display purposes only.
       date: match.match_date ? new Date(match.match_date).toLocaleDateString() : "TBD",
       time: match.match_date ? new Date(match.match_date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "TBD",
       status: match.status || "upcoming",
@@ -126,29 +131,4 @@ export const matchRouter = router({
       return data;
     }),
 
-  // FIX (Bug 2): FinalizeMatchModal calls trpc.match.finalize but that procedure
-  // did not exist — only updateScore did. This caused a runtime crash on every
-  // admin finalize attempt ("finalize is not a function"). Adding finalize here
-  // as a named procedure with the same logic so FinalizeMatchModal resolves.
-  finalize: adminProcedure
-    .input(z.object({
-      id: z.string(),
-      homeScore: z.number(),
-      awayScore: z.number(),
-    }))
-    .mutation(async ({ input }) => {
-      const { data, error } = await supabase
-        .from("matches")
-        .update({
-          home_score: input.homeScore,
-          away_score: input.awayScore,
-          status: "completed",
-        })
-        .eq("id", input.id)
-        .select()
-        .single();
-
-      if (error) throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
-      return data;
-    }),
 });

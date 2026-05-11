@@ -22,7 +22,10 @@ export const FinalizeMatchModal = ({ match, isOpen, onClose }: FinalizeMatchModa
   const [awayScore, setAwayScore] = useState<number>(match.awayScore ?? 0);
   const utils = trpc.useUtils();
 
-  const mutation = trpc.match.finalize.useMutation({
+  // Calls updateScore — the single procedure for recording a final score.
+  // Previously called trpc.match.finalize which didn't exist; corrected to
+  // the existing updateScore procedure which is identical in behaviour.
+  const mutation = trpc.match.updateScore.useMutation({
     onSuccess: () => {
       toast.success("Match finalized!");
       utils.match.getAll.invalidate();

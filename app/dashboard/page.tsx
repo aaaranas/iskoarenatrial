@@ -34,9 +34,8 @@ function isToday(dateStr: string): boolean {
 }
 
 /**
- * Maps the shape returned by trpc.match.getAll (Match type from types/index.ts)
- * to the MatchUI shape expected by MatchCenter (sport/matchup/schedule/status/currentScore).
- * Previously these two types were incompatible, causing the table to always be empty.
+ * Maps the shape returned by trpc.match.getAll to the MatchUI shape expected
+ * by MatchCenter. tRPC inference is preserved — no any[] cast needed.
  */
 function toMatchUI(m: {
   id: string;
@@ -46,6 +45,7 @@ function toMatchUI(m: {
   homeScore: number | null;
   awayScore: number | null;
   status: string;
+  rawDate: string | null;
   date: string;
   time: string;
 }): MatchUI {
@@ -57,10 +57,11 @@ function toMatchUI(m: {
   };
   const mapped = statusMap[m.status?.toLowerCase()] ?? "UPCOMING";
 
-  // Reconstruct a Date from the separate date/time strings the router returns.
-  // Fallback to now so formatSchedule never throws on bad data.
-  const parsed = new Date(`${m.date} ${m.time}`);
-  const schedule = isNaN(parsed.getTime()) ? new Date() : parsed;
+  // Use rawDate (ISO string) for the Date object so schedule formatting is
+  // locale-independent. Fall back to the display strings only if rawDate is null.
+  const schedule = m.rawDate
+    ? new Date(m.rawDate)
+    : (() => { const p = new Date(`${m.date} ${m.time}`); return isNaN(p.getTime()) ? new Date() : p; })();
 
   const scoreStr =
     m.homeScore != null && m.awayScore != null
@@ -235,22 +236,19 @@ const DashboardPage = () => {
   const { data: matchesData, isLoading: matchesLoading } = trpc.match.getAll.useQuery();
 
   // Convert all matches to MatchUI shape for MatchCenter
+  // tRPC infers the return type — no cast needed.
   const allMatchesUI = useMemo<MatchUI[]>(() => {
     if (!matchesData) return [];
-    return (matchesData as any[]).map(toMatchUI);
+    return matchesData.map(toMatchUI);
   }, [matchesData]);
 
-  // User view: filter to today only
+  // User view: filter to today using rawDate (ISO string) so the comparison is
+  // locale-independent. toLocaleDateString() varies by server/browser locale and
+  // would silently return zero matches for users outside the server's locale.
   const todayMatchesUI = useMemo<MatchUI[]>(() => {
     if (!matchesData) return [];
-    return (matchesData as any[])
-      .filter((m) => {
-        // m.date is already a formatted date string from the router ("MM/DD/YYYY").
-        // We re-parse via the raw match_date — but the router doesn't expose it.
-        // Best effort: compare the formatted date string to today's locale string.
-        const today = new Date().toLocaleDateString();
-        return m.date === today;
-      })
+    return matchesData
+      .filter((m) => m.rawDate ? isToday(m.rawDate) : false)
       .map(toMatchUI);
   }, [matchesData]);
 

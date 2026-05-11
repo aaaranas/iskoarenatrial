@@ -44,6 +44,7 @@ function toLiveMatch(m: {
   homeScore: number | null;
   awayScore: number | null;
   status: string;
+  rawDate: string | null;
   date: string;
   time: string;
   venue: string;
@@ -166,27 +167,48 @@ function MatchesTodayCarousel({ items }: { items: LiveMatch[] }) {
   );
 }
 
+// ── Locale-safe isToday — mirrors the helper in dashboard/page.tsx ────────────
+function isToday(isoString: string): boolean {
+  const d = new Date(isoString);
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth()    === now.getMonth()    &&
+    d.getDate()     === now.getDate()
+  );
+}
+
 // ── Section ───────────────────────────────────────────────────────────────────
 export default function MatchesTodaySection() {
   const { data: matchesData } = trpc.match.getAll.useQuery();
 
-  // Filter to today's matches (live + upcoming), map to LiveMatch shape.
-  // Falls back to the static LIVE_MATCHES mock if the DB returns nothing so
-  // the carousel is never blank for first-time visitors or empty-DB dev setups.
   const liveItems = useMemo<LiveMatch[]>(() => {
-    if (!matchesData || matchesData.length === 0) return LIVE_MATCHES;
+    if (!matchesData) return [];
 
-    const today = new Date().toLocaleDateString();
-    const todayMatches = (matchesData as any[]).filter(
-      (m) => m.date === today && m.status !== "completed"
+    // Filter to today's non-completed matches using the raw ISO date string.
+    // This is locale-independent — toLocaleDateString() comparison (the previous
+    // approach) silently broke for users whose browser locale differed from the
+    // server's locale, making the carousel always show zero real matches.
+    const todayMatches = matchesData.filter(
+      (m) => m.rawDate ? isToday(m.rawDate) && m.status !== "completed" : false
     );
 
-    // If there are no matches today in the DB, fall back to mock so the
-    // landing page carousel is never visually empty.
-    if (todayMatches.length === 0) return LIVE_MATCHES;
+    if (todayMatches.length > 0) {
+      return todayMatches.map(toLiveMatch);
+    }
 
-    return todayMatches.map(toLiveMatch);
+    // Mock fallback: only in development so fabricated match data never reaches
+    // production visitors on rest days or during off-season. In production an
+    // empty carousel renders nothing — see the null return in the section below.
+    if (process.env.NODE_ENV === "development") {
+      return LIVE_MATCHES;
+    }
+
+    return [];
   }, [matchesData]);
+
+  // In production with no real matches today, render nothing rather than fake data.
+  if (liveItems.length === 0) return null;
 
   return (
     <section id="matches" className="py-28">

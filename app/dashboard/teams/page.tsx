@@ -544,38 +544,75 @@ export default function TeamsPage() {
 
     if (error) {
       console.error("❌ Error deleting:", error);
+      // Follow-up: same error toast pattern as handleAddCollege
+      const { toast } = await import("sonner");
+      toast.error("Failed to delete college: " + error.message);
       return;
     }
 
     setColleges((prev) => prev.filter((c) => c.id !== id));
   };
 
-  const allSports = [
-    "Badminton",
-    "Basketball",
-    "Block Blast",
-    "Cheerdance",
-    "Chess",
-    "CODM",
-    "Cosplay",
-    "Dancesports",
-    "Dota 2",
-    "Frisbee",
-    "MLBB",
-    "Mr. & Ms. Fitness",
-    "Petanque",
-    "Pickleball",
-    "Pinoy Games",
-    "Rubiks Cube",
-    "Scrabble",
-    "Soccer",
-    "Softball",
-    "Sudoku",
-    "Table Tennis",
-    "Tetris",
-    "Valorant",
-    "Volleyball",
-  ];
+  // ✅ Merge sports into existing college — called by AddCollegeModal when a
+  // duplicate name is submitted. Appends new sports that aren't already listed.
+  const handleMergeCollege = async (existing: College, newSports: string[]) => {
+    const merged = Array.from(new Set([...existing.sports, ...newSports]));
+    const { error } = await (supabase as any)
+      .from("teams")
+      .update({ sports: merged })
+      .eq("id", existing.id);
+
+    if (error) {
+      console.error("❌ Error merging sports:", error.message);
+      const { toast } = await import("sonner");
+      toast.error("Failed to merge sports: " + error.message);
+      return;
+    }
+
+    setColleges((prev) =>
+      prev.map((c) => (c.id === existing.id ? { ...c, sports: merged } : c))
+    );
+  };
+
+  // ✅ Bulk import from CSV — called by ImportCSVModal with validated rows.
+  // Groups rows by college name so each college is upserted once.
+  const handleImportCSV = async (rows: { college: string; sport: string; established: string; status: string }[]) => {
+    const grouped: Record<string, { sports: string[]; established: string; status: string }> = {};
+    for (const row of rows) {
+      if (!grouped[row.college]) {
+        grouped[row.college] = { sports: [], established: row.established, status: row.status };
+      }
+      grouped[row.college].sports.push(row.sport);
+    }
+
+    const { toast } = await import("sonner");
+    let successCount = 0;
+
+    for (const [collegeName, info] of Object.entries(grouped)) {
+      const existing = colleges.find(
+        (c) => c.name.trim().toLowerCase() === collegeName.trim().toLowerCase()
+      );
+
+      if (existing) {
+        await handleMergeCollege(existing, info.sports);
+      } else {
+        await handleAddCollege({
+          name: collegeName,
+          established: info.established || "N/A",
+          activeTeams: info.sports.length,
+          sports: info.sports,
+          status: (info.status as College["status"]) || "Active",
+        });
+      }
+      successCount++;
+    }
+
+    toast.success(`Imported ${successCount} college${successCount !== 1 ? "s" : ""} successfully.`);
+  };
+
+  // ALLOWED_SPORTS is defined at module scope above — reuse it rather than
+  // maintaining a second identical list here that can drift out of sync.
+  const allSports = ALLOWED_SPORTS;
   const allCollegeNames = colleges.map((c) => c.name);
 
   const toggleSport = (sport: string) => {
