@@ -1,30 +1,23 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import superjson from 'superjson';
-import { createClient } from '@supabase/supabase-js';
-import type { Context } from '@/server/trpc/context';
+import { createCookieSupabaseClient } from '@/lib/supabase/server-client';
 
-const t = initTRPC.context<Context>().create({
+const t = initTRPC.create({
   transformer: superjson,
 });
 
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
-// Server-side Supabase client using the service role key so it can verify
-// JWTs and read profiles without being blocked by RLS.
-const supabaseServer = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Uses the cookie-aware server client so the session is readable in the
+// tRPC API route context. The old browser client singleton had no cookie
+// handler and always returned null (getUser = null → always UNAUTHORIZED).
+export const adminProcedure = t.procedure.use(async ({ next }) => {
+  const supabase = await createCookieSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
-// PROTECTED PROCEDURE (For Admins)
-export const adminProcedure = t.procedure.use(async ({ ctx, next }) => {
-  if (!ctx.token) throw new TRPCError({ code: 'UNAUTHORIZED' });
-
-  const { data: { user }, error } = await supabaseServer.auth.getUser(ctx.token);
-  if (error || !user) throw new TRPCError({ code: 'UNAUTHORIZED' });
-
-  const { data: profile } = await supabaseServer
+  const { data: profile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
@@ -34,5 +27,5 @@ export const adminProcedure = t.procedure.use(async ({ ctx, next }) => {
     throw new TRPCError({ code: 'FORBIDDEN', message: "Insufficient permissions" });
   }
 
-  return next({ ctx: { ...ctx, user, profile } });
+  return next({ ctx: { user, profile } });
 });

@@ -1,6 +1,6 @@
-import { DM_Sans, JetBrains_Mono, Bebas_Neue } from "next/font/google";
-import { ThemeProvider } from "@/components/theme-provider";
-import { TRPCProvider } from "@/components/providers/trpc-provider";
+﻿import { DM_Sans, JetBrains_Mono, Bebas_Neue } from "next/font/google";
+import { ThemeProvider } from "@/components/layout/ThemeProvider";
+import { TRPCProvider } from "@/providers/TRPCProvider";
 import './globals.css';
 
 // Body / UI text — DM Sans
@@ -24,7 +24,6 @@ const bebasNeue = Bebas_Neue({
 interface RootLayoutProps {
   children: React.ReactNode;
 }
-
 
 export default function RootLayout({ children }: RootLayoutProps) {
   // Font CSS variables exposed to Tailwind via tailwind.config.ts → fontFamily.bebas / mono / sans
