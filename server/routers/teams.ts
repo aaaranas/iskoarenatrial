@@ -1,5 +1,5 @@
 import { router, publicProcedure } from "../trpc";
-import { supabase } from "@/lib/supabase/client";
+import { supabaseAdmin } from "@/lib/supabase/server";
 import { TRPCError } from "@trpc/server";
 
 export const teamsRouter = router({
@@ -7,7 +7,7 @@ export const teamsRouter = router({
     try {
       // 1. Try a simple select. If you renamed 'college' to 'org', 
       // make sure this isn't trying to do a join that doesn't exist yet.
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from("teams")
         .select("*");
 
