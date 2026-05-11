@@ -125,4 +125,30 @@ export const matchRouter = router({
       if (error) throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
       return data;
     }),
+
+  // FIX (Bug 2): FinalizeMatchModal calls trpc.match.finalize but that procedure
+  // did not exist — only updateScore did. This caused a runtime crash on every
+  // admin finalize attempt ("finalize is not a function"). Adding finalize here
+  // as a named procedure with the same logic so FinalizeMatchModal resolves.
+  finalize: adminProcedure
+    .input(z.object({
+      id: z.string(),
+      homeScore: z.number(),
+      awayScore: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const { data, error } = await supabase
+        .from("matches")
+        .update({
+          home_score: input.homeScore,
+          away_score: input.awayScore,
+          status: "completed",
+        })
+        .eq("id", input.id)
+        .select()
+        .single();
+
+      if (error) throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
+      return data;
+    }),
 });
