@@ -1,32 +1,83 @@
 ﻿"use client";
 
-// Matches Today section — auto-scroll only ticker carousel of live + upcoming
-// matches. Replaces components/landing/PublicSchedules.tsx (the previous
-// embedded schedules grid).
+// Matches Today section — auto-scroll ticker carousel of live + upcoming matches.
 //
-// Implementation notes (ported from ia-carousels.jsx → TypeScript):
-//   • CSS keyframe `matchesScroll` (defined in app/globals.css) drives the
-//     duplicated track. Pause on hover via `animation-play-state: paused`.
-//   • Duration scales with item count: max(28, items.length * 6) seconds —
-//     keeps per-card dwell time roughly constant regardless of feed size.
-//   • LIVE pill pulses (pulseDot keyframe) and glows in ia-accent. UPCOMING
-//     uses a gold outline; FINAL uses a muted outline.
+// FIX (Bug 4): Previously this section was hardwired to the LIVE_MATCHES static
+// array from data.ts and showed the same mock matches every visit regardless of
+// real data. Now it fetches from trpc.match.getAll filtered to today's matches
+// and falls back to LIVE_MATCHES only if the DB is empty (so the landing page
+// never shows a blank carousel during early setup).
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Image from "next/image";
-import { LIVE_MATCHES, COLLEGE_COLORS, COLLEGE_LOGOS, type LiveMatch, type CollegeCode } from "./data";
+import { trpc } from "@/lib/trpc";
+import {
+  LIVE_MATCHES,
+  COLLEGE_COLORS,
+  COLLEGE_LOGOS,
+  type LiveMatch,
+  type CollegeCode,
+} from "./data";
 
-// Inline row for a single team in a match card: logo + Bebas team name + mono score.
-// Score renders an em-dash if null (upcoming match — no score yet).
-function TeamRow({
-  code,
-  name,
-  score,
-}: {
-  code: CollegeCode;
-  name: string;
-  score: number | null;
-}) {
+// ── Type adapter ──────────────────────────────────────────────────────────────
+// Maps the shape returned by trpc.match.getAll to the LiveMatch shape the
+// carousel cards expect. College codes are inferred from team name prefixes
+// (e.g. "COS Scions" → "COS"). Falls back to "COS" if unrecognized so the
+// card never crashes on an unknown team.
+const COLLEGE_PREFIXES: Record<string, CollegeCode> = {
+  COS:  "COS",
+  CSS:  "CSS",
+  CCAD: "CCAD",
+  SOM:  "SOM",
+};
+
+function inferCollegeCode(teamName: string): CollegeCode {
+  const prefix = teamName?.split(" ")[0]?.toUpperCase();
+  return COLLEGE_PREFIXES[prefix] ?? "COS";
+}
+
+function toLiveMatch(m: {
+  id: string;
+  league: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  status: string;
+  rawDate: string | null;
+  date: string;
+  time: string;
+  venue: string;
+}, index: number): LiveMatch {
+  const statusLower = m.status?.toLowerCase() ?? "upcoming";
+  const statusType =
+    statusLower === "live"      ? "live"     :
+    statusLower === "completed" ? "finished" : "upcoming";
+
+  const statusLabel =
+    statusType === "live"     ? "LIVE"     :
+    statusType === "finished" ? "FINISHED" : m.time;
+
+  return {
+    id:         index + 1,        // numeric id for React key
+    sport:      m.league,
+    home:       m.homeTeam,
+    away:       m.awayTeam,
+    homeScore:  statusType === "upcoming" ? null : (m.homeScore ?? null),
+    awayScore:  statusType === "upcoming" ? null : (m.awayScore ?? null),
+    status:     statusLabel,
+    statusType,
+    venue:      m.venue,
+    time:       m.time,
+    cat:        "Traditional",    // category not exposed by the router; default ok
+    homeCo:     inferCollegeCode(m.homeTeam),
+    awayCo:     inferCollegeCode(m.awayTeam),
+    img:        null,
+  };
+}
+
+// ── TeamRow (unchanged) ───────────────────────────────────────────────────────
+function TeamRow({ code, name, score }: { code: CollegeCode; name: string; score: number | null }) {
   const teamColor = COLLEGE_COLORS[code] ?? "#f0f0f0";
   const logo = COLLEGE_LOGOS[code];
   const noScore = score == null;
@@ -34,40 +85,23 @@ function TeamRow({
   return (
     <div className="flex items-center justify-between gap-2.5">
       <div className="flex min-w-0 items-center gap-2.5">
-        {/* Team crest — small white square so the colored logo pops on the dark card */}
-        <Image
-          src={logo}
-          alt=""
-          width={26}
-          height={26}
-          className="flex-shrink-0 rounded-md bg-white object-cover"
-        />
-        {/* Team name — Bebas Neue in the team's brand color, truncates if long */}
-        <span
-          className="truncate font-bebas text-lg leading-none tracking-[1.2px]"
-          style={{ color: teamColor }}
-        >
+        <Image src={logo} alt="" width={26} height={26} className="flex-shrink-0 rounded-md bg-white object-cover" />
+        <span className="truncate font-bebas text-lg leading-none tracking-[1.2px]" style={{ color: teamColor }}>
           {name}
         </span>
       </div>
-      {/* Score — JetBrains Mono, tabular-nums so digits align across rows */}
-      <span
-        className={`font-mono leading-none tabular-nums ${
-          noScore ? "text-sm text-white/25" : "text-[22px] font-bold text-[#f0f0f0]"
-        }`}
-      >
+      <span className={`font-mono leading-none tabular-nums ${noScore ? "text-sm text-white/25" : "text-[22px] font-bold text-[#f0f0f0]"}`}>
         {noScore ? "–" : score}
       </span>
     </div>
   );
 }
 
-// Single match card — sport tag + status pill + 2 team rows + time/venue footer.
+// ── MatchesTodayCard (unchanged) ──────────────────────────────────────────────
 function MatchesTodayCard({ m }: { m: LiveMatch }) {
-  const isLive = m.statusType === "live";
+  const isLive     = m.statusType === "live";
   const isUpcoming = m.statusType === "upcoming";
 
-  // Status pill style is conditional on the match state.
   const statusClasses = isLive
     ? "bg-ia-accent text-white shadow-[0_0_14px_rgba(169,29,58,0.55)]"
     : isUpcoming
@@ -81,37 +115,21 @@ function MatchesTodayCard({ m }: { m: LiveMatch }) {
       className="relative flex flex-shrink-0 flex-col gap-3.5 overflow-hidden rounded-[18px] border border-white/[0.06] bg-ia-card px-5 py-5 shadow-[0_6px_24px_rgba(0,0,0,0.35)]"
       style={{ width: "clamp(280px, 28vw, 340px)" }}
     >
-      {/* Top row: sport tag pill + status pill */}
       <div className="flex items-center justify-between">
-        {/* Sport tag — small caps muted pill */}
         <span className="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[2px] text-white/65">
           {m.sport}
         </span>
-
-        {/* Status pill — LIVE has a pulsing white dot + accent glow */}
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[2px] ${statusClasses}`}
-        >
-          {isLive && (
-            <span className="h-1.5 w-1.5 rounded-full bg-white animate-[pulseDot_1s_ease-in-out_infinite]" />
-          )}
+        <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[2px] ${statusClasses}`}>
+          {isLive && <span className="h-1.5 w-1.5 rounded-full bg-white animate-[pulseDot_1s_ease-in-out_infinite]" />}
           {statusLabel}
         </span>
       </div>
-
-      {/* Two team rows */}
       <div className="flex flex-col gap-2.5">
         <TeamRow code={m.homeCo} name={m.home} score={m.homeScore} />
         <TeamRow code={m.awayCo} name={m.away} score={m.awayScore} />
       </div>
-
-      {/* Footer: time on the left (accent if live), venue on the right */}
       <div className="mt-0.5 flex items-center justify-between border-t border-white/[0.05] pt-3">
-        <span
-          className={`font-mono text-xs font-semibold ${
-            isLive ? "text-ia-accent" : "text-[#f0f0f0]"
-          }`}
-        >
+        <span className={`font-mono text-xs font-semibold ${isLive ? "text-ia-accent" : "text-[#f0f0f0]"}`}>
           {m.time}
         </span>
         <span className="text-[11px] tracking-[0.5px] text-white/40">📍 {m.venue}</span>
@@ -120,15 +138,11 @@ function MatchesTodayCard({ m }: { m: LiveMatch }) {
   );
 }
 
-interface MatchesTodayCarouselProps {
-  items?: LiveMatch[];
-}
-
-function MatchesTodayCarousel({ items = LIVE_MATCHES }: MatchesTodayCarouselProps) {
+// ── Carousel (unchanged except items source) ──────────────────────────────────
+function MatchesTodayCarousel({ items }: { items: LiveMatch[] }) {
   const [paused, setPaused] = useState(false);
-  // Duration scales by item count so the per-card pace feels constant.
   const duration = Math.max(28, items.length * 6);
-  const doubled = [...items, ...items];
+  const doubled  = [...items, ...items];
 
   return (
     <div
@@ -136,34 +150,69 @@ function MatchesTodayCarousel({ items = LIVE_MATCHES }: MatchesTodayCarouselProp
       onMouseLeave={() => setPaused(false)}
       className="relative w-full overflow-hidden"
       style={{
-        // Soft-fade edges hide the loop seam.
-        WebkitMaskImage:
-          "linear-gradient(90deg, transparent 0, #000 80px, #000 calc(100% - 80px), transparent 100%)",
-        maskImage:
-          "linear-gradient(90deg, transparent 0, #000 80px, #000 calc(100% - 80px), transparent 100%)",
+        WebkitMaskImage: "linear-gradient(90deg, transparent 0, #000 80px, #000 calc(100% - 80px), transparent 100%)",
+        maskImage:        "linear-gradient(90deg, transparent 0, #000 80px, #000 calc(100% - 80px), transparent 100%)",
       }}
     >
       <div
         className="flex w-max gap-[18px] py-2 will-change-transform"
         style={{
-          animation: `matchesScroll ${duration}s linear infinite`,
-          animationPlayState: paused ? "paused" : "running",
+          animation:           `matchesScroll ${duration}s linear infinite`,
+          animationPlayState:  paused ? "paused" : "running",
         }}
       >
-        {doubled.map((m, i) => (
-          <MatchesTodayCard key={`${m.id}-${i}`} m={m} />
-        ))}
+        {doubled.map((m, i) => <MatchesTodayCard key={`${m.id}-${i}`} m={m} />)}
       </div>
     </div>
   );
 }
 
-export default function MatchesTodaySection() {
+// ── Locale-safe isToday — mirrors the helper in dashboard/page.tsx ────────────
+function isToday(isoString: string): boolean {
+  const d = new Date(isoString);
+  const now = new Date();
   return (
-    // id="matches" — Nav "Schedules" link points here per the design.
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth()    === now.getMonth()    &&
+    d.getDate()     === now.getDate()
+  );
+}
+
+// ── Section ───────────────────────────────────────────────────────────────────
+export default function MatchesTodaySection() {
+  const { data: matchesData } = trpc.match.getAll.useQuery();
+
+  const liveItems = useMemo<LiveMatch[]>(() => {
+    if (!matchesData) return [];
+
+    // Filter to today's non-completed matches using the raw ISO date string.
+    // This is locale-independent — toLocaleDateString() comparison (the previous
+    // approach) silently broke for users whose browser locale differed from the
+    // server's locale, making the carousel always show zero real matches.
+    const todayMatches = matchesData.filter(
+      (m) => m.rawDate ? isToday(m.rawDate) && m.status !== "completed" : false
+    );
+
+    if (todayMatches.length > 0) {
+      return todayMatches.map(toLiveMatch);
+    }
+
+    // Mock fallback: only in development so fabricated match data never reaches
+    // production visitors on rest days or during off-season. In production an
+    // empty carousel renders nothing — see the null return in the section below.
+    if (process.env.NODE_ENV === "development") {
+      return LIVE_MATCHES;
+    }
+
+    return [];
+  }, [matchesData]);
+
+  // In production with no real matches today, render nothing rather than fake data.
+  if (liveItems.length === 0) return null;
+
+  return (
     <section id="matches" className="py-28">
       <div className="mx-auto flex max-w-[1280px] flex-wrap items-end justify-between gap-6 px-6 pb-12">
-        {/* Left: eyebrow + headline + subcopy */}
         <div>
           <div className="mb-3.5 inline-flex items-center gap-2.5">
             <span className="inline-block h-0.5 w-7 rounded bg-ia-accent" />
@@ -178,17 +227,15 @@ export default function MatchesTodaySection() {
             Auto-updating feed of every game on the court, board, or arena today.
           </p>
         </div>
-
-        {/* Right: live-feed pill with date */}
         <div className="inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2">
           <span className="h-2 w-2 rounded-full bg-ia-accent animate-[pulseDot_1s_ease-in-out_infinite]" />
           <span className="text-[11px] font-semibold uppercase tracking-[1.5px] text-white/70">
-            LIVE FEED · APR 26 · 2026
+            LIVE FEED · {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()} · {new Date().getFullYear()}
           </span>
         </div>
       </div>
 
-      <MatchesTodayCarousel items={LIVE_MATCHES} />
+      <MatchesTodayCarousel items={liveItems} />
     </section>
   );
 }
