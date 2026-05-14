@@ -58,7 +58,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 w-full pt-16">
           {children}
         </main>
-        <ThemeToggle />
         <Toaster />
       </div>
     </RoleProvider>
