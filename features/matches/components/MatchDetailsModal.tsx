@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const MatchDetailsModal = ({ match, open, onOpenChange }: any) => {
@@ -9,7 +9,16 @@ export const MatchDetailsModal = ({ match, open, onOpenChange }: any) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl bg-[#050505] border-white/10 p-0 overflow-hidden text-white">
-        
+        {/* sr-only — the visual header is a custom scoreboard layout below;
+            these elements exist purely so Radix can wire up aria-labelledby
+            and aria-describedby for screen readers. */}
+        <DialogTitle className="sr-only">
+          Match Details: {match.homeTeam} vs {match.awayTeam}
+        </DialogTitle>
+        <DialogDescription className="sr-only">
+          View overview and statistics for this match.
+        </DialogDescription>
+
 	        {/* Header - Cinematic Scoreboard */}
         <div className="relative p-8 bg-gradient-to-b from-[#111] to-[#050505] border-b border-white/10">
           <div className="flex justify-between items-center">

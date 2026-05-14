@@ -52,21 +52,23 @@ export const DeleteMatchModal = ({
         >
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">Delete Match?</AlertDialogTitle>
+            {/* Description renders as <p>; keep its content text-only to avoid
+                hydration errors. Rich content lives in siblings below. */}
             <AlertDialogDescription className="text-zinc-400">
               Are you sure you want to delete this match?
-              <div className="mt-4 p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
-                <p className="text-zinc-300 font-semibold">
-                  {match.homeTeam} <span className="text-zinc-600">vs</span> {match.awayTeam}
-                </p>
-                <p className="text-xs text-zinc-500 mt-1">
-                  {match.league} • {match.date}
-                </p>
-              </div>
-              <p className="mt-4 text-sm text-[#A91D3A]">
-                This action cannot be undone.
-              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="mt-4 p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
+            <p className="text-zinc-300 font-semibold">
+              {match.homeTeam} <span className="text-zinc-600">vs</span> {match.awayTeam}
+            </p>
+            <p className="text-xs text-zinc-500 mt-1">
+              {match.league} • {match.date}
+            </p>
+          </div>
+          <p className="mt-4 text-sm text-[#A91D3A]">
+            This action cannot be undone.
+          </p>
           <div className="flex gap-3 justify-end">
             <AlertDialogCancel
               className="bg-zinc-900 border-zinc-800 text-white hover:bg-zinc-800"

@@ -1,7 +1,7 @@
 ﻿"use client";
 
-import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -64,6 +64,9 @@ export const EditMatchModal = ({ match, open, onOpenChange }: EditMatchModalProp
       <DialogContent className="bg-[#050505] border border-white/10 text-white max-w-sm">
         <DialogHeader>
           <DialogTitle className="text-[#C5A059] font-black uppercase tracking-widest">Edit Match</DialogTitle>
+          <DialogDescription className="text-zinc-500 text-xs uppercase tracking-widest">
+            Update score, status, and venue for this match.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
