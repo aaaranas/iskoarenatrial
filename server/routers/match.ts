@@ -1,11 +1,18 @@
-import { router, publicProcedure, adminProcedure } from "../trpc";
+import { router, publicProcedure } from "../trpc";
 import { z } from "zod";
-import { supabase } from "@/lib/supabase/client";
+import { supabaseAdmin } from "@/lib/supabase/server";
 import { TRPCError } from "@trpc/server";
 
+// ✅ Shared schema for IDs
+const uuid = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+  "Invalid UUID");
+
 export const matchRouter = router({
+  // ─────────────────────────────────────────────────────────────
+  // GET ALL MATCHES
+  // ─────────────────────────────────────────────────────────────
   getAll: publicProcedure.query(async () => {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("matches")
       .select(`
         id,
@@ -21,7 +28,12 @@ export const matchRouter = router({
       `)
       .order("match_date", { ascending: false });
 
-    if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+    if (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error.message,
+      });
+    }
 
     return (data || []).map((match: any) => ({
       id: match.id,
@@ -31,13 +43,15 @@ export const matchRouter = router({
       awayScore: match.away_score,
       league: match.sport?.name || "Unknown Sport",
       venue: match.venue?.name || "TBD",
-      // rawDate: raw ISO string for locale-safe date filtering on the client.
-      // Clients must use this for isToday() comparisons — toLocaleDateString()
-      // is server-locale-dependent and silently breaks for users in other locales.
-      rawDate: match.match_date ?? null,
-      // date/time remain locale-formatted strings for display purposes only.
-      date: match.match_date ? new Date(match.match_date).toLocaleDateString() : "TBD",
-      time: match.match_date ? new Date(match.match_date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "TBD",
+      date: match.match_date
+        ? new Date(match.match_date).toLocaleDateString()
+        : "TBD",
+      time: match.match_date
+        ? new Date(match.match_date).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "TBD",
       status: match.status || "upcoming",
       statusType: (match.status || "upcoming").toLowerCase(),
       category: "Intramurals",
@@ -45,78 +59,144 @@ export const matchRouter = router({
     }));
   }),
 
-  addMatch: adminProcedure
-    .input(z.object({
-      sport_id: z.string(),
-      home_team_id: z.string(),
-      away_team_id: z.string(),
-      match_date: z.string(),
-      venue_id: z.string(),
-      status: z.string().default("upcoming"),
-    }))
+  // ─────────────────────────────────────────────────────────────
+  // ADD MATCH
+  // ─────────────────────────────────────────────────────────────
+  addMatch: publicProcedure
+    .input(
+      z.object({
+        sport_id: uuid,
+        home_team_id: uuid,
+        away_team_id: uuid,
+        venue_id: uuid,
+        match_date: z.string(), // ISO string
+        status: z.string().optional().default("scheduled"),
+      })
+    )
     .mutation(async ({ input }) => {
-      const { data, error } = await supabase
+      // ✅ Prevent same team
+      if (input.home_team_id === input.away_team_id) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Home and away teams cannot be the same",
+        });
+      }
+
+      // ✅ Validate date
+      const parsedDate = new Date(input.match_date);
+      if (isNaN(parsedDate.getTime())) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid match date",
+        });
+      }
+
+      const { data, error } = await supabaseAdmin
         .from("matches")
         .insert({
           sport_id: input.sport_id,
           home_team_id: input.home_team_id,
           away_team_id: input.away_team_id,
-          match_date: input.match_date,
           venue_id: input.venue_id,
+          match_date: parsedDate.toISOString(),
           status: input.status,
         })
         .select()
         .single();
 
-      if (error) throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
+      if (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: error.message,
+        });
+      }
+
       return data;
     }),
 
-  updateMatch: adminProcedure
-    .input(z.object({
-      id: z.string(),
-      home_score: z.number().optional(),
-      away_score: z.number().optional(),
-      status: z.string().optional(),
-      match_date: z.string().optional(),
-    }))
+  // ─────────────────────────────────────────────────────────────
+  // UPDATE MATCH
+  // ─────────────────────────────────────────────────────────────
+  updateMatch: publicProcedure
+    .input(
+      z.object({
+        id: uuid,
+        home_score: z.number().optional(),
+        away_score: z.number().optional(),
+        status: z.string().optional(),
+        match_date: z.string().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
-      const { id, ...updateFields } = input;
+      const { id, match_date, ...rest } = input;
 
-      const { data, error } = await supabase
+      const updateFields: any = { ...rest };
+
+      // ✅ Handle date safely
+      if (match_date) {
+        const parsedDate = new Date(match_date);
+        if (isNaN(parsedDate.getTime())) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid match date",
+          });
+        }
+        updateFields.match_date = parsedDate.toISOString();
+      }
+
+      const { data, error } = await supabaseAdmin
         .from("matches")
         .update(updateFields)
         .eq("id", id)
         .select()
         .single();
 
-      if (error) throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
+      if (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: error.message,
+        });
+      }
+
       return data;
     }),
 
-  deleteMatch: adminProcedure
-    .input(z.object({ id: z.string() }))
+  // ─────────────────────────────────────────────────────────────
+  // DELETE MATCH
+  // ─────────────────────────────────────────────────────────────
+  deleteMatch: publicProcedure
+    .input(z.object({ id: uuid }))
     .mutation(async ({ input }) => {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from("matches")
         .delete()
         .eq("id", input.id)
         .select()
         .single();
 
-      if (error) throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
+      if (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: error.message,
+        });
+      }
+
       return data;
     }),
 
-  // ── Added: update scores ──────────────────────────────────────────────────
-  updateScore: adminProcedure
-    .input(z.object({
-      id: z.string(),
-      homeScore: z.number(),
-      awayScore: z.number(),
-    }))
+  // ─────────────────────────────────────────────────────────────
+  // UPDATE SCORE
+  // ─────────────────────────────────────────────────────────────
+  updateScore: publicProcedure
+    .input(
+      z.object({
+        id: uuid,
+        homeScore: z.number().min(0),
+        awayScore: z.number().min(0),
+      })
+    )
     .mutation(async ({ input }) => {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from("matches")
         .update({
           home_score: input.homeScore,
@@ -127,8 +207,13 @@ export const matchRouter = router({
         .select()
         .single();
 
-      if (error) throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
+      if (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: error.message,
+        });
+      }
+
       return data;
     }),
-
 });

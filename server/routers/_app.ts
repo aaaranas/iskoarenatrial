@@ -5,6 +5,7 @@ import { statsRouter }     from './stats';
 import { playersRouter }   from './players';
 import { teamsRouter }     from './teams';
 import { sportRouter }     from './sport';
+import { venueRouter } from './venue';
 import { mediaRouter }     from './media';
 import { highlightRouter } from './highlight';
 
@@ -12,9 +13,10 @@ export const appRouter = router({
   match:     matchRouter,
   auth:      authRouter,
   stats:     statsRouter,
-  teams:     teamsRouter,
+  team:     teamsRouter,
   players:   playersRouter,
   sport:     sportRouter,
+  venue: venueRouter,
   media:     mediaRouter,
   highlight: highlightRouter,
 });
