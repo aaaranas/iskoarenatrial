@@ -1,9 +1,9 @@
 import { router, publicProcedure } from "../trpc";
-import { supabase } from "@/lib/supabase/client";
+import { supabaseAdmin } from "@/lib/supabase/server";
 
 export const playersRouter = router({
   getAll: publicProcedure.query(async () => {
-    const { data, error } = await supabase.from("players").select("*");
+    const { data, error } = await supabaseAdmin.from("players").select("*");
     if (error) throw error;
     return data || [];
   }),

@@ -5,10 +5,12 @@ import React from "react";
 export interface College {
   id?: string;
   name: string;
+  org?: string;           // canonical college code: COS | CSS | CCAD | SOM
   established: string;
   activeTeams: number;
   sports: string[];
   status: "Active" | "Pending" | "Inactive";
+  logoUrl?: string | null;
 }
 
 export const CollegeRow = ({

@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Match } from "@/types";
 import { trpc } from "@/lib/trpc";
@@ -64,9 +65,9 @@ export const FinalizeMatchModal = ({ match, isOpen, onClose }: FinalizeMatchModa
               <DialogTitle className="text-lg font-black uppercase tracking-tight text-white">
                 Confirm Final Score
               </DialogTitle>
-              <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mt-0.5">
+              <DialogDescription className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mt-0.5">
                 {match.league} · {match.venue}
-              </p>
+              </DialogDescription>
             </DialogHeader>
           </div>
 

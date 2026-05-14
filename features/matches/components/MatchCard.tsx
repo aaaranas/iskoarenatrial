@@ -1,17 +1,22 @@
 "use client";
 import React, { useState, useRef } from "react";
 import { Match } from "@/types";
-import { MapPin, Edit3, Trash2, Clock } from "lucide-react";
+import { MapPin, Edit3, Trash2, Clock, Flag } from "lucide-react";
 import { DeleteMatchModal } from "./DeleteMatchModal";
 import { EditMatchModal } from "./EditMatchModal";
 
 interface MatchCardProps {
   match: Match;
-  onOpenDetails: () => void;
+  // Optional so the card can also render in read-only contexts (e.g. LiveCarousel).
+  onOpenDetails?: () => void;
   onFinalize?: () => void;
+  // When provided, the parent owns the edit/delete modals (see Box.tsx).
+  // When omitted, MatchCard falls back to its built-in dialogs.
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export const MatchCard = ({ match, onOpenDetails, onFinalize }: MatchCardProps) => {
+export const MatchCard = ({ match, onOpenDetails, onFinalize, onEdit, onDelete }: MatchCardProps) => {
   const isLive = match.statusType?.toLowerCase() === "live";
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -51,7 +56,7 @@ export const MatchCard = ({ match, onOpenDetails, onFinalize }: MatchCardProps) 
     if (suppressNextClick.current) {
       return;
     }
-    onOpenDetails();
+    onOpenDetails?.();
   };
 
   return (
@@ -69,32 +74,6 @@ export const MatchCard = ({ match, onOpenDetails, onFinalize }: MatchCardProps) 
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent opacity-60" />
       </div>
 
-      <div
-        className="absolute top-4 right-4 z-50 flex flex-col gap-2 translate-x-10 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {isLive && onFinalize && (
-          <button
-            onClick={onFinalize}
-            className="p-2.5 bg-[#C5A059]/20 backdrop-blur-md rounded-full border border-[#C5A059] text-[#C5A059] hover:bg-[#C5A059] hover:text-black transition-all"
-            title="Finalize Match"
-          >
-            <span className="text-[8px] font-black uppercase">End</span>
-          </button>
-        )}
-        <button
-          onClick={() => setEditDialogOpen(true)}
-          className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#C5A059] hover:text-black transition-all"
-        >
-          <Edit3 className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => setDeleteDialogOpen(true)}
-          className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#A91D3A] transition-all"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
 
       <div className="relative z-10 h-full p-6 flex flex-col justify-between pointer-events-none">
         <div className="flex justify-between items-start pointer-events-auto">
@@ -108,18 +87,53 @@ export const MatchCard = ({ match, onOpenDetails, onFinalize }: MatchCardProps) 
               <span className="text-[9px] font-bold uppercase tracking-widest">{match.venue}</span>
             </div>
           </div>
-          <div className={`px-2 py-0.5 rounded-[2px] text-[8px] font-black tracking-[0.2em] border ${isLive ? "bg-[#A91D3A] border-[#A91D3A] text-white shadow-[0_0_15px_rgba(169,29,58,0.4)]" : "bg-black/40 backdrop-blur-md border-white/10 text-zinc-400"}`}>
-            {isLive ? "LIVE" : match.status}
+          <div className={`px-2 py-0.5 rounded-[2px] text-[8px] font-black tracking-[0.2em] border ${
+            isLive
+              ? "bg-[#A91D3A] border-[#A91D3A] text-white shadow-[0_0_15px_rgba(169,29,58,0.4)]"
+              : match.statusType === "upcoming"
+              ? "bg-green-500/20 border-green-500/60 text-green-400"
+              : "bg-black/40 backdrop-blur-md border-white/10 text-zinc-400"
+          }`}>
+            {match.statusType === "live"
+              ? "LIVE"
+              : match.statusType === "upcoming"
+              ? "UPCOMING"
+              : "COMPLETED"}
           </div>
         </div>
 
         <div className="space-y-5">
-          <div className="space-y-1">
+          <div className="flex items-end justify-between">
             <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white leading-tight">
               {match.homeTeam} <br />
               <span className="text-zinc-500 not-italic font-light text-lg">vs</span> <br />
               {match.awayTeam}
             </h3>
+
+            {/* Action buttons — reveal on hover, staggered top-to-bottom */}
+            <div className="flex flex-col items-end gap-2 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => (onEdit ? onEdit() : setEditDialogOpen(true))}
+                className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#C5A059] hover:text-black transition-all opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 duration-300"
+              >
+                <Edit3 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => (onDelete ? onDelete() : setDeleteDialogOpen(true))}
+                className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#A91D3A] transition-all opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 duration-300 delay-75"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+              {isLive && onFinalize && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onFinalize(); }}
+                  className="p-2.5 bg-[#C5A059]/20 backdrop-blur-md rounded-full border border-[#C5A059] hover:bg-[#C5A059] transition-all opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 duration-300 delay-150"
+                  title="Finalize Match"
+                >
+                  <Flag className="w-4 h-4 text-white" />
+                </button>
+              )}
+            </div>
           </div>
           <div className="pt-4 border-t border-white/10 flex items-end justify-between">
             <div className="flex items-baseline gap-3">

@@ -10,7 +10,10 @@ export const statsRouter = router({
       timeframe: z.string().default("Season")
     }))
     .query(async ({ input }) => {
-      let query = supabase
+      // stats table is owned by TM3 and isn't in the generated Database types
+      // yet; cast to any to unblock typing. Remove this cast once types/supabase.ts
+      // is regenerated with the stats schema.
+      let query = (supabase as any)
         .from("stats")
         .select(`
           *,
@@ -21,7 +24,6 @@ export const statsRouter = router({
         .eq("timeframe", input.timeframe)
         .order("stat_value", { ascending: false });
 
-      // Filter by type: if searching for players, player_id must not be null
       if (input.type === "players") query = query.not("player_id", "is", null);
       if (input.type === "teams") query = query.not("team_id", "is", null);
 

@@ -31,7 +31,7 @@ const FILTER_OPTIONS = {
   location: ["UP High School Gymnasium", "AS Hall", "Admin Field", "SOM Court", "PAH"],
   college: ["CCAD Phoenix", "SOM Tycoons", "COS Scions", "CSS Stallions"],
   sport: ["Badminton", "Basketball", "Volleyball", "Table Tennis", "Larong Pinoy", "Pickleball", "Petanque", "Mobile Legends (ESPORTS)", "DOTA 2 (ESPORTS)", "Valorant (ESPORTS)", "Football"],
-  status: ["Live", "Upcoming", "Concluded", "Postponed"]
+  status: ["Live", "Upcoming", "Completed"]
 };
 
 const ITEMS_PER_PAGE = 8;
@@ -57,8 +57,10 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
   const [matchToEdit, setMatchToEdit] = useState<Match | null>(null);
   const [matchToDelete, setMatchToDelete] = useState<Match | null>(null);
 
+  const STATUS_ORDER: Record<string, number> = { live: 0, upcoming: 1, completed: 2 };
+
   const filteredMatches = useMemo(() => {
-    return matches.filter((m) => {
+    const filtered = matches.filter((m) => {
       const searchStr = search.toLowerCase();
       const matchesSearch =
         (m.league ?? '').toLowerCase().includes(searchStr) ||
@@ -68,6 +70,19 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
       const matchesStatus = filters.status === "Status" || m.statusType === filters.status.toLowerCase();
       const matchesCollege = filters.college === "College" || m.homeTeam === filters.college || m.awayTeam === filters.college;
       return matchesSearch && matchesSport && matchesStatus && matchesCollege;
+    });
+
+    return filtered.sort((a, b) => {
+      // Primary sort: Live → Upcoming → Completed
+      const statusDiff = (STATUS_ORDER[a.statusType] ?? 3) - (STATUS_ORDER[b.statusType] ?? 3);
+      if (statusDiff !== 0) return statusDiff;
+
+      // Secondary sort: within each group sort by date.
+      // Upcoming: ascending (soonest first).
+      // Live / Completed: descending (most recent first).
+      const aTime = a.rawDate ? new Date(a.rawDate).getTime() : 0;
+      const bTime = b.rawDate ? new Date(b.rawDate).getTime() : 0;
+      return a.statusType === "upcoming" ? aTime - bTime : bTime - aTime;
     });
   }, [matches, search, filters]);
 
@@ -211,13 +226,6 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {paginatedMatches.map((match) => (
               <div key={match.id} onClick={() => onSelectMatch(match)} className="cursor-pointer">
-                {matchToFinalize && (
-                  <FinalizeMatchModal
-                    match={matchToFinalize}
-                    isOpen={!!matchToFinalize}
-                    onClose={() => setMatchToFinalize(null)}
-                  />
-                )}
                 <MatchCard
                   match={match}
                   onOpenDetails={() => onSelectMatch(match)}
@@ -228,6 +236,31 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
               </div>
             ))}
           </div>
+
+          {/* Admin-owned modals — lifted out of the card loop so they're
+              mounted once, not once per card. Conditionally rendered so the
+              required `match` prop is always defined when open. */}
+          {matchToEdit && (
+            <EditMatchModal
+              match={matchToEdit}
+              open={!!matchToEdit}
+              onOpenChange={(open) => { if (!open) setMatchToEdit(null); }}
+            />
+          )}
+          {matchToDelete && (
+            <DeleteMatchModal
+              match={matchToDelete}
+              open={!!matchToDelete}
+              onOpenChange={(open) => { if (!open) setMatchToDelete(null); }}
+            />
+          )}
+          {matchToFinalize && (
+            <FinalizeMatchModal
+              match={matchToFinalize}
+              isOpen={!!matchToFinalize}
+              onClose={() => setMatchToFinalize(null)}
+            />
+          )}
 
           {/* PAGINATION */}
           {totalPages > 1 && (

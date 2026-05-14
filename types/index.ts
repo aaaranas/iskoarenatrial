@@ -25,14 +25,19 @@ export interface Match {
   id: string;
   league: string; // Sport name
   status: string; // e.g., "UPCOMING", "LIVE", "CONCLUDED"
-  statusType: "live" | "finished" | "upcoming";
+  statusType: "live" | "upcoming" | "completed";
   date: string;
   time: string;
   homeTeam: string;
+  homeTeamId: string | null;
+  homeTeamOrg: string;
   awayTeam: string;
+  awayTeamId: string | null;
+  awayTeamOrg: string;
   homeScore: number | null;
   awayScore: number | null;
-  venue: string; // Venue name
+  venue: string;   // Venue name (display)
+  venueId: string | null; // Venue UUID — used by EditMatchModal to pre-select
   category?: string; // Match category (e.g., "Intramurals")
   isOwner?: boolean; // UI logic: true if created_by === current_user.id
 }
