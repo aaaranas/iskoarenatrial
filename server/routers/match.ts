@@ -82,7 +82,7 @@ export const matchRouter = router({
         away_team_id: uuid,
         venue_id: uuid,
         match_date: z.string(), // ISO string — validated below for runtime correctness
-        status: matchStatus.optional().default("scheduled"),
+        status: matchStatus.optional().default("upcoming"),
       })
     )
     .mutation(async ({ input }) => {

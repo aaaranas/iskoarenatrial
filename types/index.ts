@@ -26,6 +26,10 @@ export interface Match {
   league: string; // Sport name
   status: string; // e.g., "UPCOMING", "LIVE", "CONCLUDED"
   statusType: "live" | "upcoming" | "completed";
+  // rawDate is the unformatted ISO string from match.match_date — used by
+  // client code for locale-independent comparisons (e.g. "is this today?").
+  // date/time below are the formatted display strings.
+  rawDate: string | null;
   date: string;
   time: string;
   homeTeam: string;

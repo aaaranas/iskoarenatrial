@@ -1,7 +1,7 @@
 //app/dashboard/teams/page.tsx
 "use client";
 import React, { useState, useEffect } from "react";
-import { College } from "@/features/teams/components/CollegeTable";
+import { College } from "@/features/teams/components/CollegeRow";
 import { CollegeCard } from "@/features/teams/components/CollegeCard";
 import { CollegeProfilePage } from "@/features/teams/components/CollegeProfilePage";
 import { supabase } from "@/lib/supabase/client";
@@ -19,29 +19,38 @@ const ORG_LABELS: Record<string, string> = {
 export default function TeamsPage() {
   const [colleges, setColleges] = useState<College[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<string>("ALL");
   const [profileCollege, setProfileCollege] = useState<College | null>(null);
 
   useEffect(() => {
     async function loadColleges() {
-      const { data, error } = await (supabase as any)
-        .from("teams")
-        .select("*")
-        .in("org", FIXED_ORGS)
-        .order("created_at", { ascending: true });
+      // Fetch teams and the full sports list in parallel
+      const [teamsResult, sportsResult] = await Promise.all([
+        (supabase as any)
+          .from("teams")
+          .select("*")
+          .in("org", FIXED_ORGS)
+          .order("created_at", { ascending: true }),
+        (supabase as any)
+          .from("sports")
+          .select("name")
+          .order("name", { ascending: true }),
+      ]);
 
-      if (error) {
-        console.error("❌ Error fetching teams:", error);
+      if (teamsResult.error) {
+        console.error("❌ Error fetching teams:", teamsResult.error);
       } else {
+        // Use the real sports list from DB; fall back to the teams row value if unavailable
+        const sportNames: string[] = sportsResult.data?.map((s: { name: string }) => s.name) ?? [];
+
         setColleges(
-          data.map((t: any) => ({
+          teamsResult.data.map((t: any) => ({
             id: t.id,
             name: t.college,
             org: t.org,
             established: t.established ?? "N/A",
             activeTeams: t.active_teams ?? 0,
-            sports: t.sports ?? [],
+            sports: sportNames.length > 0 ? sportNames : (t.sports ?? []),
             status: t.status ?? "Active",
             logoUrl: t.logo_url ?? null,
           }))
@@ -52,16 +61,7 @@ export default function TeamsPage() {
     loadColleges();
   }, []);
 
-  const filtered = colleges.filter((c) => {
-    const matchSearch =
-      !search ||
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      (c.org ?? "").toLowerCase().includes(search.toLowerCase()) ||
-      (ORG_LABELS[c.org ?? ""] ?? "").toLowerCase().includes(search.toLowerCase()) ||
-      c.sports.some((s) => s.toLowerCase().includes(search.toLowerCase()));
-    const matchTab = activeTab === "ALL" || c.org === activeTab;
-    return matchSearch && matchTab;
-  });
+  const filtered = colleges.filter((c) => activeTab === "ALL" || c.org === activeTab);
 
   if (profileCollege) {
     return (
@@ -153,71 +153,41 @@ export default function TeamsPage() {
         </div>
       </div>
 
-      {/* ── Toolbar: tabs + search ────────────────────────────────────────────── */}
+      {/* ── Toolbar: college filter tabs ─────────────────────────────────────── */}
       <div style={{
         padding: "16px 40px",
         borderBottom: "1px solid rgba(255,255,255,0.07)",
         display: "flex",
         alignItems: "center",
-        justifyContent: "space-between",
-        gap: 20,
+        gap: 2,
         background: "rgba(0,0,0,0.35)",
         flexWrap: "wrap",
       }}>
-        {/* College filter tabs */}
-        <div style={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
-          {["ALL", ...FIXED_ORGS].map((tab) => {
-            const label = tab === "ALL" ? "ALL" : `${tab} · ${ORG_LABELS[tab]}`;
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  padding: "7px 14px",
-                  fontSize: 9,
-                  fontWeight: 900,
-                  letterSpacing: "0.22em",
-                  textTransform: "uppercase",
-                  border: "none",
-                  borderRadius: 4,
-                  cursor: "pointer",
-                  background: isActive ? "#A91D3A" : "transparent",
-                  color: isActive ? "#fff" : "rgba(255,255,255,0.45)",
-                  transition: "all 0.15s",
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Search */}
-        <div style={{ position: "relative", flexShrink: 0 }}>
-          <svg
-            style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)" }}
-            width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-            <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search colleges or sports…"
-            style={{
-              width: 260,
-              height: 38,
-              background: "#0a0a0a",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 999,
-              padding: "0 18px 0 38px",
-              fontSize: 12,
-              color: "#f0f0f0",
-              outline: "none",
-            }}
-          />
-        </div>
+        {["ALL", ...FIXED_ORGS].map((tab) => {
+          const label = tab === "ALL" ? "ALL" : `${tab} · ${ORG_LABELS[tab]}`;
+          const isActive = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                padding: "7px 14px",
+                fontSize: 9,
+                fontWeight: 900,
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+                border: "none",
+                borderRadius: 4,
+                cursor: "pointer",
+                background: isActive ? "#A91D3A" : "transparent",
+                color: isActive ? "#fff" : "rgba(255,255,255,0.45)",
+                transition: "all 0.15s",
+              }}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       {/* ── Content ───────────────────────────────────────────────────────────── */}
@@ -267,10 +237,10 @@ export default function TeamsPage() {
             NO RESULTS
           </div>
           <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 14, marginBottom: 20 }}>
-            {search ? `No colleges match "${search}".` : "No colleges match the current filter."}
+            No colleges match the current filter.
           </p>
           <button
-            onClick={() => { setSearch(""); setActiveTab("ALL"); }}
+            onClick={() => setActiveTab("ALL")}
             style={{
               padding: "10px 20px",
               background: "transparent",

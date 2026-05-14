@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { College } from "./CollegeRow";
 import { supabase } from "@/lib/supabase/client";
 import { useRole } from "@/providers/RoleProvider";
+import { toast } from "sonner";
 
 // ─── College identity ─────────────────────────────────────────────────────────
 const COLLEGE_IDENTITY: Record<string, {
@@ -14,21 +15,34 @@ const COLLEGE_IDENTITY: Record<string, {
   CCAD: { mascot: "PHOENIX",   color: "#22C55E", tagline: "RISE. BURN. RISE AGAIN.",               photo: "/iskolarofrisbee2.jpg",  logo: "/colleges/ccad_logo.jpg" },
   SOM:  { mascot: "TYCOONS",   color: "#3B82F6", tagline: "EVERY POINT IS PROFIT.",                photo: "/iskolarovolley.jpg",    logo: "/colleges/som_logo.jpg" },
 };
+
+// Canonical full college name keyed by org code — matches teams.college rows.
+// Used as a fallback if college.name (from teams.college) is somehow missing.
+const COLLEGE_CANONICAL_NAME: Record<string, string> = {
+  COS:  "College of Science",
+  CSS:  "College of Social Science",
+  CCAD: "Communication Arts and Design",
+  SOM:  "School of Management",
+};
 const TEXT_ON_COLOR: Record<string, string> = {
   COS: "#0a0a0a",
   CCAD: "#0a0a0a",
 };
 
-// ─── DB player shape ─────────────────────────────────────────────────────────
+// ─── DB shapes ──────────────────────────────────────────────────────────────
+// After the Option A migration, players link to teams/sports via FKs.
+// The college/sport text columns are gone.
 interface DBPlayer {
   id: string;
   name: string;
-  college: string;
-  sport: string;
-  position: string;
-  jersey_number: string;
-  photo_url: string;
+  college_id: string;
+  sport_id: string;
+  position: string | null;
+  jersey_number: number | null;
+  photo_url: string | null;
 }
+
+type Sport = { id: string; name: string };
 
 const AVATAR_COLORS = [
   { bg: "#1a0a2e", fg: "#c4a9f5" }, { bg: "#0a1a2e", fg: "#a9c4f5" },
@@ -39,195 +53,6 @@ const AVATAR_COLORS = [
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
-}
-
-// ─── Sport Lineup Modal ───────────────────────────────────────────────────────
-function SportLineupModal({
-  college,
-  sport,
-  accentColor,
-  onClose,
-  onPlayerChange,
-}: {
-  college: College;
-  sport: string;
-  accentColor: string;
-  onClose: () => void;
-  onPlayerChange?: () => void;
-}) {
-  const [players, setPlayers] = useState<DBPlayer[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: "", position: "", jersey_number: "", photo_url: "" });
-  const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => { fetchPlayers(); }, [college.name, sport]);
-
-  async function fetchPlayers() {
-    setIsLoading(true);
-    const { data, error } = await (supabase as any)
-      .from("players")
-      .select("*")
-      .eq("college", college.name)
-      .eq("sport", sport);
-    if (!error && data) setPlayers(data);
-    setIsLoading(false);
-  }
-
-  async function handleAdd() {
-    if (!form.name.trim()) return;
-    setIsSaving(true);
-    const { data, error } = await (supabase as any)
-      .from("players")
-      .insert([{ name: form.name.trim(), college: college.name, sport, position: form.position.trim(), jersey_number: form.jersey_number.trim(), photo_url: form.photo_url.trim() }])
-      .select().single();
-    if (!error && data) { setPlayers((p) => [...p, data]); setForm({ name: "", position: "", jersey_number: "", photo_url: "" }); setShowForm(false); onPlayerChange?.(); }
-    setIsSaving(false);
-  }
-
-  async function handleDelete(id: string) {
-    await (supabase as any).from("players").delete().eq("id", id);
-    setPlayers((p) => p.filter((x) => x.id !== id));
-    onPlayerChange?.();
-  }
-
-  const inp = "w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-white placeholder:text-muted-foreground/60 outline-none transition-all";
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="bg-[#0a0a0a] border border-white/8 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[85vh]">
-
-        {/* Modal header */}
-        <div
-          className="px-6 py-5 flex items-start justify-between rounded-t-2xl shrink-0"
-          style={{ background: accentColor }}
-        >
-          <div>
-            <p className="text-[9px] font-bold uppercase tracking-widest mb-1"
-               style={{ color: TEXT_ON_COLOR[college.org ?? ""] ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)" }}>
-              {college.name}
-            </p>
-            <h2
-              className="text-2xl font-black uppercase leading-none"
-              style={{ fontFamily: "var(--font-bebas)", color: TEXT_ON_COLOR[college.org ?? ""] ?? "#fff" }}
-            >
-              {sport}
-            </h2>
-            <p className="text-[11px] mt-1"
-               style={{ color: TEXT_ON_COLOR[college.org ?? ""] ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.45)" }}>
-              {isLoading ? "Loading…" : `${players.length} ${players.length === 1 ? "player" : "players"} registered`}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 mt-1">
-            <button
-              onClick={() => setShowForm((v) => !v)}
-              className="text-[9px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all"
-              style={{ background: "rgba(0,0,0,0.15)", color: TEXT_ON_COLOR[college.org ?? ""] ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.8)" }}
-            >
-              + Add Player
-            </button>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-sm transition-colors"
-              style={{ background: "rgba(0,0,0,0.15)", color: TEXT_ON_COLOR[college.org ?? ""] ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.7)" }}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-
-        {/* Add player form */}
-        {showForm && (
-          <div className="px-6 py-4 border-b border-white/6 bg-[#0d0d0d] shrink-0">
-            <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-3">New Player</p>
-            <div className="flex gap-2 flex-wrap">
-              <input className={inp} style={{ flex: "2 1 160px" }} placeholder="Full name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-              <input className={inp} style={{ flex: "1 1 100px" }} placeholder="Position" value={form.position} onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))} />
-              <input className={inp} style={{ flex: "1 1 80px" }} placeholder="Jersey #" value={form.jersey_number} onChange={(e) => setForm((f) => ({ ...f, jersey_number: e.target.value }))} />
-              <input className={inp} style={{ flex: "2 1 200px" }} placeholder="Photo URL (optional)" value={form.photo_url} onChange={(e) => setForm((f) => ({ ...f, photo_url: e.target.value }))} />
-              <button
-                onClick={handleAdd}
-                disabled={!form.name.trim() || isSaving}
-                className="text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
-                style={{ background: accentColor, color: TEXT_ON_COLOR[college.org ?? ""] ?? "#fff" }}
-              >
-                {isSaving ? "Saving…" : "Save"}
-              </button>
-              <button
-                onClick={() => { setShowForm(false); setForm({ name: "", position: "", jersey_number: "", photo_url: "" }); }}
-                className="border border-white/10 hover:border-white/20 text-white/50 hover:text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all flex-shrink-0"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Lineup list */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
-          <p className="text-[9px] font-bold text-white/35 uppercase tracking-widest mb-4">
-            Lineup <span style={{ color: accentColor }}>{players.length}</span>
-          </p>
-          {isLoading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-white/4 border border-white/5 rounded-lg h-14 animate-pulse" />
-              ))}
-            </div>
-          ) : players.length === 0 ? (
-            <div className="text-center py-14">
-              <p className="text-2xl mb-3">🏅</p>
-              <p className="text-white/40 text-sm">No players listed for {sport} yet.</p>
-              <button onClick={() => setShowForm(true)} className="mt-3 text-sm hover:underline" style={{ color: accentColor }}>+ Add the first player</button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {players.map((p, idx) => {
-                const c = AVATAR_COLORS[idx % AVATAR_COLORS.length];
-                return (
-                  <div key={p.id} className="bg-white/3 border border-white/6 hover:border-white/12 transition-colors rounded-lg px-4 py-3 flex items-center gap-3 group">
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 overflow-hidden" style={{ background: c.bg, color: c.fg }}>
-                      {p.photo_url
-                        ? <img src={p.photo_url} alt={p.name} className="w-full h-full object-cover" />
-                        : getInitials(p.name)
-                      }
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-[13px] font-bold truncate">{p.name}</p>
-                      <p className="text-white/40 text-[10px] mt-0.5">{sport}</p>
-                    </div>
-                    <p className="text-[10px] font-black uppercase tracking-widest flex-shrink-0" style={{ color: accentColor }}>
-                      {p.position || "—"}
-                    </p>
-                    {p.jersey_number && (
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${accentColor}18`, border: `1px solid ${accentColor}33` }}>
-                        <span className="text-[10px] font-black" style={{ color: accentColor }}>#{p.jersey_number}</span>
-                      </div>
-                    )}
-                    <button
-                      onClick={() => handleDelete(p.id)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 hover:bg-white/6"
-                    >
-                      <svg className="w-3 h-3 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="px-6 py-4 border-t border-white/6 flex justify-end shrink-0">
-          <button onClick={onClose} className="text-[10px] font-bold text-white/35 hover:text-white uppercase tracking-widest transition-colors">Close</button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ─── CSV Import Modal ─────────────────────────────────────────────────────────
@@ -409,62 +234,273 @@ export function CollegeProfilePage({
   onBack: () => void;
 }) {
   const { isAdmin } = useRole();
-  const [selectedSport, setSelectedSport] = useState<string | null>(null);
   const [showCSV, setShowCSV] = useState(false);
+  // playerCounts is keyed by sport_id now (was sport name before the FK migration)
   const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({});
-  const [activeSportTab, setActiveSportTab] = useState<string | null>(null);
+  // activeSportTab now carries the full {id, name} so we can filter by FK
+  const [activeSportTab, setActiveSportTab] = useState<Sport | null>(null);
+  // Full sport list from the DB — {id, name} pairs
+  const [sports, setSports] = useState<Sport[]>([]);
+  const [players, setPlayers] = useState<DBPlayer[]>([]);
+  const [isLoadingPlayers, setIsLoadingPlayers] = useState(false);
+  const [showAddPlayer, setShowAddPlayer] = useState(false);
+  const [addForm, setAddForm] = useState({ name: "", position: "", jersey_number: "", photo_url: "" });
+  const [isSaving, setIsSaving] = useState(false);
 
   const org = college.org ?? "";
   const identity = COLLEGE_IDENTITY[org] ?? { mascot: college.name.toUpperCase(), color: "#A91D3A", tagline: "", photo: "", logo: "" };
   const { mascot, color, tagline, photo, logo } = identity;
   const textOnColor = TEXT_ON_COLOR[org] ?? "#ffffff";
 
+  // Resolved college display name — falls back to canonical map if college.name is empty.
+  // Used purely for UI display (toasts, modal labels). The FK value is college.id.
+  const resolvedCollegeName = (college.name?.trim() || COLLEGE_CANONICAL_NAME[org] || "").trim();
+
   const fetchCounts = async () => {
+    if (!college.id) return;
     const { data } = await (supabase as any)
       .from("players")
-      .select("sport")
-      .eq("college", college.name);
+      .select("sport_id")
+      .eq("college_id", college.id);
     if (data) {
       const counts: Record<string, number> = {};
-      data.forEach((r: { sport: string }) => {
-        counts[r.sport] = (counts[r.sport] || 0) + 1;
+      data.forEach((r: { sport_id: string }) => {
+        counts[r.sport_id] = (counts[r.sport_id] || 0) + 1;
       });
       setPlayerCounts(counts);
     }
   };
 
+  const fetchPlayers = async (sport: Sport) => {
+    if (!college.id) return;
+    setIsLoadingPlayers(true);
+    const { data } = await (supabase as any)
+      .from("players")
+      .select("*")
+      .eq("college_id", college.id)
+      .eq("sport_id", sport.id);
+    if (data) setPlayers(data);
+    setIsLoadingPlayers(false);
+  };
+
+  const handleAddPlayer = async () => {
+    const name = addForm.name.trim();
+    if (!name) {
+      toast.error("Player name is required");
+      return;
+    }
+    if (!activeSportTab) {
+      toast.error("Pick a sport first");
+      return;
+    }
+    if (!college.id) {
+      toast.error("Cannot determine college for this profile");
+      return;
+    }
+
+    // jersey_number is an int column — coerce or null. Empty string crashes the insert.
+    const jerseyRaw = addForm.jersey_number.trim();
+    let jerseyNumber: number | null = null;
+    if (jerseyRaw) {
+      const parsed = parseInt(jerseyRaw, 10);
+      if (Number.isNaN(parsed)) {
+        toast.error("Jersey number must be a number");
+        return;
+      }
+      jerseyNumber = parsed;
+    }
+
+    setIsSaving(true);
+    // college_id + sport_id are auto-tagged from page context, never from the form
+    const payload = {
+      name,
+      college_id: college.id,
+      sport_id: activeSportTab.id,
+      position: addForm.position.trim() || null,
+      jersey_number: jerseyNumber,
+      photo_url: addForm.photo_url.trim() || null,
+    };
+
+    const { data, error } = await (supabase as any)
+      .from("players")
+      .insert([payload])
+      .select()
+      .single();
+
+    setIsSaving(false);
+
+    if (error) {
+      toast.error(`Failed to add player: ${error.message}`);
+      return;
+    }
+    if (data) {
+      setPlayers((p) => [...p, data]);
+      setAddForm({ name: "", position: "", jersey_number: "", photo_url: "" });
+      setShowAddPlayer(false);
+      fetchCounts();
+      toast.success(`${name} added to ${resolvedCollegeName} · ${activeSportTab.name}`);
+    }
+  };
+
+  const handleDeletePlayer = async (id: string) => {
+    const { error } = await (supabase as any).from("players").delete().eq("id", id);
+    if (error) {
+      toast.error(`Failed to remove player: ${error.message}`);
+      return;
+    }
+    setPlayers((p) => p.filter((x) => x.id !== id));
+    fetchCounts();
+    toast.success("Player removed");
+  };
+
+  // Fetch the full sports list on mount, then auto-select the first one
   useEffect(() => {
     fetchCounts();
-    if (college.sports.length > 0) setActiveSportTab(college.sports[0]);
-  }, [college.name]);
+
+    async function fetchSports() {
+      const { data } = await (supabase as any)
+        .from("sports")
+        .select("id, name")
+        .order("name", { ascending: true });
+      if (data && data.length > 0) {
+        const list: Sport[] = data.map((s: { id: string; name: string }) => ({ id: s.id, name: s.name }));
+        setSports(list);
+        setActiveSportTab(list[0]);
+      }
+    }
+    fetchSports();
+  }, [college.id]);
+
+  // Re-fetch the roster every time the dropdown selection changes
+  useEffect(() => {
+    if (activeSportTab) fetchPlayers(activeSportTab);
+  }, [activeSportTab, college.id]);
 
   const handleImportPlayers = async (rows: PlayerCSVRow[]) => {
+    if (!college.id) {
+      toast.error("Cannot determine college for this import");
+      return;
+    }
+    // Map sport name → sport_id once, then resolve each row against it
+    const sportIdByName = new Map(sports.map((s) => [s.name.toLowerCase(), s.id]));
+
+    let inserted = 0;
+    let failed = 0;
     for (const row of rows) {
-      await (supabase as any).from("players").insert([{
+      const sportId = sportIdByName.get(row.sport.toLowerCase());
+      if (!sportId) {
+        failed++;
+        continue;
+      }
+      // jersey_number is an int column; treat blank/non-numeric as null
+      const jerseyRaw = (row.jersey_number ?? "").trim();
+      const parsed = jerseyRaw ? parseInt(jerseyRaw, 10) : NaN;
+      const jerseyNumber = Number.isNaN(parsed) ? null : parsed;
+
+      const { error } = await (supabase as any).from("players").insert([{
         name: row.name,
-        college: college.name,
-        sport: row.sport,
-        position: row.position,
-        jersey_number: row.jersey_number,
+        college_id: college.id,
+        sport_id: sportId,
+        position: row.position || null,
+        jersey_number: jerseyNumber,
       }]);
+      if (error) failed++; else inserted++;
     }
     fetchCounts();
+    if (inserted > 0) toast.success(`${inserted} player${inserted === 1 ? "" : "s"} imported`);
+    if (failed > 0)   toast.error(`${failed} row${failed === 1 ? "" : "s"} failed to import`);
   };
 
   const totalPlayers = Object.values(playerCounts).reduce((a, b) => a + b, 0);
 
   return (
     <div style={{ minHeight: "100vh", background: "#050505", color: "#f0f0f0" }}>
-      {/* Modals */}
-      {selectedSport && (
-        <SportLineupModal
-          college={college}
-          sport={selectedSport}
-          accentColor={color}
-          onClose={() => setSelectedSport(null)}
-          onPlayerChange={fetchCounts}
-        />
+      {/* Add Player modal */}
+      {showAddPlayer && activeSportTab && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowAddPlayer(false); }}
+        >
+          <div className="bg-[#0a0a0a] border border-white/8 rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="px-6 py-5 flex items-start justify-between rounded-t-2xl" style={{ background: color }}>
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-widest mb-1"
+                   style={{ color: TEXT_ON_COLOR[org] ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)" }}>
+                  {college.name} · {activeSportTab.name}
+                </p>
+                <h2 className="text-xl font-black uppercase" style={{ fontFamily: "var(--font-bebas)", color: TEXT_ON_COLOR[org] ?? "#fff" }}>
+                  Add Player
+                </h2>
+              </div>
+              <button
+                onClick={() => setShowAddPlayer(false)}
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-sm"
+                style={{ background: "rgba(0,0,0,0.15)", color: TEXT_ON_COLOR[org] ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.7)" }}
+              >✕</button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              {/* Auto-tag panel — these are set from page context, NOT user input.
+                  Shown read-only so the user can verify exactly what will be saved. */}
+              <div style={{
+                background: `${color}0d`,
+                border: `1px solid ${color}33`,
+                borderRadius: 10,
+                padding: "12px 14px",
+                display: "grid",
+                gridTemplateColumns: "auto 1fr",
+                rowGap: 8,
+                columnGap: 14,
+                alignItems: "center",
+              }}>
+                <div style={{ fontSize: 9, fontWeight: 900, color: `${color}cc`, letterSpacing: "0.3em", textTransform: "uppercase" }}>
+                  College
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {resolvedCollegeName}
+                </div>
+                <div style={{ fontSize: 9, fontWeight: 900, color: `${color}cc`, letterSpacing: "0.3em", textTransform: "uppercase" }}>
+                  Sport
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>
+                  {activeSportTab.name}
+                </div>
+                <div style={{ gridColumn: "1 / -1", fontSize: 9, color: "rgba(255,255,255,0.35)", letterSpacing: "0.05em" }}>
+                  Auto-tagged from the profile you're viewing — change the sport using the dropdown above.
+                </div>
+              </div>
+
+              {/* User-editable fields only */}
+              {[
+                { key: "name",          placeholder: "Full name *" },
+                { key: "position",      placeholder: "Position (e.g. Point Guard)" },
+                { key: "jersey_number", placeholder: "Jersey # (optional)" },
+                { key: "photo_url",     placeholder: "Photo URL (optional)" },
+              ].map(({ key, placeholder }) => (
+                <input
+                  key={key}
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-white placeholder:text-muted-foreground/60 outline-none"
+                  placeholder={placeholder}
+                  value={(addForm as any)[key]}
+                  onChange={(e) => setAddForm((f) => ({ ...f, [key]: e.target.value }))}
+                />
+              ))}
+            </div>
+            <div className="px-6 pb-5 flex gap-3">
+              <button
+                onClick={() => { setShowAddPlayer(false); setAddForm({ name: "", position: "", jersey_number: "", photo_url: "" }); }}
+                className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/50 text-sm font-semibold hover:text-white transition-all"
+              >Cancel</button>
+              <button
+                onClick={handleAddPlayer}
+                disabled={!addForm.name.trim() || isSaving}
+                className="flex-1 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest transition-all disabled:opacity-30"
+                style={{ background: color, color: TEXT_ON_COLOR[org] ?? "#fff" }}
+              >{isSaving ? "Saving…" : "Save Player"}</button>
+            </div>
+          </div>
+        </div>
       )}
+
       {showCSV && (
         <PlayerCSVModal
           college={college}
@@ -681,7 +717,7 @@ export function CollegeProfilePage({
         {[
           { label: "Active Players", value: totalPlayers || "—", accent: color },
           { label: "Active Teams",   value: college.activeTeams },
-          { label: "Sports",         value: college.sports.length, accent: color },
+          { label: "Sports",         value: sports.length, accent: color },
           { label: "Status",         value: college.status },
         ].map((s, i) => (
           <div
@@ -715,7 +751,7 @@ export function CollegeProfilePage({
         ))}
       </div>
 
-      {/* ── Sport tabs + action buttons ────────────────────────────────────── */}
+      {/* ── Sport dropdown + action buttons ───────────────────────────────── */}
       <div style={{
         padding: "16px 64px",
         borderBottom: "1px solid rgba(255,255,255,0.07)",
@@ -724,31 +760,52 @@ export function CollegeProfilePage({
         justifyContent: "space-between",
         gap: 16,
         background: "rgba(0,0,0,0.3)",
-        overflowX: "auto",
       }}>
-        <div style={{ display: "flex", gap: 24, flexShrink: 0 }}>
-          {college.sports.map((s) => (
-            <button
-              key={s}
-              onClick={() => setActiveSportTab(s)}
-              style={{
-                fontSize: 10,
-                fontWeight: 900,
-                color: activeSportTab === s ? color : "rgba(255,255,255,0.4)",
-                letterSpacing: "0.25em",
-                textTransform: "uppercase",
-                background: "none",
-                border: "none",
-                borderBottom: activeSportTab === s ? `2px solid ${color}` : "2px solid transparent",
-                paddingBottom: 8,
-                cursor: "pointer",
-                transition: "color 0.15s",
-                flexShrink: 0,
-              }}
-            >
-              {s}
-            </button>
-          ))}
+        {/* Sport selector dropdown */}
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <select
+            value={activeSportTab?.id ?? ""}
+            onChange={(e) => {
+              const next = sports.find((s) => s.id === e.target.value);
+              if (next) setActiveSportTab(next);
+            }}
+            style={{
+              appearance: "none",
+              WebkitAppearance: "none",
+              background: "#0a0a0a",
+              border: `1px solid ${color}44`,
+              borderRadius: 6,
+              padding: "9px 36px 9px 14px",
+              fontSize: 10,
+              fontWeight: 900,
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+              color: color,
+              cursor: "pointer",
+              outline: "none",
+              minWidth: 220,
+            }}
+          >
+            {sports.map((s) => (
+              <option key={s.id} value={s.id} style={{ background: "#0a0a0a", color: "#f0f0f0" }}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          {/* Custom chevron */}
+          <svg
+            style={{
+              position: "absolute",
+              right: 10,
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+              color: color,
+            }}
+            width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </div>
 
         <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
@@ -774,9 +831,9 @@ export function CollegeProfilePage({
               ↑ Import CSV
             </button>
           )}
-          {activeSportTab && (
+          {isAdmin && activeSportTab && (
             <button
-              onClick={() => setSelectedSport(activeSportTab)}
+              onClick={() => setShowAddPlayer(true)}
               style={{
                 padding: "9px 16px",
                 background: color,
@@ -793,114 +850,235 @@ export function CollegeProfilePage({
                 gap: 6,
               }}
             >
-              + View Lineup
+              + Add Player
             </button>
           )}
         </div>
       </div>
 
-      {/* ── Sports grid ──────────────────────────────────────────────────────── */}
-      <div style={{ padding: "36px 64px 40px" }}>
-        {/* Section label */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          marginBottom: 22,
-          color: "#C5A059",
-        }}>
-          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
-          <span style={{ fontSize: 9, fontWeight: 900, letterSpacing: "0.3em", textTransform: "uppercase" }}>
-            SPORTS & LINEUPS · {college.sports.length} SPORTS
-          </span>
-        </div>
+      {/* ── Roster — Bold photo-card grid (per teams-college-bold.jsx) ───────── */}
+      {activeSportTab && (
+        <div style={{ padding: "36px 64px 56px" }}>
+          {/* Section label — matches the Bold design's TSectionLabel */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 22,
+            color: "#C5A059",
+          }}>
+            <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: "0.3em", textTransform: "uppercase" }}>
+              {activeSportTab?.name} Roster · {isLoadingPlayers ? "…" : `${players.length} ${players.length === 1 ? "PLAYER" : "PLAYERS"}`}
+            </span>
+          </div>
 
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-          gap: 14,
-        }}>
-          {college.sports.map((sport) => {
-            const count = playerCounts[sport] ?? 0;
-            const isActive = activeSportTab === sport;
-            return (
-              <button
-                key={sport}
-                onClick={() => { setActiveSportTab(sport); setSelectedSport(sport); }}
-                style={{
-                  position: "relative",
-                  overflow: "hidden",
-                  background: isActive ? `${color}14` : "#0a0a0a",
-                  border: `1px solid ${isActive ? color + "44" : "rgba(255,255,255,0.07)"}`,
-                  borderRadius: 10,
-                  padding: "18px 20px",
-                  textAlign: "left",
-                  cursor: "pointer",
-                  transition: "border-color 0.15s, background 0.15s",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = `${color}33`;
-                    (e.currentTarget as HTMLButtonElement).style.background = "#0d0d0d";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.07)";
-                    (e.currentTarget as HTMLButtonElement).style.background = "#0a0a0a";
-                  }
-                }}
-              >
-                {/* Color accent left edge */}
-                <div style={{
-                  position: "absolute",
-                  top: 0, bottom: 0, left: 0,
-                  width: 3,
-                  background: isActive ? color : "transparent",
-                  borderRadius: "10px 0 0 10px",
-                  transition: "background 0.15s",
+          {/* Loading skeletons in card grid layout */}
+          {isLoadingPlayers ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 18 }}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} style={{
+                  aspectRatio: "4 / 5",
+                  borderRadius: 12,
+                  background: "rgba(255,255,255,0.04)",
+                  animation: "pulse 1.5s ease-in-out infinite",
                 }} />
-
-                <div style={{ paddingLeft: 4 }}>
-                  <p style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: isActive ? "#fff" : "rgba(255,255,255,0.75)",
-                    marginBottom: 4,
-                  }}>
-                    {sport}
-                  </p>
-                  <p style={{
+              ))}
+            </div>
+          ) : players.length === 0 ? (
+            /* Empty roster state */
+            <div style={{
+              border: "1px dashed rgba(255,255,255,0.08)",
+              borderRadius: 12,
+              padding: "56px 24px",
+              textAlign: "center",
+              background: "#0a0a0a",
+            }}>
+              <div style={{
+                fontFamily: "var(--font-bebas), sans-serif",
+                fontSize: 52,
+                color: `${color}22`,
+                fontStyle: "italic",
+                letterSpacing: "0.05em",
+                marginBottom: 12,
+              }}>
+                NO ROSTER YET
+              </div>
+              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: 0, marginBottom: 16, letterSpacing: "0.1em" }}>
+                No players registered for {activeSportTab?.name} for {college.name}.
+              </p>
+              {isAdmin && (
+                <button
+                  onClick={() => setShowAddPlayer(true)}
+                  style={{
+                    padding: "10px 18px",
+                    background: color,
+                    color: textOnColor,
+                    border: "none",
+                    borderRadius: 6,
                     fontSize: 10,
-                    color: isActive ? color : "rgba(255,255,255,0.3)",
-                    fontWeight: 600,
-                  }}>
-                    {count} {count === 1 ? "player" : "players"}
-                  </p>
-                </div>
+                    fontWeight: 900,
+                    letterSpacing: "0.3em",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                  }}
+                >
+                  + Add the first player
+                </button>
+              )}
+            </div>
+          ) : (
+            /* Bold-style photo card grid */
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+              gap: 18,
+            }}>
+              {players.map((p, idx) => {
+                const fallback = AVATAR_COLORS[idx % AVATAR_COLORS.length];
+                return (
+                  <div
+                    key={p.id}
+                    className="group"
+                    style={{
+                      position: "relative",
+                      overflow: "hidden",
+                      background: "#0a0a0a",
+                      border: "1px solid rgba(255,255,255,0.07)",
+                      borderRadius: 12,
+                      aspectRatio: "4 / 5",
+                      cursor: "default",
+                    }}
+                  >
+                    {/* Full-bleed photo — falls back to brand-color gradient + initials */}
+                    {p.photo_url ? (
+                      <img
+                        src={p.photo_url}
+                        alt={p.name}
+                        style={{
+                          position: "absolute", inset: 0,
+                          width: "100%", height: "100%",
+                          objectFit: "cover",
+                          filter: "grayscale(0.3) contrast(1.05) brightness(0.85)",
+                        }}
+                      />
+                    ) : (
+                      <div style={{
+                        position: "absolute", inset: 0,
+                        background: `linear-gradient(135deg, ${color}33 0%, ${fallback.bg} 60%, #050505 100%)`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <span style={{
+                          fontFamily: "var(--font-bebas), sans-serif",
+                          fontSize: 92,
+                          color: `${color}55`,
+                          fontStyle: "italic",
+                          letterSpacing: "0.04em",
+                        }}>
+                          {getInitials(p.name)}
+                        </span>
+                      </div>
+                    )}
 
-                <div style={{
-                  alignSelf: "flex-start",
-                  marginLeft: 4,
-                  fontSize: 8,
-                  fontWeight: 900,
-                  letterSpacing: "0.25em",
-                  textTransform: "uppercase",
-                  color: isActive ? color : "rgba(255,255,255,0.2)",
-                }}>
-                  View Lineup →
-                </div>
-              </button>
-            );
-          })}
+                    {/* Bottom gradient — makes name readable on photo */}
+                    <div style={{
+                      position: "absolute", inset: 0,
+                      background: "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, transparent 30%, rgba(5,5,5,0.95) 75%, #0a0a0a 100%)",
+                    }} />
+
+                    {/* Brand-color side bar w/ glow */}
+                    <div style={{
+                      position: "absolute", top: 0, left: 0, bottom: 0,
+                      width: 3,
+                      background: color,
+                      boxShadow: `0 0 16px ${color}99`,
+                    }} />
+
+                    {/* Jersey badge — top right */}
+                    {p.jersey_number != null && (
+                      <div style={{
+                        position: "absolute", top: 14, right: 14,
+                        padding: "5px 11px",
+                        background: color,
+                        color: textOnColor,
+                        fontFamily: "var(--font-mono), monospace",
+                        fontSize: 13,
+                        fontWeight: 900,
+                        borderRadius: 4,
+                        letterSpacing: "0.05em",
+                      }}>
+                        #{p.jersey_number.toString().padStart(2, "0")}
+                      </div>
+                    )}
+
+                    {/* Delete — admin only, top-left, hover-reveal */}
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleDeletePlayer(p.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{
+                          position: "absolute", top: 14, left: 22,
+                          width: 28, height: 28, borderRadius: 6,
+                          background: "rgba(0,0,0,0.7)",
+                          border: "1px solid rgba(255,255,255,0.15)",
+                          cursor: "pointer",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}
+                        aria-label={`Remove ${p.name}`}
+                      >
+                        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    )}
+
+                    {/* Content stack — bottom left */}
+                    <div style={{
+                      position: "absolute", left: 22, right: 22, bottom: 18,
+                    }}>
+                      <div style={{
+                        fontSize: 9,
+                        color: color,
+                        fontWeight: 900,
+                        letterSpacing: "0.3em",
+                        textTransform: "uppercase",
+                        marginBottom: 6,
+                      }}>
+                        {activeSportTab?.name}
+                      </div>
+                      <div style={{
+                        fontFamily: "var(--font-bebas), sans-serif",
+                        fontSize: 30,
+                        lineHeight: 0.95,
+                        color: "#ffffff",
+                        fontStyle: "italic",
+                        letterSpacing: "0.02em",
+                      }}>
+                        {p.name}
+                      </div>
+                      {p.position && (
+                        <div style={{
+                          marginTop: 6,
+                          fontSize: 10,
+                          color: "rgba(255,255,255,0.55)",
+                          fontWeight: 700,
+                          letterSpacing: "0.18em",
+                          textTransform: "uppercase",
+                        }}>
+                          {p.position}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }

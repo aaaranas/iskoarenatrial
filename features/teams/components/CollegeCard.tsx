@@ -92,14 +92,14 @@ export function CollegeCard({
         zIndex: 2,
       }} />
 
-      {/* Giant mascot watermark */}
+      {/* Giant mascot watermark — centered */}
       <div
         aria-hidden
         style={{
           position: "absolute",
           top: "50%",
-          transform: "translateY(-50%)",
-          [reverse ? "left" : "right"]: 24,
+          left: "50%",
+          transform: "translate(-50%, -50%)",
           fontFamily: "var(--font-bebas), sans-serif",
           fontSize: "clamp(110px, 16vw, 240px)",
           lineHeight: 0.8,
