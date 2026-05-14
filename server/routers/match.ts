@@ -1,11 +1,23 @@
-import { router, publicProcedure } from "../trpc";
+import { router, publicProcedure, adminProcedure } from "../trpc";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { TRPCError } from "@trpc/server";
 
-// ✅ Shared schema for IDs
 const uuid = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
   "Invalid UUID");
+
+// Allowed match statuses — mirrored by the front-end status filter.
+// If you add a status here, also update FILTER_OPTIONS in features/matches/components/Box.tsx.
+const matchStatus = z.enum([
+  "scheduled",
+  "upcoming",
+  "live",
+  "in_progress",
+  "finished",
+  "completed",
+  "cancelled",
+  "postponed",
+]);
 
 export const matchRouter = router({
   // ─────────────────────────────────────────────────────────────
@@ -43,6 +55,10 @@ export const matchRouter = router({
       awayScore: match.away_score,
       league: match.sport?.name || "Unknown Sport",
       venue: match.venue?.name || "TBD",
+      // rawDate is the unformatted ISO string — used by client code for
+      // locale-independent comparisons (e.g. "is this today?"). The formatted
+      // date/time strings below are display-only.
+      rawDate: match.match_date as string | null,
       date: match.match_date
         ? new Date(match.match_date).toLocaleDateString()
         : "TBD",
@@ -62,15 +78,15 @@ export const matchRouter = router({
   // ─────────────────────────────────────────────────────────────
   // ADD MATCH
   // ─────────────────────────────────────────────────────────────
-  addMatch: publicProcedure
+  addMatch: adminProcedure
     .input(
       z.object({
         sport_id: uuid,
         home_team_id: uuid,
         away_team_id: uuid,
         venue_id: uuid,
-        match_date: z.string(), // ISO string
-        status: z.string().optional().default("scheduled"),
+        match_date: z.string(), // ISO string — validated below for runtime correctness
+        status: matchStatus.optional().default("scheduled"),
       })
     )
     .mutation(async ({ input }) => {
@@ -117,13 +133,13 @@ export const matchRouter = router({
   // ─────────────────────────────────────────────────────────────
   // UPDATE MATCH
   // ─────────────────────────────────────────────────────────────
-  updateMatch: publicProcedure
+  updateMatch: adminProcedure
     .input(
       z.object({
         id: uuid,
-        home_score: z.number().optional(),
-        away_score: z.number().optional(),
-        status: z.string().optional(),
+        home_score: z.number().int().min(0).optional(),
+        away_score: z.number().int().min(0).optional(),
+        status: matchStatus.optional(),
         match_date: z.string().optional(),
       })
     )
@@ -164,7 +180,7 @@ export const matchRouter = router({
   // ─────────────────────────────────────────────────────────────
   // DELETE MATCH
   // ─────────────────────────────────────────────────────────────
-  deleteMatch: publicProcedure
+  deleteMatch: adminProcedure
     .input(z.object({ id: uuid }))
     .mutation(async ({ input }) => {
       const { data, error } = await supabaseAdmin
@@ -187,12 +203,12 @@ export const matchRouter = router({
   // ─────────────────────────────────────────────────────────────
   // UPDATE SCORE
   // ─────────────────────────────────────────────────────────────
-  updateScore: publicProcedure
+  updateScore: adminProcedure
     .input(
       z.object({
         id: uuid,
-        homeScore: z.number().min(0),
-        awayScore: z.number().min(0),
+        homeScore: z.number().int().min(0),
+        awayScore: z.number().int().min(0),
       })
     )
     .mutation(async ({ input }) => {

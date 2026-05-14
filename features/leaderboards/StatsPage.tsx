@@ -19,6 +19,8 @@ interface Performer {
   prize: string;
   rank: number;
   value: number;
+  sport: string;
+  category: string;
 }
 
 export default function LeaderboardPage() {
@@ -28,7 +30,7 @@ export default function LeaderboardPage() {
 
   // ── DATA FETCHING ──
   const { data: players, isLoading: plLoading } = trpc.players.getAll.useQuery();
-  const { data: teams, isLoading: tmLoading } = trpc.teams.getAll.useQuery();
+  const { data: teams, isLoading: tmLoading } = trpc.team.getAll.useQuery();
   const { data: stats, isLoading: stLoading } = trpc.stats.getLeaderboard.useQuery({
     type: viewMode,
     timeframe,
@@ -43,6 +45,8 @@ export default function LeaderboardPage() {
       prize: `${1000 - index * 100} PTS`,
       rank: index + 1,
       value: 1000 - index * 100,
+      sport: team.sport ?? "—",
+      category: team.org ?? "—",
     }));
   }, [teams]);
 
@@ -62,7 +66,7 @@ export default function LeaderboardPage() {
     if (!teams) return [];
     return teams
       .filter((t: any) => t.name?.toLowerCase().includes(searchQuery.toLowerCase()))
-      .map((t: any, i) => ({
+      .map((t: any, i: number) => ({
         rank: i + 1,
         name: t.name,
         username: `@${t.org?.toLowerCase() ?? "unknown"}`,

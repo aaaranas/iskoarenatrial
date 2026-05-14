@@ -7,11 +7,16 @@ import { EditMatchModal } from "./EditMatchModal";
 
 interface MatchCardProps {
   match: Match;
-  onOpenDetails: () => void;
+  // Optional so the card can also render in read-only contexts (e.g. LiveCarousel).
+  onOpenDetails?: () => void;
   onFinalize?: () => void;
+  // When provided, the parent owns the edit/delete modals (see Box.tsx).
+  // When omitted, MatchCard falls back to its built-in dialogs.
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export const MatchCard = ({ match, onOpenDetails, onFinalize }: MatchCardProps) => {
+export const MatchCard = ({ match, onOpenDetails, onFinalize, onEdit, onDelete }: MatchCardProps) => {
   const isLive = match.statusType?.toLowerCase() === "live";
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -51,7 +56,7 @@ export const MatchCard = ({ match, onOpenDetails, onFinalize }: MatchCardProps) 
     if (suppressNextClick.current) {
       return;
     }
-    onOpenDetails();
+    onOpenDetails?.();
   };
 
   return (
@@ -83,13 +88,13 @@ export const MatchCard = ({ match, onOpenDetails, onFinalize }: MatchCardProps) 
           </button>
         )}
         <button
-          onClick={() => setEditDialogOpen(true)}
+          onClick={() => (onEdit ? onEdit() : setEditDialogOpen(true))}
           className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#C5A059] hover:text-black transition-all"
         >
           <Edit3 className="w-4 h-4" />
         </button>
         <button
-          onClick={() => setDeleteDialogOpen(true)}
+          onClick={() => (onDelete ? onDelete() : setDeleteDialogOpen(true))}
           className="p-2.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#A91D3A] transition-all"
         >
           <Trash2 className="w-4 h-4" />

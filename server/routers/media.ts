@@ -102,7 +102,7 @@ export const mediaRouter = router({
       tag:     z.string().nullable().optional(),
     }))
     .mutation(async ({ input }) => {
-      const patch: Record<string, unknown> = {};
+      const patch: { title?: string; tag?: string | null; sport_id?: string | null } = {};
       if (input.title   !== undefined) patch.title    = input.title;
       if (input.tag     !== undefined) patch.tag      = input.tag;
       if (input.sportId !== undefined) patch.sport_id = input.sportId || null;

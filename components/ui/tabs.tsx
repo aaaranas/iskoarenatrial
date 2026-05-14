@@ -22,8 +22,10 @@ export function Tabs({ value, onValueChange, children, className }: TabsProps) {
 }
 
 interface TabsListProps {
-  value: string;
-  onValueChange: (value: string) => void;
+  // value/onValueChange are injected by the parent <Tabs> via cloneElement,
+  // so call-sites only need to pass children/className.
+  value?: string;
+  onValueChange?: (value: string) => void;
   children: React.ReactNode;
   className?: string;
 }
@@ -33,7 +35,7 @@ export function TabsList({ value, onValueChange, children, className }: TabsList
     <div className={cn("tabs-list", className)}>
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child) && child.type === TabsTrigger) {
-          return React.cloneElement(child, { isActive: child.props.value === value, onClick: () => onValueChange(child.props.value) });
+          return React.cloneElement(child, { isActive: child.props.value === value, onClick: () => onValueChange?.(child.props.value) });
         }
         return child;
       })}
@@ -66,8 +68,9 @@ export function TabsTrigger({ value, isActive, onClick, children, className }: T
 
 interface TabsContentProps {
   value: string;
-  activeValue: string;
-  children: React.ReactNode;
+  // activeValue is injected by the parent <Tabs> via cloneElement.
+  activeValue?: string;
+  children?: React.ReactNode;
   className?: string;
 }
 

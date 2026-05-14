@@ -9,28 +9,53 @@ import { Match } from "@/types";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
+interface EditMatchModalProps {
+  match: Match;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+// Status values must match the matchStatus zod enum in server/routers/match.ts.
+type MatchStatus =
+  | "scheduled"
+  | "upcoming"
+  | "live"
+  | "in_progress"
+  | "finished"
+  | "completed"
+  | "cancelled"
+  | "postponed";
+
 export const EditMatchModal = ({ match, open, onOpenChange }: EditMatchModalProps) => {
   const [homeScore, setHomeScore] = useState(match.homeScore?.toString() || "0");
   const [awayScore, setAwayScore] = useState(match.awayScore?.toString() || "0");
-  const [status, setStatus] = useState(match.statusType || "upcoming");
+  const [status, setStatus] = useState<MatchStatus>((match.statusType as MatchStatus) || "upcoming");
   const [venue, setVenue] = useState(match.venue || "");
 
   const utils = trpc.useUtils();
-  const editMatch = trpc.match.update.useMutation({ // Assuming you have a general update endpoint
+  const editMatch = trpc.match.updateMatch.useMutation({
     onSuccess: () => {
       toast.success("Match details updated!");
       utils.match.getAll.invalidate();
       onOpenChange(false);
     },
+    onError: (err) => toast.error(err.message),
   });
 
   const handleSave = () => {
+    const home = parseInt(homeScore, 10);
+    const away = parseInt(awayScore, 10);
+    if (Number.isNaN(home) || Number.isNaN(away)) {
+      toast.error("Scores must be valid numbers");
+      return;
+    }
+    // venue is collected for future use; updateMatch mutation doesn't persist it yet.
+    void venue;
     editMatch.mutate({
       id: match.id,
-      homeScore: parseInt(homeScore),
-      awayScore: parseInt(awayScore),
-      statusType: status,
-      venue: venue,
+      home_score: home,
+      away_score: away,
+      status,
     });
   };
 
@@ -57,7 +82,7 @@ export const EditMatchModal = ({ match, open, onOpenChange }: EditMatchModalProp
           {/* Status Select */}
           <div className="space-y-2">
             <Label className="text-[10px] text-zinc-500 uppercase font-bold">Match Status</Label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select value={status} onValueChange={(v) => setStatus(v as MatchStatus)}>
               <SelectTrigger className="bg-black border-white/10">
                 <SelectValue />
               </SelectTrigger>
@@ -78,10 +103,10 @@ export const EditMatchModal = ({ match, open, onOpenChange }: EditMatchModalProp
 
         <button 
           onClick={handleSave}
-          disabled={editMatch.isLoading}
+          disabled={editMatch.isPending}
           className="w-full bg-[#C5A059] text-black font-black uppercase text-[10px] py-3 rounded-sm hover:opacity-90 transition-opacity"
         >
-          {editMatch.isLoading ? "Updating..." : "Save Changes"}
+          {editMatch.isPending ? "Updating..." : "Save Changes"}
         </button>
       </DialogContent>
     </Dialog>
