@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import React, { useState } from 'react';
-import { LogoIcon } from "@/components/Logo"; // fix: match actual filename casing
+import { LogoIcon } from "@/components/Logo";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

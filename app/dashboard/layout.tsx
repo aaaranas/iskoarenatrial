@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { TopBar } from "@/components/topbar";
 import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
-import { RoleProvider } from "@/providers/RoleProvider"; // restore: removed by PR #39, breaks isAdmin gate
+import { RoleProvider } from "@/providers/RoleProvider";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -18,8 +18,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleLogout = async () => {
     await supabase.auth.signOut();
     utils.auth.getSession.invalidate();
-    router.refresh();
-    router.push("/");
+    router.push("/"); // push navigates away; refresh() beforehand was a no-op stutter
   };
 
   // Client-side session check — reads localStorage where signInWithPassword stores

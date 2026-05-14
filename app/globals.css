@@ -269,10 +269,8 @@ html { scroll-behavior: smooth; }
 
 /* ─── Animations ─────────────────────────────────────────────────────────────── */
 @keyframes fadeIn       { from { opacity: 0; } to { opacity: 1; } }
-/* Landing page motion — Hero, MatchesTodaySection, CompetingColleges, SportsSection, LoginModal */
 @keyframes fadeInUp     { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes scrollPulse  { 0%, 100% { opacity: 0.3; transform: scaleY(0.6); } 50% { opacity: 1; transform: scaleY(1); } }
-@keyframes ticker       { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @keyframes matchesScroll { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
 @keyframes pulseDot     { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 
