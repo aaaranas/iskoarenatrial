@@ -184,7 +184,6 @@ function ProfileModal({ profile, onClose, onSaved }: {
 interface AppSidebarProps {
   onLogout: () => void;
   adminName: string;
-  profile?: ProfileData | null;
   onProfileSaved?: () => void;
 }
 
@@ -265,9 +264,9 @@ export function AppSidebar({ onLogout, adminName, onProfileSaved }: AppSidebarPr
             onClick={() => clientProfile && setShowProfile(true)}
             title="Edit profile"
             className="group flex items-center gap-2.5 transition-opacity hover:opacity-90">
-            <div className="flex size-8 items-center justify-center rounded-full bg-zinc-800 border border-zinc-600 overflow-hidden group-hover:border-zinc-400 transition-colors shadow-inner">
+            <div className="relative flex size-8 items-center justify-center rounded-full bg-zinc-800 border border-zinc-600 overflow-hidden group-hover:border-zinc-400 transition-colors shadow-inner">
               {clientProfile?.avatar_url
-                ? <img src={clientProfile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+                ? <Image src={clientProfile.avatar_url} alt={displayName} fill className="object-cover" />
                 : <span className="text-[11px] font-bold text-zinc-300 select-none">{initials}</span>}
             </div>
             <span className="hidden lg:block text-xs text-zinc-400 group-hover:text-white transition-colors max-w-[120px] truncate">

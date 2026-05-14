@@ -32,6 +32,8 @@ type MediaItem = {
   sportId: string | null;
   matchId: string | null;
   createdAt: string;
+  likeCount: number;
+  userHasLiked: boolean;
 };
 
 type HighlightSlide = {
@@ -86,41 +88,41 @@ function sportConfig(sport: string | null) {
   return SPORT_CONFIG[sport] ?? SPORT_CONFIG.default;
 }
 
-// ─── Like Button (DB-backed) ──────────────────────────────────────────────────
+// ─── Like Button (optimistic, count from server) ─────────────────────────────
 
-function LikeButton({ mediaId, size = 18, className = "" }: { mediaId: string; size?: number; className?: string }) {
-  const [liked,   setLiked]   = useState(false);
-  const [count,   setCount]   = useState(0);
+function LikeButton({ mediaId, initialCount = 0, initialLiked = false, size = 18, className = "" }: {
+  mediaId: string; initialCount?: number; initialLiked?: boolean; size?: number; className?: string;
+}) {
+  const [liked,   setLiked]   = useState(initialLiked);
+  const [count,   setCount]   = useState(initialCount);
   const [userId,  setUserId]  = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchState = useCallback(async (uid: string | null) => {
-    const { data: rows } = await supabase.from("media_likes").select("id, user_id").eq("media_id", mediaId);
-    setCount(rows?.length ?? 0);
-    if (uid) setLiked(rows?.some(r => r.user_id === uid) ?? false);
-  }, [mediaId]);
-
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      const uid = data.user?.id ?? null;
-      setUserId(uid);
-      fetchState(uid);
-    });
-  }, [mediaId, fetchState]);
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+  }, []);
 
   const toggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!userId || loading) return;
+
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setCount(c => wasLiked ? c - 1 : c + 1);
+
     setLoading(true);
     try {
-      if (liked) {
+      if (wasLiked) {
         const { error } = await supabase.from("media_likes").delete().eq("media_id", mediaId).eq("user_id", userId);
-        if (error) { console.error("Unlike error:", error); toast.error(error.message); return; }
+        if (error) throw error;
       } else {
         const { error } = await supabase.from("media_likes").insert({ media_id: mediaId, user_id: userId });
-        if (error) { console.error("Like error:", error); toast.error(error.message); return; }
+        if (error) throw error;
       }
-      await fetchState(userId);
+    } catch (err: any) {
+      setLiked(wasLiked);
+      setCount(c => wasLiked ? c + 1 : c - 1);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -187,16 +189,10 @@ function CommentsSection({ mediaId, isAdmin }: { mediaId: string; isAdmin: boole
       media_id: mediaId, user_id: userId, user_name: userName, content,
     });
     if (error) {
-      console.error("Comment insert error:", error);
       toast.error(error.message);
     } else {
       setText("");
-      // Re-fetch all comments so the new one is guaranteed to appear
-      const { data: fresh } = await supabase.from("media_comments")
-        .select("id, user_id, user_name, content, created_at")
-        .eq("media_id", mediaId)
-        .order("created_at", { ascending: true });
-      if (fresh) setComments(fresh as CommentRow[]);
+      // realtime INSERT handler adds the new comment automatically
     }
     setSubmitting(false);
   };
@@ -1178,7 +1174,7 @@ function PostDetailModal({ item, onClose, onEdit, onDelete, onShare, isAdmin }: 
                 </div>
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <LikeButton mediaId={item.id} size={18} />
+                <LikeButton mediaId={item.id} initialCount={item.likeCount} initialLiked={item.userHasLiked} size={18} />
                 {isAdmin && <button onClick={onShare} className="text-zinc-600 hover:text-[#A91D3A] transition-colors"><BookMarked size={18} /></button>}
                 <button onClick={() => setSaved(v => !v)} className={`transition-all duration-200 ${saved ? "text-white" : "text-zinc-600 hover:text-zinc-300"}`}>
                   <Bookmark size={18} fill={saved ? "currentColor" : "none"} />
@@ -1277,7 +1273,7 @@ function ReelDetailModal({ item, onClose, onEdit, onDelete, onShare, isAdmin }: 
               </span>
             </div>
             <div className="flex items-center gap-3 mt-2">
-              <LikeButton mediaId={item.id} size={16} />
+              <LikeButton mediaId={item.id} initialCount={item.likeCount} initialLiked={item.userHasLiked} size={16} />
               {isAdmin && (
                 <button onClick={e => { e.stopPropagation(); onShare(); }} className="text-zinc-600 hover:text-[#A91D3A] transition-colors">
                   <BookMarked size={16} />
@@ -1388,7 +1384,7 @@ function PostCard({ item, onClick, onEdit, onDelete, onShare, featured, isAdmin 
           <p className="text-zinc-300 text-[11px] font-medium truncate">{item.title}</p>
           {item.sport && <p className="text-[9px] font-semibold uppercase tracking-wider mt-0.5" style={{ color: cfg.accent }}>{item.sport}</p>}
         </div>
-        <LikeButton mediaId={item.id} size={14} className="shrink-0 ml-2" />
+        <LikeButton mediaId={item.id} initialCount={item.likeCount} initialLiked={item.userHasLiked} size={14} className="shrink-0 ml-2" />
       </div>
     </article>
   );
@@ -1511,7 +1507,7 @@ function FacebookFeedCard({ item, onClick, onEdit, onDelete, onShare, isAdmin }:
 
       {/* Action row */}
       <div className="px-4 py-2.5 border-t border-zinc-800/40 flex items-center gap-4">
-        <LikeButton mediaId={item.id} size={16} />
+        <LikeButton mediaId={item.id} initialCount={item.likeCount} initialLiked={item.userHasLiked} size={16} />
         <button onClick={e => { e.stopPropagation(); onClick(); }}
           className="flex items-center gap-1.5 text-zinc-600 hover:text-zinc-300 transition-colors">
           <MessageCircle size={16} />

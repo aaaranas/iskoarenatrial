@@ -7,6 +7,10 @@ node_modules
 
 NPMRUNDEV.md
 ISKOARENABUGS1.0.md
+ISKOARENA_CLAUDE.md
 
 .claude
 _design-import
+
+reports/
+internal/
