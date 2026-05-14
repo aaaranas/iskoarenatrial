@@ -6,9 +6,13 @@ const nextConfig: NextConfig = {
 	remotePatterns: [
 	    {
 		hostname: "ik.imagekit.io",
-		protocol: "https"
-	    
-	    }
+		protocol: "https",
+	    },
+	    {
+		// Supabase Storage — avatars and media uploads
+		hostname: "*.supabase.co",
+		protocol: "https",
+	    },
 	]	
     },
 };

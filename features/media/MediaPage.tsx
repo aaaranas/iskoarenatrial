@@ -1,17 +1,22 @@
 ﻿"use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
-  Grid3X3, Film, Plus, Play, Image as ImageIcon,
-  Heart, MessageCircle, Share2, Bookmark, Camera, X, Upload,
+  Grid3X3, Film, Plus, Play, Image as ImageIcon, LayoutList,
+  Heart, Share2, Bookmark, Camera, X, Upload,
   ChevronLeft, ChevronRight, Loader2, Pencil, Trash2, Check,
-  BookMarked, Search, Zap, TrendingUp, Eye,
+  BookMarked, Search, Zap, MessageCircle, Send, Eye,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { supabase } from "@/lib/supabase/client";
 import { useRole } from "@/providers/RoleProvider";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatDistanceToNow } from "date-fns";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+type MediaImage = { url: string; fileName: string };
 
 type MediaItem = {
   id: string;
@@ -19,12 +24,16 @@ type MediaItem = {
   type: "image" | "video";
   url: string;
   fileName: string;
+  images: MediaImage[];
+  caption: string | null;
   tag: string | null;
   size: string | null;
   sport: string | null;
   sportId: string | null;
   matchId: string | null;
   createdAt: string;
+  likeCount: number;
+  userHasLiked: boolean;
 };
 
 type HighlightSlide = {
@@ -40,12 +49,17 @@ type Highlight = {
   id: string;
   label: string;
   color: string;
+  college: string | null;
   coverUrl: string | null;
   createdAt: string;
   slides: HighlightSlide[];
 };
 
+type CommentRow = { id: string; user_id: string; user_name: string; content: string; created_at: string };
+
 // ─── Constants ────────────────────────────────────────────────────────────────
+
+const MEDIA_BUCKET = "media";
 
 const COLOR_OPTIONS = [
   { label: "Brand",  value: "from-[#A91D3A] to-[#741029]"  },
@@ -59,6 +73,7 @@ const COLOR_OPTIONS = [
 
 const TAGS_POST = ["FINALS", "SEMI-FINALS", "QUARTERFINALS", "RECORD BROKEN", "OPENING", "CLOSING", "DAY 1", "DAY 2", "DAY 3"];
 const TAGS_REEL = ["HIGHLIGHTS", "COMPILATION", "BEST MOMENTS", "BEHIND THE SCENES", "CEREMONY"];
+const COLLEGES  = ["COS", "CSS", "SOM", "CCAD"] as const;
 
 const SPORT_CONFIG: Record<string, { gradient: string; accent: string; glow: string }> = {
   Basketball: { gradient: "from-orange-950 via-red-900 to-orange-950", accent: "#F97316", glow: "rgba(249,115,22,0.3)" },
@@ -71,6 +86,174 @@ const SPORT_CONFIG: Record<string, { gradient: string; accent: string; glow: str
 function sportConfig(sport: string | null) {
   if (!sport) return SPORT_CONFIG.default;
   return SPORT_CONFIG[sport] ?? SPORT_CONFIG.default;
+}
+
+// ─── Like Button (optimistic, count from server) ─────────────────────────────
+
+function LikeButton({ mediaId, initialCount = 0, initialLiked = false, size = 18, className = "" }: {
+  mediaId: string; initialCount?: number; initialLiked?: boolean; size?: number; className?: string;
+}) {
+  const [liked,   setLiked]   = useState(initialLiked);
+  const [count,   setCount]   = useState(initialCount);
+  const [userId,  setUserId]  = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+  }, []);
+
+  const toggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!userId || loading) return;
+
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setCount(c => wasLiked ? c - 1 : c + 1);
+
+    setLoading(true);
+    try {
+      if (wasLiked) {
+        const { error } = await supabase.from("media_likes").delete().eq("media_id", mediaId).eq("user_id", userId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("media_likes").insert({ media_id: mediaId, user_id: userId });
+        if (error) throw error;
+      }
+    } catch (err: any) {
+      setLiked(wasLiked);
+      setCount(c => wasLiked ? c + 1 : c - 1);
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button onClick={toggle} disabled={loading || !userId}
+      className={`flex items-center gap-1.5 transition-all duration-200 disabled:opacity-40 ${liked ? "text-red-400" : "text-zinc-600 hover:text-zinc-300"} ${className}`}>
+      <Heart size={size} fill={liked ? "currentColor" : "none"} className={liked ? "scale-110" : ""} />
+      {count > 0 && <span className="text-xs tabular-nums">{count}</span>}
+    </button>
+  );
+}
+
+// ─── Comments Section (DB-backed + Realtime) ──────────────────────────────────
+
+function CommentsSection({ mediaId, isAdmin }: { mediaId: string; isAdmin: boolean }) {
+  const [comments,   setComments]   = useState<CommentRow[]>([]);
+  const [text,       setText]       = useState("");
+  const [userId,     setUserId]     = useState<string | null>(null);
+  const [userName,   setUserName]   = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data }) => {
+      const uid = data.user?.id ?? null;
+      setUserId(uid);
+      if (uid) {
+        const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", uid).maybeSingle();
+        setUserName((profile as any)?.full_name || data.user?.email?.split("@")[0] || "User");
+      }
+    });
+
+    supabase.from("media_comments").select("id, user_id, user_name, content, created_at")
+      .eq("media_id", mediaId).order("created_at", { ascending: true })
+      .then(({ data }) => setComments((data as CommentRow[]) ?? []));
+
+    const channel = supabase.channel(`media_comments:${mediaId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "media_comments", filter: `media_id=eq.${mediaId}` },
+        payload => {
+          if (payload.eventType === "INSERT") {
+            const row = payload.new as CommentRow;
+            setComments(c => c.some(r => r.id === row.id) ? c : [...c, row]);
+          }
+          if (payload.eventType === "DELETE") {
+            setComments(c => c.filter(r => r.id !== (payload.old as any).id));
+          }
+        })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [mediaId]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [comments.length]);
+
+  const submit = async () => {
+    if (!text.trim() || !userId || submitting) return;
+    setSubmitting(true);
+    const content = text.trim();
+    const { error } = await supabase.from("media_comments").insert({
+      media_id: mediaId, user_id: userId, user_name: userName, content,
+    });
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setText("");
+      // realtime INSERT handler adds the new comment automatically
+    }
+    setSubmitting(false);
+  };
+
+  const deleteComment = async (id: string) => {
+    const { error } = await supabase.from("media_comments").delete().eq("id", id);
+    if (!error) setComments(c => c.filter(r => r.id !== id));
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto px-3 py-2 space-y-3 min-h-0">
+        {comments.length === 0 && (
+          <p className="text-zinc-700 text-xs text-center py-6 italic">No comments yet. Be the first!</p>
+        )}
+        {comments.map(c => (
+          <div key={c.id} className="group flex items-start gap-2">
+            <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center shrink-0 text-xs font-bold text-zinc-400 select-none">
+              {c.user_name[0]?.toUpperCase() ?? "?"}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline gap-1.5 flex-wrap">
+                <span className="text-white text-xs font-semibold">{c.user_name}</span>
+                <span className="text-zinc-600 text-[10px]">
+                  {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+                </span>
+              </div>
+              <p className="text-zinc-300 text-xs leading-relaxed mt-0.5 break-words">{c.content}</p>
+            </div>
+            {(isAdmin || c.user_id === userId) && (
+              <button onClick={() => deleteComment(c.id)}
+                className="opacity-0 group-hover:opacity-100 shrink-0 w-5 h-5 flex items-center justify-center text-zinc-600 hover:text-red-400 transition-all">
+                <X size={10} />
+              </button>
+            )}
+          </div>
+        ))}
+        <div ref={bottomRef} />
+      </div>
+
+      <div className="shrink-0 px-3 py-2.5 border-t border-zinc-800/60">
+        {userId ? (
+          <div className="flex items-center gap-2">
+            <input
+              className="flex-1 bg-zinc-800 border border-zinc-700 rounded-full px-3 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
+              placeholder="Add a comment…"
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
+            />
+            <button onClick={submit} disabled={!text.trim() || submitting}
+              className="w-7 h-7 rounded-full bg-[#A91D3A] hover:bg-[#c4223f] disabled:opacity-40 flex items-center justify-center text-white transition-all shrink-0">
+              {submitting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+            </button>
+          </div>
+        ) : (
+          <p className="text-zinc-600 text-xs text-center">Sign in to comment</p>
+        )}
+      </div>
+    </div>
+  );
 }
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
@@ -163,8 +346,8 @@ function HighlightViewer({ highlights, startIndex, onClose, onDelete, isAdmin }:
         {slide?.imageUrl && <img src={slide.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/10 to-black/70" />
 
-        {/* Progress */}
-        <div className="absolute top-5 left-4 right-4 z-20 flex gap-1.5">
+        {/* Progress — dims when paused */}
+        <div className={`absolute top-5 left-4 right-4 z-20 flex gap-1.5 transition-opacity duration-200 ${paused ? "opacity-40" : "opacity-100"}`}>
           {hl.slides.map((_, i) => (
             <div key={i} className="flex-1 h-[2px] rounded-full bg-white/20 overflow-hidden">
               <div className="h-full bg-white rounded-full transition-none"
@@ -172,6 +355,15 @@ function HighlightViewer({ highlights, startIndex, onClose, onDelete, isAdmin }:
             </div>
           ))}
         </div>
+
+        {/* Pause indicator */}
+        {paused && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+            <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
+              <span className="text-white text-xl select-none">⏸</span>
+            </div>
+          </div>
+        )}
 
         {/* Header */}
         <div className="absolute top-10 left-4 right-4 z-20 flex items-center justify-between">
@@ -268,6 +460,77 @@ function ModalHeader({ title, sub, onClose }: { title: string; sub?: string; onC
   );
 }
 
+// ─── Facebook-Style Photo Grid Preview ───────────────────────────────────────
+
+function FacebookGrid({ previews, onRemove, onClick }: { previews: string[]; onRemove?: (i: number) => void; onClick?: () => void }) {
+  const n = previews.length;
+  if (n === 0) return null;
+
+  const shown = previews.slice(0, 5);
+  const extra = n > 5 ? n - 5 : 0;
+
+  function Cell({ idx, flex }: { idx: number; flex?: string }) {
+    return (
+      <div className="relative overflow-hidden bg-zinc-900" style={{ flex: flex ?? "1", minHeight: 0 }}
+        onClick={onClick}>
+        <img src={shown[idx]} alt="" aria-hidden
+          className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-50 pointer-events-none" />
+        <img src={shown[idx]} alt="" className="absolute inset-0 w-full h-full object-contain" />
+        {onRemove && (
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); onRemove(idx); }}
+            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/80 hover:bg-red-600 flex items-center justify-center text-white transition-colors z-10">
+            <X size={9} />
+          </button>
+        )}
+        {idx === 4 && extra > 0 && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center pointer-events-none">
+            <span className="text-white font-bold text-xl">+{extra}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const H = "320px";
+
+  if (n === 1) return (
+    <div className="rounded-xl overflow-hidden" style={{ height: H }}>
+      <Cell idx={0} />
+    </div>
+  );
+
+  if (n === 2) return (
+    <div className="flex gap-0.5 rounded-xl overflow-hidden" style={{ height: H }}>
+      <Cell idx={0} /><Cell idx={1} />
+    </div>
+  );
+
+  if (n === 3) return (
+    <div className="flex gap-0.5 rounded-xl overflow-hidden" style={{ height: H }}>
+      <Cell idx={0} flex="1.5" />
+      <div className="flex flex-col gap-0.5" style={{ flex: "1" }}>
+        <Cell idx={1} /><Cell idx={2} />
+      </div>
+    </div>
+  );
+
+  if (n === 4) return (
+    <div className="flex flex-col gap-0.5 rounded-xl overflow-hidden" style={{ height: H }}>
+      <div className="flex gap-0.5" style={{ flex: "1" }}><Cell idx={0} /><Cell idx={1} /></div>
+      <div className="flex gap-0.5" style={{ flex: "1" }}><Cell idx={2} /><Cell idx={3} /></div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-0.5 rounded-xl overflow-hidden" style={{ height: H }}>
+      <div className="flex gap-0.5" style={{ flex: "1" }}><Cell idx={0} /><Cell idx={1} /></div>
+      <div className="flex gap-0.5" style={{ flex: "1" }}><Cell idx={2} /><Cell idx={3} /><Cell idx={4} /></div>
+    </div>
+  );
+}
+
 // ─── Upload Modal ─────────────────────────────────────────────────────────────
 
 function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
@@ -276,52 +539,96 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
   const [caption,   setCaption]   = useState("");
   const [sportId,   setSportId]   = useState("");
   const [tag,       setTag]       = useState("");
-  const [file,      setFile]      = useState<File | null>(null);
-  const [preview,   setPreview]   = useState<string | null>(null);
+  const [files,     setFiles]     = useState<File[]>([]);
+  const [previews,  setPreviews]  = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
   const [error,     setError]     = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const TAGS    = step === "post" ? TAGS_POST : TAGS_REEL;
 
-  const handleFile = (f: File) => {
-    setFile(f);
-    const r = new FileReader();
-    r.onload = e => setPreview(e.target?.result as string);
-    r.readAsDataURL(f);
+  const addFiles = (incoming: File[]) => {
+    const readers = incoming.map(f => new Promise<string>(resolve => {
+      const r = new FileReader();
+      r.onload = e => resolve(e.target?.result as string);
+      r.readAsDataURL(f);
+    }));
+    Promise.all(readers).then(newPreviews => {
+      setFiles(prev => [...prev, ...incoming]);
+      setPreviews(prev => [...prev, ...newPreviews]);
+    });
+  };
+
+  const removeFile = (i: number) => {
+    setFiles(prev => prev.filter((_, idx) => idx !== i));
+    setPreviews(prev => prev.filter((_, idx) => idx !== i));
   };
 
   const handleSubmit = async () => {
-    if (!file || !title) return setError(!file ? "Choose a file." : "Title is required.");
-    setError(null); setUploading(true); setUploadPct(15);
+    if (!files.length) return setError(step === "post" ? "Add at least one photo." : "Choose a video.");
+    if (!title) return setError("Title is required.");
+    setError(null); setUploading(true); setUploadPct(5);
     try {
-      const ext      = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      setUploadPct(35);
-      const { error: upErr } = await supabase.storage.from("media").upload(fileName, file, { upsert: false });
-      if (upErr) throw new Error(upErr.message);
-      setUploadPct(70);
-      const { data: urlData } = supabase.storage.from("media").getPublicUrl(fileName);
-      const { error: dbErr } = await supabase.from("media").insert({
-        title,
-        type:      file.type.startsWith("video/") ? "video" : "image",
-        url:       urlData.publicUrl,
-        file_name: fileName,
-        sport_id:  sportId || null,
-        match_id:  null,
-        tag:       tag  || null,
-        size:      `${(file.size / 1024).toFixed(0)} KB`,
-      });
-      if (dbErr) throw new Error(dbErr.message);
+      if (step === "post") {
+        // Upload all images, then save as ONE media record
+        const uploaded: { url: string; fileName: string }[] = [];
+        for (let idx = 0; idx < files.length; idx++) {
+          const f = files[idx];
+          const ext      = f.name.split(".").pop();
+          const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+          const { error: upErr } = await supabase.storage.from(MEDIA_BUCKET).upload(fileName, f, { upsert: false });
+          if (upErr) throw new Error(upErr.message);
+          const { data: urlData } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(fileName);
+          uploaded.push({ url: urlData.publicUrl, fileName });
+          setUploadPct(Math.round(((idx + 1) / files.length) * 80));
+        }
+        const totalKB = files.reduce((s, f) => s + f.size, 0) / 1024;
+        const { error: dbErr } = await supabase.from("media").insert({
+          title,
+          type:      "image",
+          url:       uploaded[0].url,
+          file_name: uploaded[0].fileName,
+          images:    uploaded,
+          caption:   caption.trim() || null,
+          sport_id:  sportId || null,
+          match_id:  null,
+          tag:       tag || null,
+          size:      `${totalKB.toFixed(0)} KB`,
+        });
+        if (dbErr) throw new Error(dbErr.message);
+      } else {
+        // Reel: single video record
+        const f = files[0];
+        const ext      = f.name.split(".").pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from(MEDIA_BUCKET).upload(fileName, f, { upsert: false });
+        if (upErr) throw new Error(upErr.message);
+        setUploadPct(70);
+        const { data: urlData } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(fileName);
+        const { error: dbErr } = await supabase.from("media").insert({
+          title,
+          type:      "video",
+          url:       urlData.publicUrl,
+          file_name: fileName,
+          images:    [],
+          sport_id:  sportId || null,
+          match_id:  null,
+          tag:       tag || null,
+          size:      `${(f.size / 1024).toFixed(0)} KB`,
+        });
+        if (dbErr) throw new Error(dbErr.message);
+      }
       setUploadPct(100);
+      toast.success(files.length > 1 ? `Post with ${files.length} photos uploaded.` : "Media uploaded successfully.");
       setTimeout(() => { onSuccess(); onClose(); }, 400);
     } catch (e: any) {
       setError(e.message ?? "Upload failed.");
+      toast.error(e.message ?? "Upload failed.");
       setUploading(false); setUploadPct(0);
     }
   };
 
-  const back = () => { setStep("choose"); setFile(null); setPreview(null); setError(null); };
+  const back = () => { setStep("choose"); setFiles([]); setPreviews([]); setError(null); };
 
   return (
     <ModalShell onClose={onClose}>
@@ -358,41 +665,81 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
               <ChevronLeft size={13} /> Back
             </button>
 
-            {/* Drop zone */}
-            <div
-              onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
-              onDragOver={e => e.preventDefault()}
-              onClick={() => !file && fileRef.current?.click()}
-              className={`relative rounded-2xl border-2 border-dashed overflow-hidden transition-all ${file ? "border-zinc-700 cursor-default" : "border-zinc-700 hover:border-zinc-500 cursor-pointer"}`}>
-              <input ref={fileRef} type="file" accept={step === "post" ? "image/*" : "video/*"} className="hidden"
-                onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-              {file && preview ? (
-                <div className="relative">
-                  {step === "post"
-                    ? <img src={preview} alt="" className="w-full h-44 object-cover" />
-                    : <div className="h-32 bg-zinc-900 flex items-center justify-center gap-3">
-                        <Film size={20} className="text-zinc-500" />
-                        <span className="text-zinc-400 text-sm font-medium truncate max-w-[200px]">{file.name}</span>
-                      </div>
-                  }
-                  <button onClick={e => { e.stopPropagation(); setFile(null); setPreview(null); }}
-                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 hover:bg-black flex items-center justify-center text-white transition-all backdrop-blur-sm">
-                    <X size={12} />
+            {/* Hidden file input */}
+            <input
+              ref={fileRef}
+              type="file"
+              accept={step === "post" ? "image/*" : "video/*"}
+              multiple={step === "post"}
+              className="hidden"
+              onChange={e => {
+                if (e.target.files?.length) addFiles(Array.from(e.target.files));
+                e.target.value = "";
+              }}
+            />
+
+            {/* Post: Facebook grid or empty drop zone */}
+            {step === "post" ? (
+              files.length > 0 ? (
+                <div
+                  onDrop={e => { e.preventDefault(); addFiles(Array.from(e.dataTransfer.files)); }}
+                  onDragOver={e => e.preventDefault()}
+                  className="space-y-2">
+                  <FacebookGrid previews={previews} onRemove={removeFile} />
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="w-full py-2 border border-dashed border-zinc-700 hover:border-zinc-500 rounded-xl text-zinc-500 hover:text-zinc-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-all">
+                    <Plus size={12} /> Add more photos
                   </button>
-                  <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-0.5">
-                    <p className="text-white/70 text-[10px]">{(file.size / 1024).toFixed(0)} KB</p>
-                  </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-8 gap-2">
-                  <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center">
-                    <Upload size={17} className="text-zinc-500" />
+                <div
+                  onDrop={e => { e.preventDefault(); addFiles(Array.from(e.dataTransfer.files)); }}
+                  onDragOver={e => e.preventDefault()}
+                  onClick={() => fileRef.current?.click()}
+                  className="rounded-2xl border-2 border-dashed border-zinc-700 hover:border-zinc-500 cursor-pointer transition-all">
+                  <div className="flex flex-col items-center justify-center py-8 gap-2">
+                    <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center">
+                      <Upload size={17} className="text-zinc-500" />
+                    </div>
+                    <p className="text-zinc-400 text-sm font-medium">Drop photos or click to browse</p>
+                    <p className="text-zinc-600 text-xs">PNG, JPG, WEBP · select multiple</p>
                   </div>
-                  <p className="text-zinc-400 text-sm font-medium">Drop here or click to browse</p>
-                  <p className="text-zinc-600 text-xs">{step === "post" ? "PNG, JPG, WEBP" : "MP4, MOV, WEBM"}</p>
                 </div>
-              )}
-            </div>
+              )
+            ) : (
+              /* Reel: single video */
+              <div
+                onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) addFiles([f]); }}
+                onDragOver={e => e.preventDefault()}
+                onClick={() => !files.length && fileRef.current?.click()}
+                className={`relative rounded-2xl border-2 border-dashed overflow-hidden transition-all ${files.length ? "border-zinc-700 cursor-default" : "border-zinc-700 hover:border-zinc-500 cursor-pointer"}`}>
+                {files.length > 0 ? (
+                  <div className="relative">
+                    <div className="h-32 bg-zinc-900 flex items-center justify-center gap-3">
+                      <Film size={20} className="text-zinc-500" />
+                      <span className="text-zinc-400 text-sm font-medium truncate max-w-[200px]">{files[0].name}</span>
+                    </div>
+                    <button onClick={e => { e.stopPropagation(); setFiles([]); setPreviews([]); }}
+                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 hover:bg-black flex items-center justify-center text-white transition-all backdrop-blur-sm">
+                      <X size={12} />
+                    </button>
+                    <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-0.5">
+                      <p className="text-white/70 text-[10px]">{(files[0].size / 1024).toFixed(0)} KB</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 gap-2">
+                    <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center">
+                      <Upload size={17} className="text-zinc-500" />
+                    </div>
+                    <p className="text-zinc-400 text-sm font-medium">Drop here or click to browse</p>
+                    <p className="text-zinc-600 text-xs">MP4, MOV, WEBM</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div>
               <label className={labelCls}>Title *</label>
@@ -429,7 +776,8 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
             {uploading && (
               <div>
                 <div className="flex justify-between text-[10px] text-zinc-500 mb-1.5">
-                  <span>Uploading…</span><span>{uploadPct}%</span>
+                  <span>Uploading{files.length > 1 ? ` (${files.length} photos)` : ""}…</span>
+                  <span>{uploadPct}%</span>
                 </div>
                 <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
                   <div className="h-full bg-[#A91D3A] rounded-full transition-all duration-500" style={{ width: `${uploadPct}%` }} />
@@ -444,7 +792,11 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
               </button>
               <button onClick={handleSubmit} disabled={uploading}
                 className="flex-1 py-2.5 bg-[#A91D3A] hover:bg-[#c4223f] text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-60 flex items-center justify-center gap-2">
-                {uploading ? <><Loader2 size={13} className="animate-spin" /> Uploading…</> : step === "post" ? "Share Post" : "Upload Reel"}
+                {uploading
+                  ? <><Loader2 size={13} className="animate-spin" /> Uploading…</>
+                  : step === "post"
+                    ? `Share ${files.length > 1 ? `${files.length} Photos` : "Post"}`
+                    : "Upload Reel"}
               </button>
             </div>
           </div>
@@ -457,10 +809,11 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
 // ─── Add Highlight Modal ──────────────────────────────────────────────────────
 
 function AddHighlightModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
-  const [label, setLabel]   = useState("");
-  const [color, setColor]   = useState(COLOR_OPTIONS[0].value);
-  const [emoji, setEmoji]   = useState("🌟");
-  const [text,  setText]    = useState("");
+  const [label,   setLabel]   = useState("");
+  const [college, setCollege] = useState("");
+  const [color,   setColor]   = useState(COLOR_OPTIONS[0].value);
+  const [emoji,   setEmoji]   = useState("🌟");
+  const [text,    setText]    = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [saving,    setSaving]    = useState(false);
   const [error,     setError]     = useState<string | null>(null);
@@ -469,30 +822,44 @@ function AddHighlightModal({ onClose, onSuccess }: { onClose: () => void; onSucc
 
   const handleCreate = async () => {
     if (!label.trim()) return setError("Name is required.");
+    if (!college)      return setError("College is required.");
     setError(null); setSaving(true);
     try {
       let coverUrl: string | null = null;
       if (coverFile) {
         const ext = coverFile.name.split(".").pop();
         const fn  = `highlights/${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("media").upload(fn, coverFile, { upsert: false });
+        const { error: upErr } = await supabase.storage.from(MEDIA_BUCKET).upload(fn, coverFile, { upsert: false });
         if (upErr) throw new Error(upErr.message);
-        const { data: urlData } = supabase.storage.from("media").getPublicUrl(fn);
+        const { data: urlData } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(fn);
         coverUrl = urlData.publicUrl;
       }
-      await createHL.mutateAsync({ label: label.trim(), color, coverUrl, slides: [{ emoji: emoji || null, text: text || null, order: 0 }] });
+      await createHL.mutateAsync({ label: label.trim(), color, college, coverUrl, slides: [{ emoji: emoji || null, text: text || null, order: 0 }] });
+      toast.success("Story highlight created.");
       onSuccess(); onClose();
-    } catch (e: any) { setError(e.message ?? "Failed."); }
+    } catch (e: any) {
+      setError(e.message ?? "Failed.");
+      toast.error(e.message ?? "Failed to create story highlight.");
+    }
     finally { setSaving(false); }
   };
 
   return (
     <ModalShell onClose={onClose}>
-      <ModalHeader title="New Highlight" sub="Create a story highlight" onClose={onClose} />
+      <ModalHeader title="New Story Highlight" sub="Add a highlight for a college" onClose={onClose} />
       <div className="p-5 space-y-4">
-        <div>
-          <label className={labelCls}>Name *</label>
-          <input className={inputCls} placeholder="e.g. Basketball Finals" value={label} onChange={e => setLabel(e.target.value)} />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={labelCls}>Name *</label>
+            <input className={inputCls} placeholder="e.g. Basketball Finals" value={label} onChange={e => setLabel(e.target.value)} />
+          </div>
+          <div>
+            <label className={labelCls}>College *</label>
+            <select className={selectCls} value={college} onChange={e => setCollege(e.target.value)}>
+              <option value="">Select college</option>
+              {COLLEGES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
         </div>
         <div>
           <label className={labelCls}>Color</label>
@@ -522,7 +889,7 @@ function AddHighlightModal({ onClose, onSuccess }: { onClose: () => void; onSucc
           <button onClick={onClose} disabled={saving} className="px-4 py-2.5 rounded-xl border border-zinc-700 text-zinc-400 text-sm hover:text-white hover:border-zinc-500 transition-all">Cancel</button>
           <button onClick={handleCreate} disabled={saving}
             className="flex-1 py-2.5 bg-[#A91D3A] hover:bg-[#c4223f] text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-60 flex items-center justify-center gap-2">
-            {saving ? <><Loader2 size={13} className="animate-spin" /> Creating…</> : "Create Highlight"}
+            {saving ? <><Loader2 size={13} className="animate-spin" /> Creating…</> : "Create Story Highlight"}
           </button>
         </div>
       </div>
@@ -533,27 +900,33 @@ function AddHighlightModal({ onClose, onSuccess }: { onClose: () => void; onSucc
 // ─── Share to Story Modal ─────────────────────────────────────────────────────
 
 function ShareToStoryModal({ item, onClose, onSuccess }: { item: MediaItem; onClose: () => void; onSuccess: () => void }) {
-  const [label,  setLabel]  = useState(item.title.toUpperCase().slice(0, 20));
-  const [color,  setColor]  = useState(COLOR_OPTIONS[0].value);
-  const [emoji,  setEmoji]  = useState("📸");
-  const [text,   setText]   = useState(item.title);
-  const [saving, setSaving] = useState(false);
-  const [error,  setError]  = useState<string | null>(null);
+  const [label,   setLabel]   = useState(item.title.toUpperCase().slice(0, 20));
+  const [college, setCollege] = useState("");
+  const [color,   setColor]   = useState(COLOR_OPTIONS[0].value);
+  const [emoji,   setEmoji]   = useState("📸");
+  const [text,    setText]    = useState(item.title);
+  const [saving,  setSaving]  = useState(false);
+  const [error,   setError]   = useState<string | null>(null);
   const createFromMedia = trpc.highlight.createFromMedia.useMutation();
 
   const handleShare = async () => {
     if (!label.trim()) return setError("Label is required.");
+    if (!college)      return setError("College is required.");
     setError(null); setSaving(true);
     try {
-      await createFromMedia.mutateAsync({ mediaId: item.id, label: label.trim(), color, emoji: emoji || null, text: text || null });
+      await createFromMedia.mutateAsync({ mediaId: item.id, label: label.trim(), color, college, emoji: emoji || null, text: text || null });
+      toast.success("Added to story highlights.");
       onSuccess(); onClose();
-    } catch (e: any) { setError(e.message ?? "Failed."); }
+    } catch (e: any) {
+      setError(e.message ?? "Failed.");
+      toast.error(e.message ?? "Failed to add to story highlights.");
+    }
     finally { setSaving(false); }
   };
 
   return (
     <ModalShell onClose={onClose}>
-      <ModalHeader title="Add to Story" sub="Create a highlight from this media" onClose={onClose} />
+      <ModalHeader title="Add to Story Highlight" sub="Create a story highlight from this post" onClose={onClose} />
       <div className={`relative h-28 bg-gradient-to-br ${color} overflow-hidden`}>
         <img src={item.url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
         <div className="absolute inset-0 flex items-center justify-center gap-3">
@@ -562,7 +935,16 @@ function ShareToStoryModal({ item, onClose, onSuccess }: { item: MediaItem; onCl
         </div>
       </div>
       <div className="p-5 space-y-4">
-        <div><label className={labelCls}>Label *</label><input className={inputCls} placeholder="GAME DAY" value={label} onChange={e => setLabel(e.target.value)} /></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className={labelCls}>Label *</label><input className={inputCls} placeholder="GAME DAY" value={label} onChange={e => setLabel(e.target.value)} /></div>
+          <div>
+            <label className={labelCls}>College *</label>
+            <select className={selectCls} value={college} onChange={e => setCollege(e.target.value)}>
+              <option value="">Select college</option>
+              {COLLEGES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        </div>
         <div>
           <label className={labelCls}>Color</label>
           <div className="flex gap-2 flex-wrap">
@@ -581,7 +963,7 @@ function ShareToStoryModal({ item, onClose, onSuccess }: { item: MediaItem; onCl
           <button onClick={onClose} disabled={saving} className="px-4 py-2.5 rounded-xl border border-zinc-700 text-zinc-400 text-sm hover:text-white hover:border-zinc-500 transition-all">Cancel</button>
           <button onClick={handleShare} disabled={saving}
             className="flex-1 py-2.5 bg-[#A91D3A] hover:bg-[#c4223f] text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-60 flex items-center justify-center gap-2">
-            {saving ? <><Loader2 size={13} className="animate-spin" /> Saving…</> : <><BookMarked size={13} /> Add to Story</>}
+            {saving ? <><Loader2 size={13} className="animate-spin" /> Saving…</> : <><BookMarked size={13} /> Add to Story Highlight</>}
           </button>
         </div>
       </div>
@@ -592,11 +974,12 @@ function ShareToStoryModal({ item, onClose, onSuccess }: { item: MediaItem; onCl
 // ─── Edit Modal ───────────────────────────────────────────────────────────────
 
 function EditModal({ item, onClose, onSuccess }: { item: MediaItem; onClose: () => void; onSuccess: () => void }) {
-  const [title, setTitle]   = useState(item.title);
+  const [title,   setTitle]   = useState(item.title);
+  const [caption, setCaption] = useState(item.caption ?? "");
   const [sportId, setSportId] = useState(item.sportId ?? "");
-  const [tag, setTag]       = useState(item.tag ?? "");
-  const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState<string | null>(null);
+  const [tag,     setTag]     = useState(item.tag ?? "");
+  const [saving,  setSaving]  = useState(false);
+  const [error,   setError]   = useState<string | null>(null);
   const TAGS = item.type === "video" ? TAGS_REEL : TAGS_POST;
 
   const handleSave = async () => {
@@ -605,20 +988,32 @@ function EditModal({ item, onClose, onSuccess }: { item: MediaItem; onClose: () 
     try {
       const { error: dbErr } = await supabase.from("media").update({
         title:    title.trim(),
+        caption:  caption.trim() || null,
         sport_id: sportId || null,
         tag:      tag     || null,
       }).eq("id", item.id);
       if (dbErr) throw new Error(dbErr.message);
+      toast.success("Changes saved.");
       onSuccess(); onClose();
-    } catch (e: any) { setError(e.message ?? "Failed."); }
+    } catch (e: any) {
+      setError(e.message ?? "Failed.");
+      toast.error(e.message ?? "Failed to save changes.");
+    }
     finally { setSaving(false); }
   };
 
   return (
     <ModalShell onClose={onClose}>
-      <ModalHeader title="Edit Media" sub="Update title, sport, or tag" onClose={onClose} />
+      <ModalHeader title="Edit Post" sub="Update title, caption, sport, or tag" onClose={onClose} />
       <div className="p-5 space-y-4">
         <div><label className={labelCls}>Title *</label><input className={inputCls} value={title} onChange={e => setTitle(e.target.value)} /></div>
+        {item.type === "image" && (
+          <div>
+            <label className={labelCls}>Caption</label>
+            <textarea className={`${inputCls} resize-none`} rows={3} placeholder="Write a caption…"
+              value={caption} onChange={e => setCaption(e.target.value)} />
+          </div>
+        )}
         <SportDropdown value={sportId} onChange={setSportId} />
         <div>
           <label className={labelCls}>Tag</label>
@@ -648,11 +1043,18 @@ function DeleteConfirmModal({ item, onClose, onSuccess }: { item: MediaItem; onC
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      await supabase.storage.from("media").remove([item.fileName]);
+      const fileNames = item.images.length > 0
+        ? item.images.map(img => img.fileName)
+        : [item.fileName];
+      await supabase.storage.from(MEDIA_BUCKET).remove(fileNames);
       const { error } = await supabase.from("media").delete().eq("id", item.id);
       if (error) throw new Error(error.message);
+      toast.success("Media deleted.");
       onSuccess(); onClose();
-    } catch (e: any) { console.error(e); setDeleting(false); }
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to delete media.");
+      setDeleting(false);
+    }
   };
 
   return (
@@ -686,9 +1088,11 @@ function DeleteConfirmModal({ item, onClose, onSuccess }: { item: MediaItem; onC
 function PostDetailModal({ item, onClose, onEdit, onDelete, onShare, isAdmin }: {
   item: MediaItem; onClose: () => void; onEdit: () => void; onDelete: () => void; onShare: () => void; isAdmin: boolean;
 }) {
-  const [liked, setLiked] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const cfg = sportConfig(item.sport);
+  const [saved,  setSaved]  = useState(false);
+  const [imgIdx, setImgIdx] = useState(0);
+  const cfg    = sportConfig(item.sport);
+  const images = item.images.length > 0 ? item.images : [{ url: item.url, fileName: item.fileName }];
+  const currentUrl = images[imgIdx]?.url ?? item.url;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -696,22 +1100,52 @@ function PostDetailModal({ item, onClose, onEdit, onDelete, onShare, isAdmin }: 
       onClick={onClose}>
       <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg shadow-[0_32px_64px_rgba(0,0,0,0.8)] overflow-hidden max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}>
-        <div className="relative shrink-0" style={{ aspectRatio: "16/9" }}>
-          <img src={item.url} alt={item.title} className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
-          {item.tag && (
-            <div className="absolute top-3 left-3">
+
+        {/* Image */}
+        <div className="relative shrink-0 bg-zinc-900" style={{ aspectRatio: "1/1", maxHeight: "50vh" }}>
+          <img src={currentUrl} alt="" aria-hidden
+            className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-50 pointer-events-none" />
+          <img src={currentUrl} alt={item.title}
+            className="absolute inset-0 w-full h-full object-contain transition-opacity duration-200" />
+
+          {images.length > 1 && (
+            <>
+              {imgIdx > 0 && (
+                <button onClick={e => { e.stopPropagation(); setImgIdx(i => i - 1); }}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-all">
+                  <ChevronLeft size={16} />
+                </button>
+              )}
+              {imgIdx < images.length - 1 && (
+                <button onClick={e => { e.stopPropagation(); setImgIdx(i => i + 1); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-all">
+                  <ChevronRight size={16} />
+                </button>
+              )}
+              <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-20">
+                {images.map((_, i) => (
+                  <button key={i} onClick={e => { e.stopPropagation(); setImgIdx(i); }}
+                    className={`h-1.5 rounded-full transition-all duration-200 ${i === imgIdx ? "bg-white w-5" : "bg-white/40 w-1.5 hover:bg-white/70"}`} />
+                ))}
+              </div>
+              <div className="absolute top-3 left-3 z-20 bg-black/50 backdrop-blur-sm rounded-full px-2 py-0.5">
+                <span className="text-white text-[10px] font-semibold">{imgIdx + 1} / {images.length}</span>
+              </div>
+            </>
+          )}
+
+          {item.tag && images.length <= 1 && (
+            <div className="absolute top-3 left-3 z-20">
               <span className="text-[9px] font-bold tracking-widest text-white/80 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/10">
                 {item.tag}
               </span>
             </div>
           )}
-          <div className="absolute top-3 right-3 flex gap-1.5">
+          <div className="absolute top-3 right-3 flex gap-1.5 z-20">
             {[
-              { icon: BookMarked, action: onShare, hover: "hover:bg-[#A91D3A]/70", adminOnly: false },
-              { icon: Pencil,     action: onEdit,  hover: "hover:bg-zinc-600",     adminOnly: true  },
-              { icon: Trash2,     action: onDelete, hover: "hover:bg-red-600/70", adminOnly: true  },
-              { icon: X,          action: onClose,  hover: "hover:bg-zinc-600",    adminOnly: false },
+              { icon: Pencil, action: onEdit,   hover: "hover:bg-zinc-600",    adminOnly: true  },
+              { icon: Trash2, action: onDelete,  hover: "hover:bg-red-600/70", adminOnly: true  },
+              { icon: X,      action: onClose,   hover: "hover:bg-zinc-600",   adminOnly: false },
             ].filter(b => !b.adminOnly || isAdmin).map(({ icon: Icon, action, hover }, i) => (
               <button key={i} onClick={e => { e.stopPropagation(); action(); }}
                 className={`w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm ${hover} flex items-center justify-center text-white/60 hover:text-white transition-all`}>
@@ -720,25 +1154,45 @@ function PostDetailModal({ item, onClose, onEdit, onDelete, onShare, isAdmin }: 
             ))}
           </div>
         </div>
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div>
-              <h3 className="text-white font-semibold text-sm">{item.title}</h3>
-              <div className="flex items-center gap-2 mt-1">
-                {item.sport && <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: cfg.accent }}>{item.sport}</span>}
-                {item.sport && <span className="text-zinc-700">·</span>}
-                <span className="text-zinc-600 text-[10px]">{new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+
+        {/* Info + Comments — flex-1 so comments section fills remaining height */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          {/* Post info */}
+          <div className="px-4 pt-3 pb-2 shrink-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="text-white font-semibold text-sm">{item.title}</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  {item.sport && <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: cfg.accent }}>{item.sport}</span>}
+                  {item.sport && <span className="text-zinc-700">·</span>}
+                  {item.tag && <span className="text-[9px] font-bold tracking-widest text-white/50 bg-white/10 px-2 py-0.5 rounded-full">{item.tag}</span>}
+                  {item.tag && <span className="text-zinc-700">·</span>}
+                  <span className="text-zinc-600 text-[10px]"
+                    title={new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}>
+                    {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <LikeButton mediaId={item.id} initialCount={item.likeCount} initialLiked={item.userHasLiked} size={18} />
+                {isAdmin && <button onClick={onShare} className="text-zinc-600 hover:text-[#A91D3A] transition-colors"><BookMarked size={18} /></button>}
+                <button onClick={() => setSaved(v => !v)} className={`transition-all duration-200 ${saved ? "text-white" : "text-zinc-600 hover:text-zinc-300"}`}>
+                  <Bookmark size={18} fill={saved ? "currentColor" : "none"} />
+                </button>
               </div>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <button onClick={() => setLiked(v => !v)} className={`transition-all duration-200 ${liked ? "text-red-400 scale-110" : "text-zinc-600 hover:text-zinc-300"}`}>
-                <Heart size={18} fill={liked ? "currentColor" : "none"} />
-              </button>
-              <button onClick={onShare} className="text-zinc-600 hover:text-zinc-300 transition-colors"><Share2 size={18} /></button>
-              <button onClick={() => setSaved(v => !v)} className={`transition-all duration-200 ${saved ? "text-white" : "text-zinc-600 hover:text-zinc-300"}`}>
-                <Bookmark size={18} fill={saved ? "currentColor" : "none"} />
-              </button>
+            {item.caption && (
+              <p className="text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap border-t border-zinc-800/60 pt-2 mt-2">{item.caption}</p>
+            )}
+          </div>
+
+          {/* Comments */}
+          <div className="flex-1 flex flex-col min-h-0 border-t border-zinc-800/60">
+            <div className="px-4 py-2 shrink-0 flex items-center gap-2">
+              <MessageCircle size={12} className="text-zinc-600" />
+              <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-600">Comments</span>
             </div>
+            <CommentsSection mediaId={item.id} isAdmin={isAdmin} />
           </div>
         </div>
       </div>
@@ -751,7 +1205,6 @@ function PostDetailModal({ item, onClose, onEdit, onDelete, onShare, isAdmin }: 
 function ReelDetailModal({ item, onClose, onEdit, onDelete, onShare, isAdmin }: {
   item: MediaItem; onClose: () => void; onEdit: () => void; onDelete: () => void; onShare: () => void; isAdmin: boolean;
 }) {
-  const [liked,   setLiked]   = useState(false);
   const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const cfg      = sportConfig(item.sport);
@@ -766,42 +1219,76 @@ function ReelDetailModal({ item, onClose, onEdit, onDelete, onShare, isAdmin }: 
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ backdropFilter: "blur(24px)", backgroundColor: "rgba(0,0,0,0.9)" }}
       onClick={onClose}>
-      <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-zinc-800"
-        style={{ width: "300px", aspectRatio: "9/16" }}
-        onClick={e => e.stopPropagation()}>
-        {item.url
-          ? <video ref={videoRef} src={item.url} className="absolute inset-0 w-full h-full object-cover" loop />
-          : <div className={`absolute inset-0 bg-gradient-to-br ${cfg.gradient}`} />
-        }
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80" />
-        <div className="absolute top-4 right-4 flex flex-col gap-2">
-          {[
-            { icon: BookMarked, action: onShare, hover: "hover:bg-[#A91D3A]/70", adminOnly: false },
-            { icon: Pencil,     action: onEdit,  hover: "hover:bg-zinc-600",     adminOnly: true  },
-            { icon: Trash2,     action: onDelete, hover: "hover:bg-red-600/70", adminOnly: true  },
-            { icon: X,          action: onClose,  hover: "hover:bg-zinc-600",    adminOnly: false },
-          ].filter(b => !b.adminOnly || isAdmin).map(({ icon: Icon, action, hover }, i) => (
-            <button key={i} onClick={e => { e.stopPropagation(); action(); }}
-              className={`w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm ${hover} flex items-center justify-center text-white/60 hover:text-white transition-all`}>
-              <Icon size={13} />
-            </button>
-          ))}
+      <div className="flex items-stretch gap-3" onClick={e => e.stopPropagation()}>
+
+        {/* Video card */}
+        <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-zinc-800 flex-none"
+          style={{ width: "300px", aspectRatio: "9/16" }}>
+          {item.url
+            ? <video ref={videoRef} src={item.url} className="absolute inset-0 w-full h-full object-cover" loop />
+            : <div className={`absolute inset-0 bg-gradient-to-br ${cfg.gradient}`} />
+          }
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80" />
+
+          {/* Action buttons */}
+          <div className="absolute top-4 right-4 flex flex-col gap-2 z-30">
+            {[
+              { icon: Pencil, action: onEdit,   hover: "hover:bg-zinc-600",    adminOnly: true  },
+              { icon: Trash2, action: onDelete,  hover: "hover:bg-red-600/70", adminOnly: true  },
+              { icon: X,      action: onClose,   hover: "hover:bg-zinc-600",   adminOnly: false },
+            ].filter(b => !b.adminOnly || isAdmin).map(({ icon: Icon, action, hover }, i) => (
+              <button key={i} onClick={e => { e.stopPropagation(); action(); }}
+                className={`w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm ${hover} flex items-center justify-center text-white/60 hover:text-white transition-all`}>
+                <Icon size={13} />
+              </button>
+            ))}
+          </div>
+
+          {/* Play toggle */}
+          <button className="absolute inset-0 flex items-center justify-center z-10" onClick={e => { e.stopPropagation(); togglePlay(); }}>
+            {!playing && (
+              <div className="w-16 h-16 rounded-full bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center hover:bg-white/25 transition-all">
+                <Play size={26} className="text-white ml-1" fill="white" />
+              </div>
+            )}
+          </button>
+
+          {/* Bottom label */}
+          <div className="absolute bottom-3 left-4 right-4 pointer-events-none">
+            <p className="text-white/60 text-[11px] font-medium truncate">{item.title}</p>
+          </div>
         </div>
-        <button className="absolute inset-0 flex items-center justify-center" onClick={e => { e.stopPropagation(); togglePlay(); }}>
-          {!playing && (
-            <div className="w-16 h-16 rounded-full bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center hover:bg-white/25 transition-all">
-              <Play size={26} className="text-white ml-1" fill="white" />
+
+        {/* Info + Comments panel */}
+        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-64 flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-zinc-800/60 shrink-0">
+            <p className="text-white font-semibold text-sm leading-snug">{item.title}</p>
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              {item.sport && <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: cfg.accent }}>{item.sport}</span>}
+              {item.sport && <span className="text-zinc-700">·</span>}
+              <span className="text-zinc-600 text-[10px]"
+                title={new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}>
+                {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+              </span>
             </div>
-          )}
-        </button>
-        <div className="absolute bottom-0 left-0 right-0 p-4">
-          <p className="text-white font-semibold text-sm leading-tight mb-1">{item.title}</p>
-          {item.sport && <p className="text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: cfg.accent }}>{item.sport}</p>}
-          <div className="flex items-center gap-4">
-            <button onClick={() => setLiked(v => !v)} className={`transition-all ${liked ? "text-red-400 scale-110" : "text-white/60 hover:text-white"}`}>
-              <Heart size={20} fill={liked ? "currentColor" : "none"} />
-            </button>
-            <button onClick={onShare} className="text-white/60 hover:text-white transition-colors"><Share2 size={20} /></button>
+            <div className="flex items-center gap-3 mt-2">
+              <LikeButton mediaId={item.id} initialCount={item.likeCount} initialLiked={item.userHasLiked} size={16} />
+              {isAdmin && (
+                <button onClick={e => { e.stopPropagation(); onShare(); }} className="text-zinc-600 hover:text-[#A91D3A] transition-colors">
+                  <BookMarked size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Comments */}
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="px-4 py-2 shrink-0 flex items-center gap-2 border-b border-zinc-800/40">
+              <MessageCircle size={11} className="text-zinc-600" />
+              <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-600">Comments</span>
+            </div>
+            <CommentsSection mediaId={item.id} isAdmin={isAdmin} />
           </div>
         </div>
       </div>
@@ -809,79 +1296,71 @@ function ReelDetailModal({ item, onClose, onEdit, onDelete, onShare, isAdmin }: 
   );
 }
 
-// ─── Featured Hero Card ───────────────────────────────────────────────────────
-
-function HeroCard({ item, onClick, onShare }: { item: MediaItem; onClick: () => void; onShare: () => void }) {
-  const cfg = sportConfig(item.sport);
-  return (
-    <div className="relative rounded-2xl overflow-hidden cursor-pointer group" style={{ aspectRatio: "16/7" }} onClick={onClick}>
-      <img src={item.url} alt={item.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-
-      {/* Sport accent line */}
-      <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: cfg.accent }} />
-
-      <div className="absolute bottom-0 left-0 p-6 pr-12">
-        {item.tag && (
-          <div className="flex items-center gap-2 mb-3">
-            <Zap size={10} style={{ color: cfg.accent }} />
-            <span className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: cfg.accent }}>{item.tag}</span>
-          </div>
-        )}
-        <h2 className="text-white font-bold text-2xl leading-tight mb-2 max-w-[400px]">{item.title}</h2>
-        <div className="flex items-center gap-3">
-          {item.sport && <span className="text-white/50 text-xs font-medium">{item.sport}</span>}
-          <span className="text-white/25 text-xs">{new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
-        </div>
-      </div>
-
-      <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
-        <button onClick={e => { e.stopPropagation(); onShare(); }}
-          className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm hover:bg-[#A91D3A]/80 flex items-center justify-center text-white transition-all">
-          <BookMarked size={14} />
-        </button>
-      </div>
-
-      {/* Featured badge */}
-      <div className="absolute top-4 left-6">
-        <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-white/10 rounded-full px-3 py-1">
-          <TrendingUp size={10} className="text-white/60" />
-          <span className="text-white/60 text-[10px] font-semibold uppercase tracking-wider">Featured</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Post Card ────────────────────────────────────────────────────────────────
+// ─── Post Card (Instagram tile) ───────────────────────────────────────────────
 
 function PostCard({ item, onClick, onEdit, onDelete, onShare, featured, isAdmin }: {
   item: MediaItem; onClick: () => void; onEdit: () => void; onDelete: () => void; onShare: () => void; featured?: boolean; isAdmin: boolean;
 }) {
-  const [liked, setLiked] = useState(false);
-  const cfg = sportConfig(item.sport);
+  const [imgIdx, setImgIdx] = useState(0);
+  const cfg    = sportConfig(item.sport);
+  const images = item.images.length > 0 ? item.images : [{ url: item.url, fileName: item.fileName }];
 
   return (
     <article
       className="group relative bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800/60 hover:border-zinc-700 transition-all duration-300 hover:shadow-xl cursor-pointer"
       style={featured ? { gridColumn: "span 2", gridRow: "span 2" } : {}}>
-      <div className="relative overflow-hidden" style={{ aspectRatio: featured ? "4/3" : "1/1" }} onClick={onClick}>
-        <img src={item.url} alt={item.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className="relative overflow-hidden bg-zinc-900" style={{ aspectRatio: "1/1" }}>
+        {/* Blurred background fill */}
+        <img src={images[imgIdx]?.url ?? item.url} alt="" aria-hidden
+          className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-50 pointer-events-none" />
+        {/* Actual image */}
+        <img src={images[imgIdx]?.url ?? item.url} alt={item.title}
+          className="absolute inset-0 w-full h-full object-contain"
+          onClick={onClick} />
+
+        {/* Multi-image indicator */}
+        {images.length > 1 && (
+          <div className="absolute top-2 left-2 z-10 bg-black/60 backdrop-blur-sm rounded-full px-1.5 py-0.5 flex items-center gap-1">
+            <Grid3X3 size={9} className="text-white/80" />
+            <span className="text-white/80 text-[9px] font-semibold">{images.length}</span>
+          </div>
+        )}
 
         {item.tag && (
-          <div className="absolute top-2.5 left-2.5">
+          <div className="absolute top-2.5 right-2.5 z-10">
             <span className="text-[9px] font-bold tracking-widest text-white/80 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded-full">
               {item.tag}
             </span>
           </div>
         )}
 
-        {/* Actions on hover — admin only */}
+        {/* Carousel arrows — visible on hover when multi-image */}
+        {images.length > 1 && (
+          <>
+            {imgIdx > 0 && (
+              <button onClick={e => { e.stopPropagation(); setImgIdx(i => i - 1); }}
+                className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 w-6 h-6 rounded-full bg-black/70 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all hover:bg-black">
+                <ChevronLeft size={13} />
+              </button>
+            )}
+            {imgIdx < images.length - 1 && (
+              <button onClick={e => { e.stopPropagation(); setImgIdx(i => i + 1); }}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 w-6 h-6 rounded-full bg-black/70 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all hover:bg-black">
+                <ChevronRight size={13} />
+              </button>
+            )}
+            {/* Dot indicators */}
+            <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-1 z-10 pointer-events-none">
+              {images.map((_, i) => (
+                <div key={i} className={`h-1 rounded-full transition-all duration-200 ${i === imgIdx ? "bg-white w-3" : "bg-white/50 w-1"}`} />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Admin actions on hover */}
         {isAdmin && (
-          <div className="absolute top-2.5 right-2.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-[-4px] group-hover:translate-y-0">
+          <div className="absolute bottom-2.5 right-2.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0 z-20">
             <button onClick={e => { e.stopPropagation(); onShare(); }}
               className="w-7 h-7 rounded-lg bg-black/70 backdrop-blur-sm hover:bg-[#A91D3A]/80 flex items-center justify-center text-white/70 hover:text-white transition-all">
               <BookMarked size={11} />
@@ -897,22 +1376,142 @@ function PostCard({ item, onClick, onEdit, onDelete, onShare, featured, isAdmin 
           </div>
         )}
 
-        {/* Bottom overlay on hover */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-          <p className="text-white font-semibold text-xs leading-snug line-clamp-2">{item.title}</p>
-          {item.sport && <p className="text-[10px] font-semibold mt-0.5 uppercase" style={{ color: cfg.accent }}>{item.sport}</p>}
-        </div>
       </div>
 
-      {/* Footer — minimal */}
+      {/* Footer */}
       <div className="px-3 py-2 flex items-center justify-between">
         <div className="min-w-0 flex-1">
           <p className="text-zinc-300 text-[11px] font-medium truncate">{item.title}</p>
           {item.sport && <p className="text-[9px] font-semibold uppercase tracking-wider mt-0.5" style={{ color: cfg.accent }}>{item.sport}</p>}
         </div>
-        <button onClick={e => { e.stopPropagation(); setLiked(v => !v); }}
-          className={`shrink-0 ml-2 transition-all duration-200 ${liked ? "text-red-400 scale-110" : "text-zinc-700 hover:text-zinc-400"}`}>
-          <Heart size={14} fill={liked ? "currentColor" : "none"} />
+        <LikeButton mediaId={item.id} initialCount={item.likeCount} initialLiked={item.userHasLiked} size={14} className="shrink-0 ml-2" />
+      </div>
+    </article>
+  );
+}
+
+// ─── Feed Photo Grid (1:1 square, max 4 preview, blurred fill) ────────────────
+
+function FeedPhotoGrid({ urls, total, onClick }: {
+  urls: string[]; total: number; onClick: () => void;
+}) {
+  const show  = urls.slice(0, 4);
+  const extra = total > 4 ? total - 4 : 0;
+  const n     = show.length;
+
+  function Cell({ url, last, gridStyle }: { url: string; last?: boolean; gridStyle?: React.CSSProperties }) {
+    return (
+      <div className="relative overflow-hidden bg-zinc-900 cursor-pointer" style={gridStyle} onClick={onClick}>
+        <img src={url} alt="" aria-hidden
+          className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60 pointer-events-none" />
+        <img src={url} alt="" className="absolute inset-0 w-full h-full object-contain" />
+        {last && extra > 0 && (
+          <div className="absolute inset-0 bg-black/55 flex items-center justify-center pointer-events-none">
+            <span className="text-white font-bold text-2xl drop-shadow-lg">+{extra}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (n === 2) return (
+    <div style={{ width: "100%", aspectRatio: "1/1", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px" }}>
+      <Cell url={show[0]} />
+      <Cell url={show[1]} last />
+    </div>
+  );
+
+  if (n === 3) return (
+    <div style={{ width: "100%", aspectRatio: "1/1", display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr 1fr", gap: "2px" }}>
+      <Cell url={show[0]} gridStyle={{ gridRow: "span 2" }} />
+      <Cell url={show[1]} />
+      <Cell url={show[2]} last />
+    </div>
+  );
+
+  // 4+
+  return (
+    <div style={{ width: "100%", aspectRatio: "1/1", display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr 1fr", gap: "2px" }}>
+      <Cell url={show[0]} />
+      <Cell url={show[1]} />
+      <Cell url={show[2]} />
+      <Cell url={show[3]} last />
+    </div>
+  );
+}
+
+// ─── Facebook Feed Card ───────────────────────────────────────────────────────
+
+function FacebookFeedCard({ item, onClick, onEdit, onDelete, onShare, isAdmin }: {
+  item: MediaItem; onClick: () => void; onEdit: () => void; onDelete: () => void; onShare: () => void; isAdmin: boolean;
+}) {
+  const cfg    = sportConfig(item.sport);
+  const images = item.images.length > 0 ? item.images : [{ url: item.url, fileName: item.fileName }];
+
+  return (
+    <article className="bg-zinc-900 rounded-2xl border border-zinc-800/60 overflow-hidden hover:border-zinc-700 transition-all duration-300">
+      {/* Post header */}
+      <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-white font-semibold text-sm leading-snug">{item.title}</h3>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+            {item.sport && <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: cfg.accent }}>{item.sport}</span>}
+            {item.sport && <span className="text-zinc-700 text-[10px]">·</span>}
+            <span className="text-zinc-600 text-[10px]"
+              title={new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}>
+              {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+            </span>
+            {item.tag && (
+              <>
+                <span className="text-zinc-700 text-[10px]">·</span>
+                <span className="text-[9px] font-bold tracking-widest text-white/60 bg-white/10 px-2 py-0.5 rounded-full">{item.tag}</span>
+              </>
+            )}
+            {images.length > 1 && (
+              <>
+                <span className="text-zinc-700 text-[10px]">·</span>
+                <span className="text-[9px] text-zinc-500">{images.length} photos</span>
+              </>
+            )}
+          </div>
+        </div>
+        {isAdmin && (
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={e => { e.stopPropagation(); onShare(); }} className="text-zinc-600 hover:text-[#A91D3A] transition-colors"><BookMarked size={15} /></button>
+            <button onClick={e => { e.stopPropagation(); onEdit(); }}  className="text-zinc-600 hover:text-zinc-300 transition-colors"><Pencil size={15} /></button>
+            <button onClick={e => { e.stopPropagation(); onDelete(); }} className="text-zinc-600 hover:text-red-400 transition-colors"><Trash2 size={15} /></button>
+          </div>
+        )}
+      </div>
+
+      {/* Caption */}
+      {item.caption && (
+        <p className="px-4 pb-2 text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap">{item.caption}</p>
+      )}
+
+      {/* Images */}
+      {images.length === 1 ? (
+        <div className="relative w-full bg-zinc-900 overflow-hidden cursor-pointer" style={{ aspectRatio: "1/1" }} onClick={onClick}>
+          <img src={images[0].url} alt="" aria-hidden
+            className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-50 pointer-events-none" />
+          <img src={images[0].url} alt={item.title}
+            className="absolute inset-0 w-full h-full object-contain" />
+        </div>
+      ) : (
+        <FeedPhotoGrid
+          urls={images.map(img => img.url)}
+          total={images.length}
+          onClick={onClick}
+        />
+      )}
+
+      {/* Action row */}
+      <div className="px-4 py-2.5 border-t border-zinc-800/40 flex items-center gap-4">
+        <LikeButton mediaId={item.id} initialCount={item.likeCount} initialLiked={item.userHasLiked} size={16} />
+        <button onClick={e => { e.stopPropagation(); onClick(); }}
+          className="flex items-center gap-1.5 text-zinc-600 hover:text-zinc-300 transition-colors">
+          <MessageCircle size={16} />
+          <span className="text-xs">Comment</span>
         </button>
       </div>
     </article>
@@ -1009,25 +1608,50 @@ function EmptyState({ type, onUpload }: { type: "posts" | "reels"; onUpload: () 
   );
 }
 
+// ─── Media Skeleton Grid ──────────────────────────────────────────────────────
+
+function MediaSkeletonGrid() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+      {Array.from({ length: 10 }).map((_, i) => (
+        <Skeleton key={i} className="rounded-2xl" style={{ aspectRatio: "1/1" }} />
+      ))}
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function MediaPage() {
-  const [activeTab,    setActiveTab]    = useState<"posts" | "reels">("posts");
-  const [hlViewer,     setHlViewer]     = useState<{ startIndex: number } | null>(null);
-  const [showUpload,   setShowUpload]   = useState(false);
-  const [showAddHL,    setShowAddHL]    = useState(false);
-  const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null);
-  const [editItem,     setEditItem]     = useState<MediaItem | null>(null);
-  const [deleteItem,   setDeleteItem]   = useState<MediaItem | null>(null);
-  const [shareItem,    setShareItem]    = useState<MediaItem | null>(null);
-  const [search,       setSearch]       = useState("");
-  const [sportFilter,  setSportFilter]  = useState("all");
+  const [activeTab, setActiveTab] = useState<"posts" | "reels">("posts");
+  const [postView,  setPostView]  = useState<"instagram" | "facebook">("instagram");
+  const [hlViewer,  setHlViewer]  = useState<{ highlights: Highlight[]; startIndex: number } | null>(null);
+  const [showUpload,      setShowUpload]      = useState(false);
+  const [showAddHL,       setShowAddHL]       = useState(false);
+  const [selectedItem,    setSelectedItem]    = useState<MediaItem | null>(null);
+  const [editItem,        setEditItem]        = useState<MediaItem | null>(null);
+  const [deleteItem,      setDeleteItem]      = useState<MediaItem | null>(null);
+  const [shareItem,       setShareItem]       = useState<MediaItem | null>(null);
+  const [search,          setSearch]          = useState("");
+  const [sportFilter,     setSportFilter]     = useState("all");
 
   const { data: allMedia   = [], isLoading: mediaLoading, refetch: refetchMedia }     = trpc.media.getAll.useQuery();
   const { data: highlights = [], isLoading: hlLoading,   refetch: refetchHighlights } = trpc.highlight.getAll.useQuery();
   const { data: sports     = [] }                                                      = trpc.sport.getAll.useQuery();
-  const deleteHL  = trpc.highlight.delete.useMutation({ onSuccess: refetchHighlights });
+  const deleteHL = trpc.highlight.delete.useMutation({ onSuccess: () => refetchHighlights() });
   const { isAdmin } = useRole();
+
+  // Group highlights by college (uppercase key)
+  const hlByCollege = highlights.reduce((acc, h) => {
+    const key = (h.college ?? "").toUpperCase();
+    if (!key) return acc;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(h);
+    return acc;
+  }, {} as Record<string, Highlight[]>);
+
+  // Colleges that actually have highlights
+  const activeColleges = COLLEGES.filter(c => (hlByCollege[c]?.length ?? 0) > 0);
 
   // All sports that appear in media
   const activeSports = [...new Set(allMedia.map(m => m.sport).filter(Boolean))] as string[];
@@ -1042,20 +1666,17 @@ export default function MediaPage() {
   const posts = filtered.filter(m => m.type === "image");
   const reels = filtered.filter(m => m.type === "video");
 
-  // Hero: most recent post with an image
-  const heroPost = posts[0] ?? null;
-
   const statItems = [
     { label: "Posts",   value: allMedia.filter(m => m.type === "image").length, icon: ImageIcon },
     { label: "Reels",   value: allMedia.filter(m => m.type === "video").length, icon: Film      },
-    { label: "Stories", value: highlights.length,                                icon: Zap       },
+    { label: "Highlights", value: highlights.length,                              icon: Zap       },
   ];
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       {/* ── Modals ── */}
-      {hlViewer !== null && highlights.length > 0 && (
-        <HighlightViewer highlights={highlights} startIndex={hlViewer.startIndex}
+      {hlViewer !== null && hlViewer.highlights.length > 0 && (
+        <HighlightViewer highlights={hlViewer.highlights} startIndex={hlViewer.startIndex}
           onClose={() => setHlViewer(null)}
           onDelete={async id => { await deleteHL.mutateAsync({ id }); }}
           isAdmin={isAdmin} />
@@ -1107,44 +1728,56 @@ export default function MediaPage() {
         </div>
       </header>
 
-      {/* ── Stories Strip ── */}
+      {/* ── Story Highlights Strip ── */}
       <div className="border-b border-zinc-800/60 bg-zinc-950">
         <div className="px-6 py-4">
+          {/* Header */}
           <div className="flex items-center gap-2 mb-3">
             <Zap size={11} className="text-[#A91D3A]" />
-            <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-500">Stories</span>
+            <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-500">Story Highlights</span>
             {hlLoading && <Loader2 size={10} className="animate-spin text-zinc-700" />}
           </div>
+
+          {/* One bubble per college + add-new circle */}
           <div className="flex gap-4 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-            {/* New — admin only */}
+            {activeColleges.map(college => {
+              const group = hlByCollege[college]!;
+              const latest = group[0];
+              return (
+                <button key={college}
+                  onClick={() => setHlViewer({ highlights: group, startIndex: 0 })}
+                  className="flex flex-col items-center gap-1.5 shrink-0 group">
+                  <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${latest.color} overflow-hidden ring-2 ring-transparent group-hover:ring-[#A91D3A] ring-offset-2 ring-offset-zinc-950 transition-all duration-200 group-hover:scale-105`}>
+                    {latest.coverUrl
+                      ? <img src={latest.coverUrl} alt={college} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-white text-xs font-black tracking-tight">{college.slice(0, 3)}</span>
+                        </div>}
+                  </div>
+                  <span className="text-[9px] font-bold tracking-wider text-zinc-500 group-hover:text-zinc-300 uppercase transition-colors">{college}</span>
+                </button>
+              );
+            })}
+
+            {/* Add-new circle button */}
             {isAdmin && (
-              <button onClick={() => setShowAddHL(true)} className="flex flex-col items-center gap-2 shrink-0 group">
-                <div className="w-14 h-14 rounded-full border-2 border-dashed border-zinc-700 group-hover:border-zinc-500 flex items-center justify-center transition-all">
-                  <Plus size={16} className="text-zinc-600 group-hover:text-zinc-300 transition-colors" />
+              <button onClick={() => setShowAddHL(true)}
+                className="flex flex-col items-center gap-1.5 shrink-0 group">
+                <div className="w-16 h-16 rounded-full bg-zinc-900 border-2 border-dashed border-zinc-700 group-hover:border-[#A91D3A] group-hover:bg-zinc-800 flex items-center justify-center transition-all duration-200 group-hover:scale-105">
+                  <Plus size={20} className="text-zinc-600 group-hover:text-[#A91D3A] transition-colors" />
                 </div>
-                <span className="text-[9px] font-medium tracking-widest text-zinc-700 uppercase">New</span>
+                <span className="text-[9px] font-bold tracking-wider text-zinc-600 group-hover:text-zinc-400 uppercase transition-colors">New</span>
               </button>
             )}
 
-            {highlights.map((h, i) => (
-              <button key={h.id} onClick={() => setHlViewer({ startIndex: i })} className="flex flex-col items-center gap-2 shrink-0 group">
-                <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${h.color} overflow-hidden ring-2 ring-transparent group-hover:ring-[#A91D3A] ring-offset-2 ring-offset-zinc-950 transition-all duration-200 group-hover:scale-105`}>
-                  {h.coverUrl
-                    ? <img src={h.coverUrl} alt={h.label} className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center"><ImageIcon size={18} className="text-white/50" /></div>}
-                </div>
-                <span className="text-[9px] font-medium tracking-wide text-zinc-600 group-hover:text-zinc-400 max-w-[56px] text-center leading-tight uppercase transition-colors truncate w-full">{h.label}</span>
-              </button>
-            ))}
-
             {!hlLoading && highlights.length === 0 && (
-              <p className="text-zinc-700 text-xs italic self-center pl-1">No highlights yet</p>
+              <p className="text-zinc-700 text-xs italic self-center">No story highlights yet</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* ── Toolbar: Tabs + Search + Sport Pills ── */}
+      {/* ── Toolbar: Tabs + View Toggle + Search + Sport Pills ── */}
       <div className="px-6 py-3 border-b border-zinc-800/60 flex flex-wrap items-center gap-3">
         {/* Tab toggle */}
         <div className="flex gap-0.5 bg-zinc-900 rounded-xl p-1 border border-zinc-800">
@@ -1161,6 +1794,23 @@ export default function MediaPage() {
             </button>
           ))}
         </div>
+
+        {/* Feed view toggle — only for Posts */}
+        {activeTab === "posts" && (
+          <div className="flex gap-0.5 bg-zinc-900 rounded-xl p-1 border border-zinc-800">
+            {([
+              { mode: "instagram" as const, icon: Grid3X3,    label: "Grid" },
+              { mode: "facebook"  as const, icon: LayoutList, label: "Feed" },
+            ]).map(({ mode, icon: Icon, label }) => (
+              <button key={mode} onClick={() => setPostView(mode)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                  postView === mode ? "bg-zinc-700 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+                }`}>
+                <Icon size={11} /> {label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Sport pills */}
         <div className="flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
@@ -1197,28 +1847,19 @@ export default function MediaPage() {
 
       {/* ── Content ── */}
       <div className="p-6 space-y-6">
-        {mediaLoading && (
-          <div className="flex items-center justify-center py-32 gap-3 text-zinc-700">
-            <Loader2 size={18} className="animate-spin" />
-            <span className="text-sm">Loading media…</span>
-          </div>
-        )}
+
+        {/* Skeleton while loading */}
+        {mediaLoading && <MediaSkeletonGrid />}
 
         {/* ── Posts view ── */}
         {!mediaLoading && activeTab === "posts" && (
           posts.length === 0 && !search && sportFilter === "all"
             ? <EmptyState type="posts" onUpload={isAdmin ? () => setShowUpload(true) : () => {}} />
-            : <div className="space-y-4">
-                {/* Hero */}
-                {heroPost && !search && sportFilter === "all" && (
-                  <HeroCard item={heroPost}
-                    onClick={() => setSelectedItem(heroPost)}
-                    onShare={() => setShareItem(heroPost)} />
-                )}
-
-                {/* Grid */}
+            : postView === "instagram"
+              ? (
+                /* Instagram grid */
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                  {(search || sportFilter !== "all" ? posts : posts.slice(1)).map(item => (
+                  {posts.map(item => (
                     <PostCard key={item.id} item={item}
                       onClick={() => setSelectedItem(item)}
                       onEdit={() => setEditItem(item)}
@@ -1229,7 +1870,27 @@ export default function MediaPage() {
                   ))}
                   {isAdmin && <AddCard onClick={() => setShowUpload(true)} />}
                 </div>
-              </div>
+              )
+              : (
+                /* Facebook feed */
+                <div className="space-y-4 max-w-2xl mx-auto">
+                  {posts.map(item => (
+                    <FacebookFeedCard key={item.id} item={item}
+                      onClick={() => setSelectedItem(item)}
+                      onEdit={() => setEditItem(item)}
+                      onDelete={() => setDeleteItem(item)}
+                      onShare={() => setShareItem(item)}
+                      isAdmin={isAdmin}
+                    />
+                  ))}
+                  {isAdmin && (
+                    <button onClick={() => setShowUpload(true)}
+                      className="w-full py-3 rounded-2xl border-2 border-dashed border-zinc-800 hover:border-zinc-600 text-zinc-600 hover:text-zinc-400 text-sm font-medium flex items-center justify-center gap-2 transition-all">
+                      <Plus size={15} /> Add Post
+                    </button>
+                  )}
+                </div>
+              )
         )}
 
         {/* ── Reels view ── */}

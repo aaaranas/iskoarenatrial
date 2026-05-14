@@ -12,6 +12,70 @@ export type Database = {
   }
   public: {
     Tables: {
+      media_comments: {
+        Row: {
+          id:         string
+          media_id:   string
+          user_id:    string
+          user_name:  string
+          content:    string
+          created_at: string
+        }
+        Insert: {
+          id?:        string
+          media_id:   string
+          user_id:    string
+          user_name:  string
+          content:    string
+          created_at?: string
+        }
+        Update: {
+          id?:        string
+          media_id?:  string
+          user_id?:   string
+          user_name?: string
+          content?:   string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_comments_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_likes: {
+        Row: {
+          id:         string
+          media_id:   string
+          user_id:    string
+          created_at: string
+        }
+        Insert: {
+          id?:        string
+          media_id:   string
+          user_id:    string
+          created_at?: string
+        }
+        Update: {
+          id?:        string
+          media_id?:  string
+          user_id?:   string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_likes_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       highlight_slides: {
         Row: {
           id:           string
@@ -65,6 +129,7 @@ export type Database = {
           id:         string
           label:      string
           color:      string
+          college:    string | null
           cover_url:  string | null
           created_at: string
         }
@@ -72,6 +137,7 @@ export type Database = {
           id?:        string
           label:      string
           color?:     string
+          college?:   string | null
           cover_url?: string | null
           created_at?: string
         }
@@ -79,6 +145,7 @@ export type Database = {
           id?:        string
           label?:     string
           color?:     string
+          college?:   string | null
           cover_url?: string | null
           created_at?: string
         }
@@ -159,6 +226,8 @@ export type Database = {
           type:       string
           url:        string
           file_name:  string
+          images:     { url: string; fileName: string }[] | null
+          caption:    string | null
           sport_id:   string | null
           match_id:   string | null
           tag:        string | null
@@ -171,6 +240,8 @@ export type Database = {
           type:       string
           url:        string
           file_name:  string
+          images?:    { url: string; fileName: string }[] | null
+          caption?:   string | null
           sport_id?:  string | null
           match_id?:  string | null
           tag?:       string | null
@@ -183,6 +254,8 @@ export type Database = {
           type?:      string
           url?:       string
           file_name?: string
+          images?:    { url: string; fileName: string }[] | null
+          caption?:   string | null
           sport_id?:  string | null
           match_id?:  string | null
           tag?:       string | null

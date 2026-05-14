@@ -8,7 +8,7 @@ export const highlightRouter = router({
     const { data, error } = await supabase
       .from("highlights")
       .select(`
-        id, label, color, cover_url, created_at,
+        id, label, color, college, cover_url, created_at,
         highlight_slides ( id, emoji, text, image_url, media_id, slide_order )
       `)
       .order("created_at", { ascending: false });
@@ -20,6 +20,7 @@ export const highlightRouter = router({
       id:        h.id,
       label:     h.label,
       color:     h.color,
+      college:   h.college    ?? null,
       coverUrl:  h.cover_url  ?? null,
       createdAt: h.created_at,
       slides: ((h.highlight_slides ?? []) as any[])
@@ -39,6 +40,7 @@ export const highlightRouter = router({
     .input(z.object({
       label:    z.string().min(1),
       color:    z.string().default("from-[#A91D3A] to-[#741029]"),
+      college:  z.string().min(1),
       coverUrl: z.string().nullable().optional(),
       slides:   z.array(z.object({
         emoji:    z.string().nullable().optional(),
@@ -51,7 +53,7 @@ export const highlightRouter = router({
     .mutation(async ({ input }) => {
       const { data: hl, error: hlErr } = await supabase
         .from("highlights")
-        .insert({ label: input.label, color: input.color, cover_url: input.coverUrl ?? null })
+        .insert({ label: input.label, color: input.color, college: input.college, cover_url: input.coverUrl ?? null })
         .select()
         .single();
 
@@ -80,6 +82,7 @@ export const highlightRouter = router({
       mediaId: z.string(),
       label:   z.string().min(1),
       color:   z.string().default("from-[#A91D3A] to-[#741029]"),
+      college: z.string().min(1),
       text:    z.string().nullable().optional(),
       emoji:   z.string().nullable().optional(),
     }))
@@ -95,7 +98,7 @@ export const highlightRouter = router({
 
       const { data: hl, error: hlErr } = await supabase
         .from("highlights")
-        .insert({ label: input.label, color: input.color, cover_url: mediaItem.url })
+        .insert({ label: input.label, color: input.color, college: input.college, cover_url: mediaItem.url })
         .select()
         .single();
 

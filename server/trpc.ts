@@ -15,7 +15,6 @@ export const publicProcedure = t.procedure;
 export const adminProcedure = t.procedure.use(async ({ next }) => {
   const supabase = await createCookieSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
   const { data: profile } = await supabase

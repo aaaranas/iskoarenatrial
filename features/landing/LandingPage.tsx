@@ -85,7 +85,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
     fullName: string,
     email: string,
     password: string,
-    _role: string, // unused — server always sets role = null on public signup
+    _role: string, // unused — server always sets role = "user" on public signup
   ) => {
     try {
       await signupMutation.mutateAsync({

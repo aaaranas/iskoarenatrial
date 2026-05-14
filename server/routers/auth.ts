@@ -62,8 +62,7 @@ export const authRouter = router({
         id: userId,
         email: input.email,
         full_name: input.full_name,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        role: "user" as any, // DB enum includes "user" as the default viewer role
+        role: "user",
       }, { onConflict: "id" });
 
       if (profileErr) {

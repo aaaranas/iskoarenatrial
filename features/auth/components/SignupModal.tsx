@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { X, Loader2 } from "lucide-react";
 
-// Role picker removed — public signup always creates a viewer (null role).
+// Role picker removed — public signup always creates a viewer ("user" role).
 // Admins are promoted post-registration via trpc.auth.promoteToAdmin (admin-only).
+
 interface SignupPageProps {
   isOpen: boolean;
   onClose: () => void;
