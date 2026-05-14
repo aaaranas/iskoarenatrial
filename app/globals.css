@@ -84,6 +84,10 @@
     --text:         #140708;
     --accent-text:  #7b1113;
     --text-inverse:         #faf1f0;
+    --text-primary:         #140708;
+    --text-secondary:       #7a5a5c;
+    --text-tertiary:        #a8908f;
+    --text-disabled:        #c4b0b1;
 
     /* ── Border tokens ── */
     --border-strong:        #c8b0b1;
@@ -171,6 +175,10 @@
     --text:         #f1efef;
     --accent-text:  #d8973e;
     --text-inverse:         #b8962e;
+    --text-primary:         #f1efef;
+    --text-secondary:       #a88888;
+    --text-tertiary:        #7a6060;
+    --text-disabled:        #5a4040;
 
     /* ── Border tokens ── */
     --border-strong:        rgba(241,239,239,0.12);
@@ -256,6 +264,14 @@
   .border-live         { border-color: var(--accent-live-border); }
 }
 
+/* ─── Smooth scroll (landing page anchor nav) ────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
 /* ─── Animations ─────────────────────────────────────────────────────────────── */
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeIn       { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeInUp     { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes scrollPulse  { 0%, 100% { opacity: 0.3; transform: scaleY(0.6); } 50% { opacity: 1; transform: scaleY(1); } }
+@keyframes matchesScroll { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
+@keyframes pulseDot     { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
 .page-fade { animation: fadeIn 0.3s ease-in; }

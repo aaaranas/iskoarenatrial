@@ -5,7 +5,6 @@ import { trpc } from "@/lib/trpc";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { TopBar } from "@/components/topbar";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
 // FIX (Bug 0): RoleProvider was never mounted anywhere in the component tree.
@@ -23,8 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleLogout = async () => {
     await supabase.auth.signOut();
     utils.auth.getSession.invalidate();
-    router.refresh();
-    router.push("/");
+    router.push("/"); // push navigates away; refresh() beforehand was a no-op stutter
   };
 
   // Client-side session check — reads localStorage where signInWithPassword stores
