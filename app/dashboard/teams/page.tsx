@@ -24,23 +24,33 @@ export default function TeamsPage() {
 
   useEffect(() => {
     async function loadColleges() {
-      const { data, error } = await (supabase as any)
-        .from("teams")
-        .select("*")
-        .in("org", FIXED_ORGS)
-        .order("created_at", { ascending: true });
+      // Fetch teams and the full sports list in parallel
+      const [teamsResult, sportsResult] = await Promise.all([
+        (supabase as any)
+          .from("teams")
+          .select("*")
+          .in("org", FIXED_ORGS)
+          .order("created_at", { ascending: true }),
+        (supabase as any)
+          .from("sports")
+          .select("name")
+          .order("name", { ascending: true }),
+      ]);
 
-      if (error) {
-        console.error("❌ Error fetching teams:", error);
+      if (teamsResult.error) {
+        console.error("❌ Error fetching teams:", teamsResult.error);
       } else {
+        // Use the real sports list from DB; fall back to the teams row value if unavailable
+        const sportNames: string[] = sportsResult.data?.map((s: { name: string }) => s.name) ?? [];
+
         setColleges(
-          data.map((t: any) => ({
+          teamsResult.data.map((t: any) => ({
             id: t.id,
             name: t.college,
             org: t.org,
             established: t.established ?? "N/A",
             activeTeams: t.active_teams ?? 0,
-            sports: t.sports ?? [],
+            sports: sportNames.length > 0 ? sportNames : (t.sports ?? []),
             status: t.status ?? "Active",
             logoUrl: t.logo_url ?? null,
           }))
