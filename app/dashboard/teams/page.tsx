@@ -1,7 +1,7 @@
 //app/dashboard/teams/page.tsx
 "use client";
 import React, { useState, useEffect } from "react";
-import { College } from "@/features/teams/components/CollegeTable";
+import { College } from "@/features/teams/components/CollegeRow";
 import { CollegeCard } from "@/features/teams/components/CollegeCard";
 import { CollegeProfilePage } from "@/features/teams/components/CollegeProfilePage";
 import { supabase } from "@/lib/supabase/client";
