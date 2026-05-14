@@ -5,9 +5,9 @@ import { trpc } from "@/lib/trpc";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { TopBar } from "@/components/topbar";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
+import { RoleProvider } from "@/providers/RoleProvider"; // restore: removed by PR #39, breaks isAdmin gate
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -47,13 +47,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!auth) return null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-surface-page">
-      <TopBar onLogout={handleLogout} />
-      <main className="flex-1 w-full pt-16">
-        {children}
-      </main>
-      <ThemeToggle />
-      <Toaster />
-    </div>
+    <RoleProvider>
+      <div className="flex flex-col min-h-screen bg-surface-page">
+        <TopBar onLogout={handleLogout} />
+        <main className="flex-1 w-full pt-16">
+          {children}
+        </main>
+        <Toaster />
+      </div>
+    </RoleProvider>
   );
 }
