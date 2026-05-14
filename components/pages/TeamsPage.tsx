@@ -1,11 +1,27 @@
-﻿//app/dashboard/teams/page.tsx
+//components/pages/TeamsPage.tsx
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { College } from "@/features/teams/components/CollegeTable";
-import { CollegeCard } from "@/features/teams/components/CollegeCard";
-import { CollegeProfilePage } from "@/features/teams/components/CollegeProfilePage";
+import { College } from "../teams/CollegeTable";
+import { CollegeCard } from "../teams/CollegeCard";
+import { CollegeProfilePage } from "../teams/CollegeProfilePage";
 import { supabase } from "@/lib/supabase/client";
-import { useRole } from "@/providers/RoleProvider";
+import { useRole } from "@/components/providers/role-provider";
+
+// Direct role fetch hook — bypasses context timing issues
+function useIsAdmin() {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [ready,   setReady]   = useState(false);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) { setReady(true); return; }
+      supabase.from("profiles").select("role").eq("id", user.id).single().then(({ data }) => {
+        setIsAdmin(data?.role === "admin");
+        setReady(true);
+      });
+    });
+  }, []);
+  return { isAdmin, ready };
+}
 
 const EMPTY_FORM = {
   name: "",
@@ -102,15 +118,12 @@ function Dropdown({
 }
 
 function AddCollegeModal({
-  colleges,
-  onClose,
-  onAdd,
-  onMerge, // ✅ new prop for merging
+  colleges, onClose, onAdd, onMerge,
 }: {
   colleges: College[];
   onClose: () => void;
   onAdd: (c: College) => Promise<void>;
-  onMerge: (existing: College, newSports: string[]) => Promise<void>; // ✅ new prop
+  onMerge: (existing: College, newSports: string[]) => Promise<void>;
 }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<typeof EMPTY_FORM>>({});
@@ -120,11 +133,9 @@ function AddCollegeModal({
     const e: Partial<typeof EMPTY_FORM> = {};
     if (!form.name.trim()) e.name = "Required.";
     if (!form.established.trim()) e.established = "Required.";
-    else if (!/^\d{4}$/.test(form.established.trim()))
-      e.established = "Enter a valid 4-digit year.";
+    else if (!/^\d{4}$/.test(form.established.trim())) e.established = "Enter a valid 4-digit year.";
     if (!form.activeTeams.trim()) e.activeTeams = "Required.";
-    else if (isNaN(Number(form.activeTeams)) || Number(form.activeTeams) < 0)
-      e.activeTeams = "Invalid number.";
+    else if (isNaN(Number(form.activeTeams)) || Number(form.activeTeams) < 0) e.activeTeams = "Invalid number.";
     if (!form.sports.trim()) e.sports = "Required.";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -132,34 +143,18 @@ function AddCollegeModal({
 
   const handleSubmit = async () => {
     if (!validate()) return;
-
     const newSports = form.sports.split(",").map((s) => s.trim()).filter(Boolean);
-
     if (isDuplicateName) {
-      // ✅ MERGE: find existing college and update its sports
-      const existing = colleges.find(
-        (c) => c.name.trim().toLowerCase() === form.name.trim().toLowerCase()
-      );
-      if (existing) {
-        await onMerge(existing, newSports);
-      }
+      const existing = colleges.find((c) => c.name.trim().toLowerCase() === form.name.trim().toLowerCase());
+      if (existing) await onMerge(existing, newSports);
     } else {
-      // ✅ ADD: insert new college
-      await onAdd({
-        name: form.name.trim(),
-        established: form.established.trim(),
-        activeTeams: Number(form.activeTeams),
-        sports: newSports,
-        status: form.status,
-      });
+      await onAdd({ name: form.name.trim(), established: form.established.trim(), activeTeams: Number(form.activeTeams), sports: newSports, status: form.status });
     }
     onClose();
   };
 
   const inputCls = (err?: string) =>
-    `w-full bg-white/5 border rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/20 outline-none transition-all ${
-      err ? "border-primary" : "border-white/8 focus:border-primary/50"
-    }`;
+    `w-full bg-white/5 border rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/20 outline-none transition-all ${err ? "border-primary" : "border-white/8 focus:border-primary/50"}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
@@ -171,93 +166,44 @@ function AddCollegeModal({
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center text-muted-foreground hover:text-white text-sm">✕</button>
         </div>
-
         <div className="px-6 py-5 space-y-4">
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">College Name</label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => {
-                const val = e.target.value;
-                setForm((f) => ({ ...f, name: val }));
-                setErrors((er) => ({ ...er, name: undefined }));
-                setIsDuplicateName(
-                  colleges.some((c) => c.name.trim().toLowerCase() === val.trim().toLowerCase())
-                );
-              }}
-              placeholder="e.g. College of Law"
-              className={inputCls(errors.name)}
-            />
+            <input type="text" value={form.name}
+              onChange={(e) => { const val = e.target.value; setForm((f) => ({ ...f, name: val })); setErrors((er) => ({ ...er, name: undefined })); setIsDuplicateName(colleges.some((c) => c.name.trim().toLowerCase() === val.trim().toLowerCase())); }}
+              placeholder="e.g. College of Law" className={inputCls(errors.name)} />
             {errors.name && <p className="mt-1.5 text-[11px] text-primary">✕ {errors.name}</p>}
-            {!errors.name && isDuplicateName && (
-              <p className="mt-1.5 text-[11px] text-yellow-400 flex items-center gap-1.5">
-                ⚠ This college already exists — new sports will be merged into it.
-              </p>
-            )}
+            {!errors.name && isDuplicateName && <p className="mt-1.5 text-[11px] text-yellow-400 flex items-center gap-1.5">⚠ This college already exists — new sports will be merged into it.</p>}
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Year Established</label>
-              <input
-                type="text"
-                value={form.established}
-                onChange={(e) => { setForm((f) => ({ ...f, established: e.target.value })); setErrors((er) => ({ ...er, established: undefined })); }}
-                placeholder="e.g. 1945"
-                className={inputCls(errors.established)}
-              />
+              <input type="text" value={form.established} onChange={(e) => { setForm((f) => ({ ...f, established: e.target.value })); setErrors((er) => ({ ...er, established: undefined })); }} placeholder="e.g. 1945" className={inputCls(errors.established)} />
               {errors.established && <p className="mt-1.5 text-[11px] text-primary">✕ {errors.established}</p>}
             </div>
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Active Teams</label>
-              <input
-                type="number"
-                min={0}
-                value={form.activeTeams}
-                onChange={(e) => { setForm((f) => ({ ...f, activeTeams: e.target.value })); setErrors((er) => ({ ...er, activeTeams: undefined })); }}
-                placeholder="e.g. 20"
-                className={inputCls(errors.activeTeams)}
-              />
+              <input type="number" min={0} value={form.activeTeams} onChange={(e) => { setForm((f) => ({ ...f, activeTeams: e.target.value })); setErrors((er) => ({ ...er, activeTeams: undefined })); }} placeholder="e.g. 20" className={inputCls(errors.activeTeams)} />
               {errors.activeTeams && <p className="mt-1.5 text-[11px] text-primary">✕ {errors.activeTeams}</p>}
             </div>
           </div>
-
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Sports (comma-separated)</label>
-            <input
-              type="text"
-              value={form.sports}
-              onChange={(e) => { setForm((f) => ({ ...f, sports: e.target.value })); setErrors((er) => ({ ...er, sports: undefined })); }}
-              placeholder="e.g. Basketball, Tennis"
-              className={inputCls(errors.sports)}
-            />
+            <input type="text" value={form.sports} onChange={(e) => { setForm((f) => ({ ...f, sports: e.target.value })); setErrors((er) => ({ ...er, sports: undefined })); }} placeholder="e.g. Basketball, Tennis" className={inputCls(errors.sports)} />
             {errors.sports && <p className="mt-1.5 text-[11px] text-primary">✕ {errors.sports}</p>}
           </div>
-
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Status</label>
-            <select
-              value={form.status}
-              onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as College["status"] }))}
-              className={inputCls()}
-              style={{ backgroundColor: "#0a0a0a", color: "white" }}
-            >
+            <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as College["status"] }))} className={inputCls()} style={{ backgroundColor: "#0a0a0a", color: "white" }}>
               <option value="Active" style={{ backgroundColor: "#0a0a0a" }}>Active</option>
               <option value="Pending" style={{ backgroundColor: "#0a0a0a" }}>Pending</option>
               <option value="Inactive" style={{ backgroundColor: "#0a0a0a" }}>Inactive</option>
             </select>
           </div>
         </div>
-
         <div className="flex gap-3 px-6 py-4 border-t border-border/60">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-border text-muted-foreground text-sm font-semibold hover:border-border/80 hover:text-white transition-all">Cancel</button>
-          <button
-            onClick={handleSubmit}
-            className={`flex-1 py-2.5 rounded-xl text-white text-sm font-semibold transition-all ${
-              isDuplicateName ? "bg-yellow-600 hover:bg-yellow-500" : "bg-primary hover:bg-primary/90"
-            }`}
-          >
+          <button onClick={handleSubmit} className={`flex-1 py-2.5 rounded-xl text-white text-sm font-semibold transition-all ${isDuplicateName ? "bg-yellow-600 hover:bg-yellow-500" : "bg-primary hover:bg-primary/90"}`}>
             {isDuplicateName ? "Merge Sports" : "Add College"}
           </button>
         </div>
@@ -273,9 +219,7 @@ function DeleteCollegeModal({ college, onClose, onConfirm }: { college: College;
         <div className="px-6 pt-6 pb-4 text-center">
           <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-xl mx-auto mb-4">🗑</div>
           <h2 className="text-base font-bold text-white mb-1">Delete College</h2>
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            Are you sure you want to remove <span className="text-white font-semibold">{college.name}</span>? This cannot be undone.
-          </p>
+          <p className="text-muted-foreground text-sm leading-relaxed">Are you sure you want to remove <span className="text-white font-semibold">{college.name}</span>? This cannot be undone.</p>
         </div>
         <div className="flex gap-3 px-6 pb-6">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-border text-muted-foreground text-sm font-semibold hover:border-border/80 hover:text-white transition-all">Cancel</button>
@@ -314,12 +258,7 @@ function ImportCSVModal({ colleges, onClose, onImport }: {
       const vals = line.split(",").map((v) => v.trim().replace(/^"|"$/g, ""));
       const obj: any = {};
       headers.forEach((h, i) => { obj[h] = vals[i] ?? ""; });
-      const row: CSVRow = {
-        college: obj["college"] || obj["name"] || "",
-        sport: obj["sport"] || obj["sports"] || "",
-        established: obj["established"] || "",
-        status: obj["status"] || "Active",
-      };
+      const row: CSVRow = { college: obj["college"] || obj["name"] || "", sport: obj["sport"] || obj["sports"] || "", established: obj["established"] || "", status: obj["status"] || "Active" };
       const errors: string[] = [];
       if (!row.college) errors.push("Missing college");
       if (!row.sport) errors.push("Missing sport");
@@ -336,13 +275,6 @@ function ImportCSVModal({ colleges, onClose, onImport }: {
     const reader = new FileReader();
     reader.onload = (e) => parseCSV(e.target?.result as string);
     reader.readAsText(file);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file?.name.endsWith(".csv")) handleFile(file);
   };
 
   const validRows = rows.filter((r) => !r.error);
@@ -367,31 +299,24 @@ function ImportCSVModal({ colleges, onClose, onImport }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
       <div className="bg-card border border-border rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[85vh]">
-        {/* Header */}
         <div className="flex justify-between items-center px-6 py-5 border-b border-border/60 shrink-0">
           <div>
             <h2 className="text-base font-bold text-white">Import CSV</h2>
             <p className="text-muted-foreground text-xs mt-0.5">Upload a CSV file to bulk add colleges and sports.</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={downloadTemplate} className="text-[9px] font-bold text-muted-foreground hover:text-primary uppercase tracking-widest transition-colors border border-border hover:border-primary/30 px-3 py-1.5 rounded-lg">
-              ↓ Template
-            </button>
+            <button onClick={downloadTemplate} className="text-[9px] font-bold text-muted-foreground hover:text-primary uppercase tracking-widest transition-colors border border-border hover:border-primary/30 px-3 py-1.5 rounded-lg">↓ Template</button>
             <button onClick={onClose} className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center text-muted-foreground hover:text-white text-sm">✕</button>
           </div>
         </div>
-
-        {/* Drop Zone */}
         {rows.length === 0 && (
           <div className="px-6 py-6 shrink-0">
             <div
               onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
               onDragLeave={() => setIsDragging(false)}
-              onDrop={handleDrop}
+              onDrop={(e) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files[0]; if (file?.name.endsWith(".csv")) handleFile(file); }}
               onClick={() => fileRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl py-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${
-                isDragging ? "border-primary/60 bg-primary/5" : "border-border hover:border-border/80 bg-card/80"
-              }`}
+              className={`border-2 border-dashed rounded-xl py-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${isDragging ? "border-primary/60 bg-primary/5" : "border-border hover:border-border/80 bg-card/80"}`}
             >
               <div className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center text-lg">📂</div>
               <div className="text-center">
@@ -403,8 +328,6 @@ function ImportCSVModal({ colleges, onClose, onImport }: {
             <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
           </div>
         )}
-
-        {/* Preview */}
         {rows.length > 0 && (
           <>
             <div className="px-6 pt-4 pb-2 shrink-0 flex items-center justify-between">
@@ -415,7 +338,6 @@ function ImportCSVModal({ colleges, onClose, onImport }: {
               </div>
               <button onClick={() => { setRows([]); setFileName(""); }} className="text-[9px] text-muted-foreground/60 hover:text-white uppercase tracking-widest font-bold transition-colors">Change file</button>
             </div>
-
             <div className="overflow-y-auto flex-1 px-6 pb-2">
               <table className="w-full text-[11px]">
                 <thead>
@@ -432,12 +354,7 @@ function ImportCSVModal({ colleges, onClose, onImport }: {
                       <td className="py-2 pr-3 text-muted-foreground/90">{row.sport || <span className="text-muted-foreground/60">—</span>}</td>
                       <td className="py-2 pr-3 text-muted-foreground/80">{row.established || <span className="text-muted-foreground/60">—</span>}</td>
                       <td className="py-2 pr-3 text-muted-foreground/80">{row.status}</td>
-                      <td className="py-2">
-                        {row.error
-                          ? <span className="text-[9px] text-primary font-semibold">{row.error}</span>
-                          : <span className="text-[9px] text-green-500 font-bold">✓</span>
-                        }
-                      </td>
+                      <td className="py-2">{row.error ? <span className="text-[9px] text-primary font-semibold">{row.error}</span> : <span className="text-[9px] text-green-500 font-bold">✓</span>}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -445,15 +362,9 @@ function ImportCSVModal({ colleges, onClose, onImport }: {
             </div>
           </>
         )}
-
-        {/* Footer */}
         <div className="flex gap-3 px-6 py-4 border-t border-border/60 shrink-0">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-border text-muted-foreground text-sm font-semibold hover:border-border/80 hover:text-white transition-all">Cancel</button>
-          <button
-            onClick={handleConfirm}
-            disabled={!validRows.length || isImporting}
-            className="flex-1 py-2.5 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-30 disabled:cursor-not-allowed text-white text-sm font-semibold transition-all"
-          >
+          <button onClick={handleConfirm} disabled={!validRows.length || isImporting} className="flex-1 py-2.5 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-30 disabled:cursor-not-allowed text-white text-sm font-semibold transition-all">
             {isImporting ? "Importing…" : `Import ${validRows.length} Row${validRows.length !== 1 ? "s" : ""}`}
           </button>
         </div>
@@ -463,6 +374,7 @@ function ImportCSVModal({ colleges, onClose, onImport }: {
 }
 
 export default function TeamsPage() {
+  const { isAdmin, ready } = useIsAdmin();
   const [colleges, setColleges] = useState<College[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -473,161 +385,68 @@ export default function TeamsPage() {
   const [selectedSports, setSelectedSports] = useState<Set<string>>(new Set());
   const [selectedColleges, setSelectedColleges] = useState<Set<string>>(new Set());
 
-  // FIX (Bug 5): useRole was imported but never called. isAdmin was always
-  // undefined, so Add/Delete buttons were rendered for all users. Call it here
-  // so the buttons only appear for admins once RoleProvider is mounted.
-  const { isAdmin } = useRole();
-
   useEffect(() => {
     async function loadColleges() {
-      const { data, error } = await (supabase as any)
-        .from("teams")
-        .select("*")
-        .order("created_at", { ascending: true });
-
-      if (error) {
-        console.error("❌ Error fetching:", error);
-      } else {
-        setColleges(
-          data.map((t: any) => ({
-            id: t.id,
-            name: t.college,
-            established: t.established ?? "N/A",
-            activeTeams: t.active_teams ?? 0,
-            sports: t.sports ?? [],
-            status: t.status ?? "Active",
-          }))
-        );
+      const { data, error } = await (supabase as any).from("teams").select("*").order("created_at", { ascending: true });
+      if (error) { console.error("❌ Error fetching:", error); }
+      else {
+        setColleges(data.map((t: any) => ({
+          id: t.id, name: t.college, established: t.established ?? "N/A",
+          activeTeams: t.active_teams ?? 0, sports: t.sports ?? [], status: t.status ?? "Active",
+        })));
       }
       setIsLoading(false);
     }
     loadColleges();
   }, []);
 
-  // ✅ Add new college
   const handleAddCollege = async (college: College) => {
-    const { data, error } = await (supabase as any)
-      .from("teams")
-      .insert({
-        college: college.name,
-        name: college.name,
-        established: college.established,
-        active_teams: college.activeTeams,
-        sports: college.sports,
-        status: college.status,
-        org: "",
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("❌ Error adding:", error.message);
-      // FIX (Bug 6b): surface DB errors to the user via toast instead of silent failure
-      const { toast } = await import("sonner");
-      toast.error("Failed to add college: " + error.message);
-      return;
-    }
-
-    console.log("✅ Successfully added!");
-    // FIX (Bug 6): .select().single() returns the row object directly, not an array.
-    // Previously used data?.[0] which is always undefined — new college got id: undefined
-    // and a duplicate appeared on next load. Use data directly.
-    setColleges((prev) => [...prev, { ...college, id: data?.id }]);
+    const { data, error } = await (supabase as any).from("teams").insert({ college: college.name, name: college.name, established: college.established, active_teams: college.activeTeams, sports: college.sports, status: college.status, org: "" }).select().single();
+    if (error) { console.error("❌ Error adding:", error.message); return; }
+    setColleges((prev) => [...prev, { ...college, id: data.id }]);
   };
 
-  // ✅ Delete college — removes from Supabase permanently
-  const handleDeleteCollege = async (id: string) => {
-    const { error } = await (supabase as any)
-      .from("teams")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      console.error("❌ Error deleting:", error);
-      // Follow-up: same error toast pattern as handleAddCollege
-      const { toast } = await import("sonner");
-      toast.error("Failed to delete college: " + error.message);
-      return;
-    }
-
-    setColleges((prev) => prev.filter((c) => c.id !== id));
-  };
-
-  // ✅ Merge sports into existing college — called by AddCollegeModal when a
-  // duplicate name is submitted. Appends new sports that aren't already listed.
   const handleMergeCollege = async (existing: College, newSports: string[]) => {
-    const merged = Array.from(new Set([...existing.sports, ...newSports]));
-    const { error } = await (supabase as any)
-      .from("teams")
-      .update({ sports: merged })
-      .eq("id", existing.id);
-
-    if (error) {
-      console.error("❌ Error merging sports:", error.message);
-      const { toast } = await import("sonner");
-      toast.error("Failed to merge sports: " + error.message);
-      return;
-    }
-
-    setColleges((prev) =>
-      prev.map((c) => (c.id === existing.id ? { ...c, sports: merged } : c))
-    );
+    const mergedSports = [...new Set([...existing.sports, ...newSports])];
+    const newActiveTeams = mergedSports.length;
+    const { error } = await (supabase as any).from("teams").update({ sports: mergedSports, active_teams: newActiveTeams }).eq("college", existing.name);
+    if (error) { console.error("❌ Error merging:", error.message); return; }
+    const updatedCollege = { ...existing, sports: mergedSports, activeTeams: newActiveTeams };
+    setColleges((prev) => prev.map((c) => c.name === existing.name ? updatedCollege : c));
+    if (profileCollege?.name === existing.name) setProfileCollege(updatedCollege);
   };
 
-  // ✅ Bulk import from CSV — called by ImportCSVModal with validated rows.
-  // Groups rows by college name so each college is upserted once.
-  const handleImportCSV = async (rows: { college: string; sport: string; established: string; status: string }[]) => {
-    const grouped: Record<string, { sports: string[]; established: string; status: string }> = {};
+  const handleImportCSV = async (rows: CSVRow[]) => {
     for (const row of rows) {
-      if (!grouped[row.college]) {
-        grouped[row.college] = { sports: [], established: row.established, status: row.status };
-      }
-      grouped[row.college].sports.push(row.sport);
-    }
-
-    const { toast } = await import("sonner");
-    let successCount = 0;
-
-    for (const [collegeName, info] of Object.entries(grouped)) {
-      const existing = colleges.find(
-        (c) => c.name.trim().toLowerCase() === collegeName.trim().toLowerCase()
-      );
-
+      const sports = row.sport.split(";").map((s) => s.trim()).filter(Boolean);
+      const existing = colleges.find((c) => c.name.trim().toLowerCase() === row.college.trim().toLowerCase());
       if (existing) {
-        await handleMergeCollege(existing, info.sports);
+        const mergedSports = [...new Set([...existing.sports, ...sports])];
+        const { error } = await (supabase as any).from("teams").update({ sports: mergedSports }).eq("college", existing.name);
+        if (!error) setColleges((prev) => prev.map((c) => c.name === existing.name ? { ...c, sports: mergedSports } : c));
       } else {
-        await handleAddCollege({
-          name: collegeName,
-          established: info.established || "N/A",
-          activeTeams: info.sports.length,
-          sports: info.sports,
-          status: (info.status as College["status"]) || "Active",
-        });
+        const newCollege: College = { name: row.college.trim(), established: row.established || "N/A", activeTeams: sports.length, sports, status: (row.status as College["status"]) || "Active" };
+        const { data, error } = await (supabase as any).from("teams").insert([{ college: newCollege.name, established: newCollege.established, active_teams: newCollege.activeTeams, sports: newCollege.sports, status: newCollege.status }]).select().single();
+        if (!error && data) setColleges((prev) => [...prev, { ...newCollege, id: data.id }]);
       }
-      successCount++;
     }
-
-    toast.success(`Imported ${successCount} college${successCount !== 1 ? "s" : ""} successfully.`);
   };
 
-  // ALLOWED_SPORTS is defined at module scope above — reuse it rather than
-  // maintaining a second identical list here that can drift out of sync.
-  const allSports = ALLOWED_SPORTS;
+  const handleDeleteCollege = async (collegeName: string) => {
+    const { error } = await (supabase as any).from("teams").delete().eq("college", collegeName);
+    if (error) { console.error("❌ Error deleting:", error); return; }
+    setColleges((prev) => prev.filter((c) => c.name !== collegeName));
+  };
+
+  const allSports = ["Badminton","Basketball","Block Blast","Cheerdance","Chess","CODM","Cosplay","Dancesports","Dota 2","Frisbee","MLBB","Mr. & Ms. Fitness","Petanque","Pickleball","Pinoy Games","Rubiks Cube","Scrabble","Soccer","Softball","Sudoku","Table Tennis","Tetris","Valorant","Volleyball"];
   const allCollegeNames = colleges.map((c) => c.name);
 
-  const toggleSport = (sport: string) => {
-    setSelectedSports((prev) => { const next = new Set(prev); next.has(sport) ? next.delete(sport) : next.add(sport); return next; });
-  };
-
-  const toggleCollege = (name: string) => {
-    setSelectedColleges((prev) => { const next = new Set(prev); next.has(name) ? next.delete(name) : next.add(name); return next; });
-  };
-
+  const toggleSport = (sport: string) => setSelectedSports((prev) => { const next = new Set(prev); next.has(sport) ? next.delete(sport) : next.add(sport); return next; });
+  const toggleCollege = (name: string) => setSelectedColleges((prev) => { const next = new Set(prev); next.has(name) ? next.delete(name) : next.add(name); return next; });
   const removeFilter = (type: "sport" | "college", val: string) => {
     if (type === "sport") setSelectedSports((prev) => { const n = new Set(prev); n.delete(val); return n; });
     else setSelectedColleges((prev) => { const n = new Set(prev); n.delete(val); return n; });
   };
-
   const clearAll = () => { setSelectedSports(new Set()); setSelectedColleges(new Set()); };
   const hasFilters = selectedSports.size > 0 || selectedColleges.size > 0;
 
@@ -644,36 +463,20 @@ export default function TeamsPage() {
   ];
 
   if (profileCollege) {
-    return (
-      <div className="min-h-screen bg-background">
-        <CollegeProfilePage college={profileCollege} onBack={() => setProfileCollege(null)} />
-      </div>
-    );
+    return <div className="min-h-screen bg-background"><CollegeProfilePage college={profileCollege} onBack={() => setProfileCollege(null)} /></div>;
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {showImportModal && (
-        <ImportCSVModal
-          colleges={colleges}
-          onClose={() => setShowImportModal(false)}
-          onImport={handleImportCSV}
-        />
+      {/* Modals — admin only */}
+      {ready && isAdmin && showImportModal && (
+        <ImportCSVModal colleges={colleges} onClose={() => setShowImportModal(false)} onImport={handleImportCSV} />
       )}
-      {showModal && (
-        <AddCollegeModal
-          colleges={colleges}
-          onClose={() => setShowModal(false)}
-          onAdd={handleAddCollege}
-          onMerge={handleMergeCollege}
-        />
+      {ready && isAdmin && showModal && (
+        <AddCollegeModal colleges={colleges} onClose={() => setShowModal(false)} onAdd={handleAddCollege} onMerge={handleMergeCollege} />
       )}
-      {deleteTarget && (
-        <DeleteCollegeModal
-          college={deleteTarget}
-          onClose={() => setDeleteTarget(null)}
-          onConfirm={() => deleteTarget.id && handleDeleteCollege(deleteTarget.id)}
-        />
+      {ready && isAdmin && deleteTarget && (
+        <DeleteCollegeModal college={deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={() => handleDeleteCollege(deleteTarget.name)} />
       )}
 
       {/* Hero */}
@@ -688,16 +491,10 @@ export default function TeamsPage() {
           <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search schools by name or sport..."
-            className="w-full bg-card/80 border border-border rounded-full py-3.5 pl-11 pr-5 text-sm text-white placeholder:text-muted-foreground/60 outline-none focus:border-primary/40 transition-all"
-          />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search schools by name or sport..."
+            className="w-full bg-card/80 border border-border rounded-full py-3.5 pl-11 pr-5 text-sm text-white placeholder:text-muted-foreground/60 outline-none focus:border-primary/40 transition-all" />
         </div>
       </div>
-
 
       {/* Toolbar */}
       <div className="px-10 py-4 border-b border-border/40 flex items-center justify-between gap-4 flex-wrap">
@@ -712,22 +509,20 @@ export default function TeamsPage() {
               <button onClick={() => removeFilter(type, val)} className="text-primary/50 hover:text-primary text-sm leading-none transition-colors ml-0.5">×</button>
             </div>
           ))}
-          {hasFilters && (
-            <button onClick={clearAll} className="text-[9px] text-muted-foreground/60 hover:text-muted-foreground/80 uppercase tracking-widest font-bold underline transition-colors">Clear all</button>
-          )}
+          {hasFilters && <button onClick={clearAll} className="text-[9px] text-muted-foreground/60 hover:text-muted-foreground/80 uppercase tracking-widest font-bold underline transition-colors">Clear all</button>}
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
-          {!isLoading && (
-            <span className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-widest">
-              {filtered.length} {filtered.length === 1 ? "result" : "results"}
-            </span>
-          )}
-          {/* FIX (Bug 5): Add College button is now gated behind isAdmin.
-              Previously it was always visible to all users. */}
-          {isAdmin && (
-            <button onClick={() => setShowModal(true)} className="bg-primary hover:bg-primary/90 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all flex items-center gap-1.5">
-              + Add College
-            </button>
+          {!isLoading && <span className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-widest">{filtered.length} {filtered.length === 1 ? "result" : "results"}</span>}
+          {/* Admin-only buttons */}
+          {ready && isAdmin && (
+            <>
+              <button onClick={() => setShowImportModal(true)} className="bg-card hover:bg-card/80 border border-border text-muted-foreground text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all flex items-center gap-1.5 hover:text-white">
+                ↑ Import CSV
+              </button>
+              <button onClick={() => setShowModal(true)} className="bg-primary hover:bg-primary/90 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all flex items-center gap-1.5">
+                + Add College
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -737,7 +532,6 @@ export default function TeamsPage() {
         <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-6">
           {isLoading ? "Loading..." : `${filtered.length} College${filtered.length !== 1 ? "s" : ""}`}
         </p>
-
         {isLoading ? (
           <div className="grid grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -762,20 +556,17 @@ export default function TeamsPage() {
             <p className="text-muted-foreground text-xs mb-4 max-w-xs leading-relaxed">
               {search ? `No results for "${search}".` : "No colleges match your current filters."} Try adjusting or clearing your filters.
             </p>
-            <button
-              onClick={() => { setSearch(""); clearAll(); }}
-              className="text-[9px] font-bold text-primary border border-primary/30 hover:border-primary/60 px-4 py-2 rounded-lg uppercase tracking-widest transition-all"
-            >
+            <button onClick={() => { setSearch(""); clearAll(); }} className="text-[9px] font-bold text-primary border border-primary/30 hover:border-primary/60 px-4 py-2 rounded-lg uppercase tracking-widest transition-all">
               Clear all filters
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-4 gap-4">
-            {filtered.map((college, index) => (
-              <div key={college.id ?? `${college.name}-${index}`} className="relative group">
+            {filtered.map((college) => (
+              <div key={college.id ?? college.name} className="relative group">
                 <CollegeCard college={college} onViewProfile={setProfileCollege} />
-                {/* FIX (Bug 5): Delete button is now gated behind isAdmin. */}
-                {isAdmin && (
+                {/* Delete button — admin only */}
+                {ready && isAdmin && (
                   <button
                     onClick={() => setDeleteTarget(college)}
                     className="absolute top-2 right-2 w-7 h-7 bg-black/60 hover:bg-primary border border-white/10 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"

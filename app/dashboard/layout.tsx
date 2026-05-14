@@ -5,9 +5,13 @@ import { trpc } from "@/lib/trpc";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { TopBar } from "@/components/topbar";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
+// FIX (Bug 0): RoleProvider was never mounted anywhere in the component tree.
+// Every useRole() call returned the default context { role: null, isAdmin: false, loading: true }
+// permanently. Mounting it here wraps the entire dashboard subtree so Box.tsx,
+// MediaPage.tsx, and TeamsPage.tsx all receive the real role from Supabase.
+import { RoleProvider } from "@/providers/RoleProvider";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -18,8 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleLogout = async () => {
     await supabase.auth.signOut();
     utils.auth.getSession.invalidate();
-    router.refresh();
-    router.push("/");
+    router.push("/"); // push navigates away; refresh() beforehand was a no-op stutter
   };
 
   // Client-side session check — reads localStorage where signInWithPassword stores
@@ -47,13 +50,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!auth) return null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-surface-page">
-      <TopBar onLogout={handleLogout} />
-      <main className="flex-1 w-full pt-16">
-        {children}
-      </main>
-      <ThemeToggle />
-      <Toaster />
-    </div>
+    // RoleProvider wraps the entire dashboard so every child component
+    // that calls useRole() receives the real role from Supabase profiles.
+    <RoleProvider>
+      <div className="flex flex-col min-h-screen bg-surface-page">
+        <TopBar onLogout={handleLogout} />
+        <main className="flex-1 w-full pt-16">
+          {children}
+        </main>
+        <ThemeToggle />
+        <Toaster />
+      </div>
+    </RoleProvider>
   );
 }
