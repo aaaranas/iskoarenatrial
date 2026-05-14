@@ -8,16 +8,7 @@ const uuid = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-
 
 // Allowed match statuses — mirrored by the front-end status filter.
 // If you add a status here, also update FILTER_OPTIONS in features/matches/components/Box.tsx.
-const matchStatus = z.enum([
-  "scheduled",
-  "upcoming",
-  "live",
-  "in_progress",
-  "finished",
-  "completed",
-  "cancelled",
-  "postponed",
-]);
+const matchStatus = z.enum(["upcoming", "live", "completed"]);
 
 export const matchRouter = router({
   // ─────────────────────────────────────────────────────────────
@@ -33,8 +24,8 @@ export const matchRouter = router({
         home_score,
         away_score,
         created_at,
-        home_team:home_team_id (id, name, college),
-        away_team:away_team_id (id, name, college),
+        home_team:home_team_id (id, name, college, org),
+        away_team:away_team_id (id, name, college, org),
         sport:sport_id (id, name),
         venue:venue_id (id, name, location)
       `)
@@ -50,11 +41,16 @@ export const matchRouter = router({
     return (data || []).map((match: any) => ({
       id: match.id,
       homeTeam: match.home_team?.name || "TBD",
+      homeTeamId: match.home_team?.id ?? null,
+      homeTeamOrg: (match.home_team?.org || "").toLowerCase(),
       awayTeam: match.away_team?.name || "TBD",
+      awayTeamId: match.away_team?.id ?? null,
+      awayTeamOrg: (match.away_team?.org || "").toLowerCase(),
       homeScore: match.home_score,
       awayScore: match.away_score,
       league: match.sport?.name || "Unknown Sport",
       venue: match.venue?.name || "TBD",
+      venueId: match.venue?.id ?? null,
       // rawDate is the unformatted ISO string — used by client code for
       // locale-independent comparisons (e.g. "is this today?"). The formatted
       // date/time strings below are display-only.
@@ -141,6 +137,7 @@ export const matchRouter = router({
         away_score: z.number().int().min(0).optional(),
         status: matchStatus.optional(),
         match_date: z.string().optional(),
+        venue_id: uuid.optional(),
       })
     )
     .mutation(async ({ input }) => {

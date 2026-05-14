@@ -114,7 +114,7 @@ export const AddMatchModal = ({ children }: AddMatchModalProps) => {
       away_team_id: awayTeamId,
       venue_id: venueId,
       match_date: date.toISOString(),
-      status: "scheduled",
+      status: "upcoming",
     });
   };
 
