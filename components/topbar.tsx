@@ -4,6 +4,7 @@ import { User, Bell, LogOut, Menu, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { trpc } from "@/lib/trpc";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +25,57 @@ const allNavItems = [
   { label: "Media",        url: "/dashboard/media" },
   { label: "Teams",        url: "/dashboard/teams" },
 ];
+
+// ── Avatar bubble — shown in place of the static User icon ───────────────────
+// Fetches the current user's avatar_url and full_name from the profile router.
+// Falls back to initials when no avatar is set, and to the <User> icon while
+// the query is still loading. Re-renders automatically when the profile page
+// calls utils.profile.getProfile.invalidate() after a successful avatar save.
+function AvatarBubble() {
+  const { data: profile, isLoading } = trpc.profile.getProfile.useQuery(
+    undefined,
+    {
+      // Don't block the TopBar render — show the icon fallback while fetching
+      staleTime: 30_000,
+    }
+  );
+
+  const name      = profile?.full_name ?? "";
+  const avatarUrl = profile?.avatar_url ?? null;
+  const monogram  = name.trim().split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2) || null;
+
+  return (
+    <Link
+      href="/dashboard/profile"
+      title="My Profile"
+      className="relative flex size-8 items-center justify-center rounded-full border shadow-inner transition-colors overflow-hidden hover:border-[var(--accent-maroon)]"
+      style={{
+        backgroundColor: "var(--surface-sunken)",
+        borderColor: "var(--border-strong)",
+      }}
+    >
+      {isLoading ? (
+        // Neutral icon while loading — avoids layout shift
+        <User className="size-4" style={{ color: "var(--text)" }} />
+      ) : avatarUrl ? (
+        <Image
+          src={avatarUrl}
+          alt={name || "Profile"}
+          fill
+          className="object-cover"
+          // sizes keeps Next.js from generating oversized srcsets for a 32px bubble
+          sizes="32px"
+        />
+      ) : monogram ? (
+        <span className="text-[10px] font-bold select-none" style={{ color: "var(--text)" }}>
+          {monogram}
+        </span>
+      ) : (
+        <User className="size-4" style={{ color: "var(--text)" }} />
+      )}
+    </Link>
+  );
+}
 
 export function TopBar({ onLogout }: TopBarProps) {
   const pathname = usePathname();
@@ -96,15 +148,8 @@ export function TopBar({ onLogout }: TopBarProps) {
           <Bell className="size-4" />
         </Button>
 
-        <div
-          className="flex size-8 items-center justify-center rounded-full border shadow-inner"
-          style={{
-            backgroundColor: "var(--surface-sunken)",
-            borderColor: "var(--border-strong)",
-          }}
-        >
-          <User className="size-4" style={{ color: "var(--text)" }} />
-        </div>
+        {/* Avatar bubble — shows profile photo or initials */}
+        <AvatarBubble />
 
         <Button
           variant="ghost"
@@ -127,15 +172,8 @@ export function TopBar({ onLogout }: TopBarProps) {
           <Bell className="size-4" />
         </Button>
 
-        <div
-          className="flex size-8 items-center justify-center rounded-full border shadow-inner"
-          style={{
-            backgroundColor: "var(--surface-sunken)",
-            borderColor: "var(--border-strong)",
-          }}
-        >
-          <User className="size-4" style={{ color: "var(--text)" }} />
-        </div>
+        {/* Avatar bubble — mobile */}
+        <AvatarBubble />
 
         <Button
           variant="ghost"
