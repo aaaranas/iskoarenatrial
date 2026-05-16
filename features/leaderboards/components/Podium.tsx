@@ -17,6 +17,7 @@ interface Performer {
   value: number;
   sport: string;
   category: string;
+  logo?: string | null;
 }
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -118,15 +119,15 @@ export const Podium = ({ performers }: { performers: Performer[] }) => {
       {/* Podium Grid */}
       <div className="flex items-end justify-center gap-2 lg:gap-10">
         <div className="flex flex-col items-center flex-1">
-          <LeaderboardSideUserCardSection name={left.name} prize={left.prize} />
+          <LeaderboardSideUserCardSection name={left.name} prize={left.prize} logo={left.logo} rank={2} />
           <PodiumBlock performerId={left.id} height="150px" targetValue={left.value} />
         </div>
         <div className="flex flex-col items-center flex-1">
-          <LeaderboardToggleSection name={center.name} prize={center.prize} />
+          <LeaderboardToggleSection name={center.name} prize={center.prize} logo={center.logo} />
           <PodiumBlock performerId={center.id} height="220px" targetValue={center.value} />
         </div>
         <div className="flex flex-col items-center flex-1">
-          <LeaderboardSideUserCardSection name={right.name} prize={right.prize} />
+          <LeaderboardSideUserCardSection name={right.name} prize={right.prize} logo={right.logo} rank={3} />
           <PodiumBlock performerId={right.id} height="110px" targetValue={right.value} />
         </div>
       </div>

@@ -1,11 +1,10 @@
-import { router, publicProcedure, adminProcedure } from "../trpc";
+import { router, publicProcedure, adminProcedure, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { supabaseAdmin as supabase } from "@/lib/supabase/server";
-import { createCookieSupabaseClient } from "@/lib/supabase/server-client";
 import { TRPCError } from "@trpc/server";
 
 export const mediaRouter = router({
-  getAll: publicProcedure.query(async () => {
+  getAll: publicProcedure.query(async ({ ctx }) => {
     const { data, error } = await supabase
       .from("media")
       .select(`
@@ -22,9 +21,10 @@ export const mediaRouter = router({
     const mediaIds = items.map((m: any) => m.id);
 
     // One query for all like rows — group client-side into count + set
-    const { data: likeRows } = mediaIds.length
+    const { data: likeRows, error: likesErr } = mediaIds.length
       ? await supabase.from("media_likes").select("media_id, user_id").in("media_id", mediaIds)
-      : { data: [] };
+      : { data: [], error: null };
+    if (likesErr) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `media_likes: ${likesErr.message}` });
 
     const likeCountMap = new Map<string, number>();
     const likersByMedia = new Map<string, Set<string>>();
@@ -34,13 +34,9 @@ export const mediaRouter = router({
       likersByMedia.get(row.media_id)!.add(row.user_id);
     }
 
-    // Optional: resolve current user to populate userHasLiked
-    let currentUserId: string | null = null;
-    try {
-      const cookieClient = await createCookieSupabaseClient();
-      const { data: { user } } = await cookieClient.auth.getUser();
-      currentUserId = user?.id ?? null;
-    } catch { /* not a blocker — unauthenticated requests just get userHasLiked: false */ }
+    // ctx.user is resolved once per request in createTRPCContext via the shared
+    // cookie client — reliable for both authenticated and anonymous requests.
+    const currentUserId = ctx.user?.id ?? null;
 
     return items.map((item: any) => ({
       id:           item.id,
@@ -60,6 +56,42 @@ export const mediaRouter = router({
       userHasLiked: currentUserId ? (likersByMedia.get(item.id)?.has(currentUserId) ?? false) : false,
     }));
   }),
+
+  // Uses supabaseAdmin (service role) so no RLS policy is needed on media_likes.
+  // ctx.user is guaranteed non-null by protectedProcedure.
+  toggleLike: protectedProcedure
+    .input(z.object({ mediaId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.user.id;
+
+      const { data: existing } = await supabase
+        .from("media_likes")
+        .select("id")
+        .eq("media_id", input.mediaId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from("media_likes")
+          .delete()
+          .eq("media_id", input.mediaId)
+          .eq("user_id", userId);
+        if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      } else {
+        const { error } = await supabase
+          .from("media_likes")
+          .insert({ media_id: input.mediaId, user_id: userId });
+        if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+
+      const { count } = await supabase
+        .from("media_likes")
+        .select("id", { count: "exact", head: true })
+        .eq("media_id", input.mediaId);
+
+      return { liked: !existing, count: count ?? 0 };
+    }),
 
   create: adminProcedure
     .input(z.object({

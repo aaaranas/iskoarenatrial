@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useMemo } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
@@ -13,6 +13,19 @@ import {
 import { Podium } from "./components/Podium";
 import { LeaderboardTable } from "./components/LeaderboardTable";
 
+// ── College logo mapping — keyed by org abbreviation (matches teams DB field) ─
+const COLLEGE_LOGO_MAP: Record<string, string> = {
+  COS:  "/colleges/cos_logo.jpg",
+  CSS:  "/colleges/css_logo.jpg",
+  CCAD: "/colleges/ccad_logo.jpg",
+  SOM:  "/colleges/som_logo.jpg",
+};
+
+function collegeLogo(org: string | null | undefined): string | null {
+  if (!org) return null;
+  return COLLEGE_LOGO_MAP[org] ?? null;
+}
+
 interface Performer {
   id: string;
   name: string;
@@ -21,6 +34,7 @@ interface Performer {
   value: number;
   sport: string;
   category: string;
+  logo?: string | null;
 }
 
 export default function LeaderboardPage() {
@@ -30,23 +44,30 @@ export default function LeaderboardPage() {
 
   // ── DATA FETCHING ──
   const { data: players, isLoading: plLoading } = trpc.players.getAll.useQuery();
-  const { data: teams, isLoading: tmLoading } = trpc.team.getAll.useQuery();
-  const { data: stats, isLoading: stLoading } = trpc.stats.getLeaderboard.useQuery({
+  const { data: teams,   isLoading: tmLoading } = trpc.team.getAll.useQuery();
+  const { data: stats,   isLoading: stLoading } = trpc.stats.getLeaderboard.useQuery({
     type: viewMode,
     timeframe,
   });
+
+  // ── team_id → team lookup (for players who only have team_id) ──
+  const teamMap = useMemo(() => {
+    if (!teams) return new Map<string, any>();
+    return new Map((teams as any[]).map(t => [t.id, t]));
+  }, [teams]);
 
   // ── DATA TRANSFORMATION ──
   const topPerformers = useMemo((): Performer[] => {
     if (!teams) return [];
     return (teams as any[]).slice(0, 3).map((team, index) => ({
-      id: team.id,
-      name: team.name,
-      prize: `${1000 - index * 100} PTS`,
-      rank: index + 1,
-      value: 1000 - index * 100,
-      sport: team.sport ?? "—",
-      category: team.org ?? "—",
+      id:       team.id,
+      name:     team.college ?? team.name,   // full college name e.g. "COS Scions"
+      prize:    `${1000 - index * 100} PTS`,
+      rank:     index + 1,
+      value:    1000 - index * 100,
+      sport:    team.sport ?? "—",
+      category: team.org   ?? "—",           // org abbreviation
+      logo:     collegeLogo(team.org),        // keyed by org
     }));
   }, [teams]);
 
@@ -54,23 +75,34 @@ export default function LeaderboardPage() {
     if (!players) return [];
     return players
       .filter((p: any) => p.name?.toLowerCase().includes(searchQuery.toLowerCase()))
-      .map((p: any, i) => ({
-        rank: i + 1,
-        name: p.name,
-        username: `@${p.college?.toLowerCase() ?? "unknown"}`,
-        points: "2,400",
-      }));
-  }, [players, searchQuery]);
+      .map((p: any, i) => {
+        const team    = teamMap.get(p.team_id);
+        const org     = team?.org     ?? null;
+        const college = team?.college ?? null;
+        return {
+          id:       p.id,
+          rank:     i + 1,
+          name:     p.name,
+          college,                            // full name for display
+          logo:     collegeLogo(org),         // keyed by org abbreviation
+          username: org ? `@${org.toLowerCase()}` : "@unknown",
+          points:   "2,400",
+        };
+      });
+  }, [players, teamMap, searchQuery]);
 
   const mappedTeams = useMemo(() => {
     if (!teams) return [];
-    return teams
+    return (teams as any[])
       .filter((t: any) => t.name?.toLowerCase().includes(searchQuery.toLowerCase()))
       .map((t: any, i: number) => ({
-        rank: i + 1,
-        name: t.name,
-        username: `@${t.org?.toLowerCase() ?? "unknown"}`,
-        points: "12,400",
+        id:       t.id,
+        rank:     i + 1,
+        name:     t.college ?? t.name,        // full college name for display
+        college:  t.college ?? null,
+        logo:     collegeLogo(t.org),          // keyed by org abbreviation
+        username: t.org ? `@${t.org.toLowerCase()}` : "@unknown",
+        points:   "12,400",
       }));
   }, [teams, searchQuery]);
 
@@ -88,7 +120,7 @@ export default function LeaderboardPage() {
 
   return (
     <div className="relative bg-[#050505] min-h-screen text-zinc-100 w-full overflow-x-hidden font-sans selection:bg-[#A91D3A]">
-      
+
       {/* Background */}
       <div className="fixed top-0 right-0 w-[50%] h-screen z-0 opacity-25 grayscale brightness-[0.3]">
         <div className="absolute inset-0 bg-[url('/iskolarosocer.jpg')] bg-cover bg-center" />
@@ -96,41 +128,37 @@ export default function LeaderboardPage() {
       </div>
 
       <div className="relative z-10 max-w-[1700px] mx-auto px-6 lg:px-20 pt-32">
-        
-        {/* Centered Heading Layout */}
+
+        {/* Heading */}
         <div className="flex flex-col items-center justify-center text-center mb-24">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-4 mb-6"
-          >
-          </motion.div>
-          
+          />
           <h1 className="text-6xl lg:text-8xl font-black uppercase italic tracking-tighter mb-6">
             Leaderboard
           </h1>
-          
           <p className="max-w-xl text-zinc-500 text-xs font-medium tracking-[0.2em] uppercase">
             Quantifying campus dominance across every bracket.
           </p>
         </div>
 
-		{/* Toolbar: Modified with contrasting background panel */}
+        {/* Toolbar */}
         <div className="flex items-center justify-center py-6 mb-32 sticky top-24 z-30">
           <div className="bg-[#0f0f0f] border border-white/10 shadow-2xl p-4 flex items-center gap-16 backdrop-blur-md">
-            
-            {/* Timeframe Dropdown */}
+
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-white hover:text-[#C5A059] outline-none transition-colors px-4">
-                <Layers className="w-3.5 h-3.5 text-[#A91D3A]" /> 
-                {timeframe} 
+                <Layers className="w-3.5 h-3.5 text-[#A91D3A]" />
+                {timeframe}
                 <ChevronDown className="w-3 h-3 opacity-50" />
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-[#1a1a1a] border border-white/10 text-white rounded-none">
                 {["Weekly", "Monthly", "Season"].map(t => (
-                  <DropdownMenuItem 
-                    key={t} 
-                    onClick={() => setTimeframe(t)} 
+                  <DropdownMenuItem
+                    key={t}
+                    onClick={() => setTimeframe(t)}
                     className="text-[10px] font-black uppercase tracking-widest hover:bg-[#A91D3A] focus:bg-[#A91D3A]"
                   >
                     {t}
@@ -139,10 +167,8 @@ export default function LeaderboardPage() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Separator Line */}
             <div className="w-[1px] h-6 bg-white/10" />
 
-            {/* Search Bar */}
             <div className="relative group px-4">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 group-hover:text-[#C5A059] transition-colors" />
               <input
