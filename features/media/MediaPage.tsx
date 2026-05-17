@@ -97,18 +97,8 @@ function LikeButton({ mediaId, initialCount = 0, initialLiked = false, size = 18
   const [count, setCount] = useState(initialCount);
   const [userId, setUserId] = useState<string | null>(null);
 
-  const toggleMutation = trpc.media.toggleLike.useMutation({
-    onSuccess: (result) => {
-      setLiked(result.liked);
-      setCount(result.count);
-    },
-    onError: (err) => {
-      // Revert optimistic update
-      setLiked(liked);
-      setCount(count);
-      toast.error(err.message);
-    },
-  });
+  // onSuccess/onError for revert live in mutate() call — see toggle()
+  const toggleMutation = trpc.media.toggleLike.useMutation();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
@@ -139,11 +129,18 @@ function LikeButton({ mediaId, initialCount = 0, initialLiked = false, size = 18
   const toggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!userId || toggleMutation.isPending) return;
-    // H1: capture next so both state updates derive from the same value
-    const next = !liked;
-    setLiked(next);
-    setCount(c => c + (next ? 1 : -1));
-    toggleMutation.mutate({ mediaId });
+    // Snapshot pre-click state so the revert in onError is correct
+    const prevLiked = liked;
+    const prevCount = count;
+    // Optimistic update
+    setLiked(!prevLiked);
+    setCount(prevCount + (prevLiked ? -1 : 1));
+    toggleMutation.mutate({ mediaId }, {
+      // Server-authoritative values replace the optimistic ones
+      onSuccess: (result) => { setLiked(result.liked); setCount(result.count); },
+      // Revert to the snapshot captured at click time — not the closure
+      onError: (err) => { setLiked(prevLiked); setCount(prevCount); toast.error(err.message); },
+    });
   };
 
   return (
