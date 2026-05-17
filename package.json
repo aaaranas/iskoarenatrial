@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "echo \"lint not configured (Next 16 removed next lint); see package.json\" && exit 0"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
