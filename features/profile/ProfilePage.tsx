@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { supabase } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Camera, Check, X, Pencil, Mail, Shield, Loader2, User } from "lucide-react";
+import { Camera, Check, X, Pencil, Mail, Shield, Loader2, User, Lock, Eye, EyeOff } from "lucide-react";
 
 const AVATARS_BUCKET = "avatars";
 
@@ -188,7 +188,52 @@ export default function ProfilePage() {
     onError: (err) => toast.error(err.message),
   });
 
+  // ── Email change state ──────────────────────────────────────────────────
+  const [email, setEmail] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
+
+  // ── Password change state ───────────────────────────────────────────────
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const changePassword = trpc.profile.changePassword.useMutation({
+    onSuccess: () => {
+      toast.success("Password changed successfully.");
+      setNewPassword("");
+      setConfirmPw("");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const [savingField, setSavingField] = useState<string | null>(null);
+
+  // ── Read email-confirmation result from URL params ──────────────────────
+  // /auth/confirm redirects here with ?emailChanged=1 or ?emailError=1.
+  // Uses window.location directly to avoid useSearchParams + Suspense overhead.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const changed = params.get("emailChanged");
+    const errored = params.get("emailError");
+    if (!changed && !errored) return;
+
+    if (changed === "1") {
+      toast.success("Email address updated successfully.");
+      utils.profile.getMyProfile.invalidate();
+    }
+    if (errored === "1") {
+      toast.error("Email confirmation failed. The link may have expired — try again.");
+    }
+
+    // Strip params without adding a history entry
+    window.history.replaceState({}, "", "/dashboard/profile");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Seed email field once profile loads
+  useEffect(() => {
+    if (profile?.email) setEmail(profile.email);
+  }, [profile?.email]);
 
   // M3: only invalidate auth.getSession (consumed by TopBar/RoleProvider) when
   // avatar changes — name/handle edits don't affect anything the session provides
@@ -307,19 +352,121 @@ export default function ProfilePage() {
 
             <div className="h-px bg-white/5" />
 
-            {/* Email — read-only */}
+            {/* Email — editable with confirmation flow */}
             <div className="flex flex-col gap-1.5">
               <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Email</span>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-zinc-500 font-medium">{profile.email}</span>
-                <span className="text-[10px] text-zinc-700 border border-white/5 rounded px-1.5 py-0.5">read-only</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  disabled={emailSaving}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white outline-none focus:border-[#A91D3A]/60 focus:ring-1 focus:ring-[#A91D3A]/30 transition-all disabled:opacity-50"
+                />
+                <button
+                  onClick={async () => {
+                    if (email === profile.email) return toast.info("That's already your current email.");
+                    if (!email.includes("@")) return toast.error("Enter a valid email address.");
+                    setEmailSaving(true);
+                    try {
+                      // Client-session call — triggers Supabase's confirmation email flow.
+                      // Admin SDK would bypass confirmation, which is why we don't use it here.
+                      const { error } = await supabase.auth.updateUser({ email });
+                      if (error) throw error;
+                      toast.success("Confirmation link sent — check your new inbox.");
+                    } catch (err: any) {
+                      toast.error(err.message ?? "Failed to update email.");
+                    } finally {
+                      setEmailSaving(false);
+                    }
+                  }}
+                  disabled={emailSaving || email === profile.email}
+                  className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-[#A91D3A]/20 hover:bg-[#A91D3A]/40 text-[#A91D3A] transition-colors disabled:opacity-40"
+                >
+                  {emailSaving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                </button>
               </div>
+              <p className="text-[11px] text-zinc-600">
+                Changing your email sends a confirmation link to the new address.
+              </p>
             </div>
           </div>
         </div>
 
+        {/* ── Password card ── */}
+        <div className="rounded-3xl bg-[#0E0E0E] border border-white/5 overflow-hidden shadow-xl">
+          <div className="px-6 md:px-8 py-4 border-b border-white/5">
+            <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 flex items-center gap-2">
+              <Lock size={12} />
+              Change Password
+            </h2>
+          </div>
+
+          <div className="px-6 md:px-8 py-6 space-y-4">
+            {/* New password */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">New Password</span>
+              <div className="relative">
+                <input
+                  type={showPw ? "text" : "password"}
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="Min. 6 characters"
+                  disabled={changePassword.isPending}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 pr-9 text-sm text-white outline-none focus:border-[#A91D3A]/60 focus:ring-1 focus:ring-[#A91D3A]/30 transition-all disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(v => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-300 transition-colors"
+                >
+                  {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirm password */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Confirm Password</span>
+              <div className="relative">
+                <input
+                  type={showConfirm ? "text" : "password"}
+                  value={confirmPw}
+                  onChange={e => setConfirmPw(e.target.value)}
+                  placeholder="Re-enter password"
+                  disabled={changePassword.isPending}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 pr-9 text-sm text-white outline-none focus:border-[#A91D3A]/60 focus:ring-1 focus:ring-[#A91D3A]/30 transition-all disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(v => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-300 transition-colors"
+                >
+                  {showConfirm ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Save button */}
+            <button
+              onClick={() => {
+                if (newPassword.length < 6) return toast.error("Password must be at least 6 characters.");
+                if (newPassword !== confirmPw) return toast.error("Passwords do not match.");
+                changePassword.mutate({ password: newPassword });
+              }}
+              disabled={changePassword.isPending || !newPassword || !confirmPw}
+              className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold text-white bg-[#A91D3A] hover:bg-[#A91D3A]/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {changePassword.isPending
+                ? <><Loader2 size={14} className="animate-spin" /> Saving&hellip;</>
+                : <><Check size={14} /> Update Password</>
+              }
+            </button>
+          </div>
+        </div>
+
         <p className="text-center text-[11px] text-zinc-700">
-          Hover a field and click the pencil to edit · Enter to save · Esc to cancel
+          Hover a field and click the pencil to edit &middot; Enter to save &middot; Esc to cancel
         </p>
       </div>
     </div>

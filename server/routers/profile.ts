@@ -1,4 +1,5 @@
 import { router, protectedProcedure } from "../trpc";
+import { supabaseAdmin } from "@/lib/supabase/server";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
@@ -37,6 +38,24 @@ export const profileRouter = router({
         .update({ ...input, updated_at: new Date().toISOString() })
         .eq("id", ctx.user.id);
       if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      return { success: true };
+    }),
+
+  // ── Change password ─────────────────────────────────────────────────────
+  // Uses the admin client so no current-password prompt is needed — the
+  // active session (validated by protectedProcedure) is proof of identity.
+  changePassword: protectedProcedure
+    .input(
+      z.object({
+        password: z.string().min(6, "Password must be at least 6 characters").max(72),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(
+        ctx.user.id,
+        { password: input.password },
+      );
+      if (error) throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
       return { success: true };
     }),
 });

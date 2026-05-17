@@ -57,6 +57,12 @@ export async function middleware(request: NextRequest) {
   // IMPORTANT: Do not use getSession(). Use getUser() for security in middleware.
   const { data: { user } } = await supabase.auth.getUser()
 
+  // /auth/confirm must be reachable without a session — it exchanges the
+  // email-change token and creates the session as part of that flow.
+  if (request.nextUrl.pathname.startsWith('/auth/confirm')) {
+    return response
+  }
+
   // Authenticated area is /dashboard — gate it at the edge so unauth'd users
   // never receive RSC payloads for protected routes (the in-component check
   // in app/dashboard/layout.tsx only runs after hydration, which is too late).
