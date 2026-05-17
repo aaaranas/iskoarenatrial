@@ -41,7 +41,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // that calls useRole() receives the real role from Supabase profiles.
     <RoleProvider>
       <div className="flex flex-col min-h-screen bg-surface-page">
-        <TopBar onLogout={handleLogout} />
+        <TopBar
+          onLogout={handleLogout}
+          avatarUrl={auth?.profile?.avatar_url ?? null}
+          displayName={auth?.profile?.full_name ?? ""}
+        />
         <main className="flex-1 w-full pt-16">
           {children}
         </main>

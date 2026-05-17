@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   Table,
   TableBody,
@@ -9,72 +9,97 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Gem, Trophy, ChevronDown } from "lucide-react";
+import { Gem, Medal, ChevronDown } from "lucide-react";
+
+// ── Rank medal config ────────────────────────────────────────────────────────
+const MEDAL = [
+  { ring: "ring-yellow-400/40", border: "border-yellow-400/50", num: "text-yellow-400", barColor: "#facc15" },
+  { ring: "ring-zinc-300/30",   border: "border-zinc-300/40",   num: "text-zinc-300",   barColor: "#a1a1aa" },
+  { ring: "ring-amber-700/40",  border: "border-amber-700/50",  num: "text-amber-600",  barColor: "#92400e" },
+] as const;
 
 /* =========================
    Memoized Row Component
 ========================= */
-const LeaderboardRow = React.memo(function LeaderboardRow({
-  user,
-  index,
-}: any) {
+const LeaderboardRow = React.memo(function LeaderboardRow({ user, index }: any) {
+  // H4: use rank value (not array index) so filtered lists don't re-assign medals
+  const medal = user.rank <= 3 ? MEDAL[user.rank - 1] : null;
+
   return (
-    <TableRow className="border-none transition-all duration-300 hover:bg-[#1A1A1A]/40 group">
-      <TableCell className="pl-2 font-bold text-lg text-white">
-        {index < 3 ? (
+    // H5: left accent bar as inline border-left on the row itself — no extra <td>
+    <TableRow
+      className="border-none group transition-colors duration-200 hover:bg-white/[0.025]"
+      style={{ borderLeft: `3px solid ${medal ? medal.barColor : "transparent"}` }}
+    >
+      {/* Rank */}
+      <TableCell className="pl-5 w-[72px]">
+        {medal ? (
           <div className="flex items-center gap-2">
-            <Trophy
-              className={`w-4 h-4 ${
-                index === 0
-                  ? "text-yellow-400"
-                  : index === 1
-                  ? "text-gray-300"
-                  : "text-amber-700"
-              }`}
-            />
-            <span className="opacity-80 font-mono">{user.rank}</span>
+            <Medal className={`w-4 h-4 ${medal.num}`} />
+            <span className={`font-black text-sm font-mono ${medal.num}`}>{user.rank}</span>
           </div>
         ) : (
-          <span className="text-gray-700 font-mono">{user.rank}</span>
+          <span className="text-zinc-700 font-mono text-sm">{user.rank}</span>
         )}
       </TableCell>
 
-      <TableCell>
-        <div className="flex items-center gap-4">
-          <Avatar className="w-10 h-10 border border-gray-800 ring-1 ring-white/5 group-hover:ring-[#A91D3A]/30 transition-all">
-            <AvatarImage src={user.avatar} />
-            <AvatarFallback className="bg-[#1A1A1A] text-gray-500">
-              {user.name?.[0]}
-            </AvatarFallback>
-          </Avatar>
+      {/* Participant: logo + name + college sub-label */}
+      <TableCell className="py-3">
+        <div className="flex items-center gap-3">
+          <div className={`shrink-0 w-10 h-10 rounded-full overflow-hidden bg-[#1A1A1A] border ${medal ? `border-2 ${medal.border} ring-2 ${medal.ring}` : "border-white/10"} transition-all group-hover:scale-105`}>
+            {user.logo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={user.logo} alt={user.college ?? user.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="flex items-center justify-center w-full h-full text-zinc-500 text-sm font-bold">
+                {user.name?.[0] ?? "?"}
+              </span>
+            )}
+          </div>
 
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold text-white tracking-wide">
-              {user.name}
-            </span>
-            <span className="text-[10px] text-gray-600 uppercase tracking-widest">
-              {user.username}
-            </span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-white truncate leading-tight">{user.name}</p>
+            {user.college && (
+              <p className="text-[10px] text-zinc-600 uppercase tracking-[0.15em] mt-0.5 truncate">
+                {user.college}
+              </p>
+            )}
           </div>
         </div>
       </TableCell>
 
-      <TableCell className="text-gray-500 font-medium text-sm">
-        {user.followers}
+      {/* College badge — M9: use user.org directly (already the abbreviation) */}
+      <TableCell className="hidden sm:table-cell">
+        {user.logo && user.org ? (
+          <div className="inline-flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-full px-2.5 py-1">
+            <div className="w-3.5 h-3.5 rounded-full overflow-hidden shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={user.logo} alt="" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+              {user.org}
+            </span>
+          </div>
+        ) : (
+          <span className="text-zinc-700 text-xs">—</span>
+        )}
       </TableCell>
 
+      {/* Points */}
       <TableCell className="text-[#C5A059] font-bold text-sm tracking-wide">
-        {user.points}
+        {user.points ?? "—"}
       </TableCell>
 
-      <TableCell className="text-right pr-2">
-        <div className="inline-flex items-center justify-end gap-1.5 bg-[#121212] px-3 py-1.5 rounded-full border border-[#1A1A1A] group-hover:border-[#A91D3A]/30 transition-colors">
-          <Gem className="w-3.5 h-3.5 text-[#C5A059]" />
-          <span className="text-xs font-bold text-white tracking-tight">
-            {user.reward}
-          </span>
-        </div>
+      {/* Reward */}
+      <TableCell className="text-right pr-4">
+        {user.reward ? (
+          <div className="inline-flex items-center justify-end gap-1.5 bg-[#121212] px-3 py-1.5 rounded-full border border-[#1A1A1A] group-hover:border-[#A91D3A]/30 transition-colors">
+            <Gem className="w-3.5 h-3.5 text-[#C5A059]" />
+            <span className="text-xs font-bold text-white tracking-tight">{user.reward}</span>
+          </div>
+        ) : (
+          <span className="text-zinc-800 text-xs">—</span>
+        )}
       </TableCell>
     </TableRow>
   );
@@ -86,90 +111,74 @@ const LeaderboardRow = React.memo(function LeaderboardRow({
 export function LeaderboardTable({ players = [], teams = [] }: any) {
   const [mode, setMode] = useState<"players" | "teams">("players");
 
-  // Memoized datasets (prevents recalculation)
-  const memoPlayers = useMemo(() => players, [players]);
-  const memoTeams = useMemo(() => teams, [teams]);
+  // M1: removed dead useMemo wrappers that just returned the same reference
+  const rows = mode === "players" ? players : teams;
+  const isEmpty = rows.length === 0;
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-8 pb-12">
-      
-      {/* Toggle Buttons */}
-      <div className="flex justify-center gap-2">
-        <button
-          onClick={() => setMode("players")}
-          className={`px-4 py-1.5 text-xs font-bold tracking-widest uppercase rounded-full transition ${
-            mode === "players"
-              ? "bg-white text-black"
-              : "text-gray-500 hover:text-white"
-          }`}
-        >
-          Players
-        </button>
+    <div className="w-full max-w-4xl mx-auto space-y-6 pb-12">
 
-        <button
-          onClick={() => setMode("teams")}
-          className={`px-4 py-1.5 text-xs font-bold tracking-widest uppercase rounded-full transition ${
-            mode === "teams"
-              ? "bg-white text-black"
-              : "text-gray-500 hover:text-white"
-          }`}
-        >
-          Teams
-        </button>
+      {/* Toggle */}
+      <div className="flex justify-center gap-2 pt-6">
+        {(["players", "teams"] as const).map(m => (
+          <button
+            key={m}
+            onClick={() => setMode(m)}
+            className={`px-5 py-1.5 text-[10px] font-black tracking-widest uppercase rounded-full transition-all ${
+              mode === m
+                ? "bg-white text-black shadow-sm"
+                : "text-zinc-500 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            {m}
+          </button>
+        ))}
       </div>
 
-      {/* Table Wrapper */}
-      <div className="relative rounded-3xl bg-[#0E0E0E] shadow-2xl overflow-hidden">
-        <div className="p-6 relative [mask-image:linear-gradient(to_bottom,black_85%,transparent_100%)]">
+      {/* Table */}
+      <div className="relative rounded-2xl bg-[#0E0E0E] shadow-2xl overflow-hidden border border-white/[0.04]">
+        <div className="[mask-image:linear-gradient(to_bottom,black_80%,transparent_100%)]">
           <Table>
             <TableHeader>
               <TableRow className="border-none hover:bg-transparent">
-                <TableHead className="w-[80px] text-gray-600 font-medium uppercase text-[10px] tracking-[0.2em] pl-2">
+                <TableHead className="w-[72px] pl-5 text-zinc-700 font-bold uppercase text-[9px] tracking-[0.25em]">
                   Rank
                 </TableHead>
-                <TableHead className="text-gray-600 font-medium uppercase text-[10px] tracking-[0.2em]">
+                <TableHead className="text-zinc-700 font-bold uppercase text-[9px] tracking-[0.25em]">
                   Participant
                 </TableHead>
-                <TableHead className="text-gray-600 font-medium uppercase text-[10px] tracking-[0.2em]">
-                  Followers
+                <TableHead className="hidden sm:table-cell text-zinc-700 font-bold uppercase text-[9px] tracking-[0.25em]">
+                  College
                 </TableHead>
-                <TableHead className="text-gray-600 font-medium uppercase text-[10px] tracking-[0.2em]">
+                <TableHead className="text-zinc-700 font-bold uppercase text-[9px] tracking-[0.25em]">
                   Points
                 </TableHead>
-                <TableHead className="text-right text-gray-600 font-medium uppercase text-[10px] tracking-[0.2em] pr-2">
+                <TableHead className="text-right pr-4 text-zinc-700 font-bold uppercase text-[9px] tracking-[0.25em]">
                   Reward
                 </TableHead>
               </TableRow>
             </TableHeader>
 
-            {/* Players Table (always mounted) */}
-            <TableBody className={mode === "players" ? "" : "hidden"}>
-              {memoPlayers.map((user: any, index: number) => (
-                <LeaderboardRow
-                  key={user.id} // ✅ stable key
-                  user={user}
-                  index={index}
-                />
-              ))}
-            </TableBody>
-
-            {/* Teams Table (always mounted) */}
-            <TableBody className={mode === "teams" ? "" : "hidden"}>
-              {memoTeams.map((user: any, index: number) => (
-                <LeaderboardRow
-                  key={user.id} // ✅ stable key
-                  user={user}
-                  index={index}
-                />
-              ))}
+            <TableBody>
+              {isEmpty ? (
+                <TableRow className="border-none hover:bg-transparent">
+                  <TableCell colSpan={5} className="text-center py-16 text-zinc-700 text-xs tracking-widest uppercase">
+                    No data
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rows.map((user: any, index: number) => (
+                  <LeaderboardRow key={user.id} user={user} index={index} />
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
 
-        {/* See More Button */}
-        <div className="absolute bottom-0 left-0 w-full p-6 flex justify-center bg-gradient-to-t from-[#0E0E0E] via-[#0E0E0E] to-transparent">
-          <button className="flex items-center gap-2 text-[10px] font-bold text-gray-500 hover:text-white transition-colors uppercase tracking-[0.2em]">
-            See More <ChevronDown className="w-3.5 h-3.5" />
+        {/* See More */}
+        <div className="absolute bottom-0 left-0 w-full px-6 py-5 flex justify-center bg-gradient-to-t from-[#0E0E0E] via-[#0E0E0E]/90 to-transparent">
+          <button className="flex items-center gap-2 text-[9px] font-bold text-zinc-600 hover:text-white transition-colors uppercase tracking-[0.25em]">
+            See More <ChevronDown className="w-3 h-3" />
           </button>
         </div>
       </div>

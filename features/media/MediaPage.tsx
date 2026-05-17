@@ -93,43 +93,61 @@ function sportConfig(sport: string | null) {
 function LikeButton({ mediaId, initialCount = 0, initialLiked = false, size = 18, className = "" }: {
   mediaId: string; initialCount?: number; initialLiked?: boolean; size?: number; className?: string;
 }) {
-  const [liked,   setLiked]   = useState(initialLiked);
-  const [count,   setCount]   = useState(initialCount);
-  const [userId,  setUserId]  = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [liked, setLiked] = useState(initialLiked);
+  const [count, setCount] = useState(initialCount);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const toggleMutation = trpc.media.toggleLike.useMutation({
+    onSuccess: (result) => {
+      setLiked(result.liked);
+      setCount(result.count);
+    },
+    onError: (err) => {
+      // Revert optimistic update
+      setLiked(liked);
+      setCount(count);
+      toast.error(err.message);
+    },
+  });
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
   }, []);
 
-  const toggle = async (e: React.MouseEvent) => {
+  // H2: gate sync on isPending so an in-flight optimistic update is never overwritten
+  useEffect(() => { if (!toggleMutation.isPending) setLiked(initialLiked); }, [initialLiked, toggleMutation.isPending]);
+  useEffect(() => { if (!toggleMutation.isPending) setCount(initialCount); }, [initialCount, toggleMutation.isPending]);
+
+  // H3: subscribe for every visitor (anon included) — userId only used inside to dedupe self
+  useEffect(() => {
+    const channel = supabase
+      .channel(`media_likes:${mediaId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "media_likes", filter: `media_id=eq.${mediaId}` }, (payload) => {
+        if (payload.eventType === "INSERT") {
+          const uid = (payload.new as any).user_id;
+          if (uid !== userId) setCount(c => c + 1);
+        }
+        if (payload.eventType === "DELETE") {
+          const uid = (payload.old as any).user_id;
+          if (uid !== userId) setCount(c => Math.max(0, c - 1));
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [mediaId, userId]);
+
+  const toggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!userId || loading) return;
-
-    const wasLiked = liked;
-    setLiked(!wasLiked);
-    setCount(c => wasLiked ? c - 1 : c + 1);
-
-    setLoading(true);
-    try {
-      if (wasLiked) {
-        const { error } = await supabase.from("media_likes").delete().eq("media_id", mediaId).eq("user_id", userId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("media_likes").insert({ media_id: mediaId, user_id: userId });
-        if (error) throw error;
-      }
-    } catch (err: any) {
-      setLiked(wasLiked);
-      setCount(c => wasLiked ? c + 1 : c - 1);
-      toast.error(err.message);
-    } finally {
-      setLoading(false);
-    }
+    if (!userId || toggleMutation.isPending) return;
+    // H1: capture next so both state updates derive from the same value
+    const next = !liked;
+    setLiked(next);
+    setCount(c => c + (next ? 1 : -1));
+    toggleMutation.mutate({ mediaId });
   };
 
   return (
-    <button onClick={toggle} disabled={loading || !userId}
+    <button onClick={toggle} disabled={toggleMutation.isPending || !userId}
       className={`flex items-center gap-1.5 transition-all duration-200 disabled:opacity-40 ${liked ? "text-red-400" : "text-zinc-600 hover:text-zinc-300"} ${className}`}>
       <Heart size={size} fill={liked ? "currentColor" : "none"} className={liked ? "scale-110" : ""} />
       {count > 0 && <span className="text-xs tabular-nums">{count}</span>}

@@ -15,6 +15,8 @@ import {
 
 interface TopBarProps {
   onLogout: () => void;
+  avatarUrl?: string | null;
+  displayName?: string;
 }
 
 const allNavItems = [
@@ -25,7 +27,34 @@ const allNavItems = [
   { label: "Teams",        url: "/dashboard/teams" },
 ];
 
-export function TopBar({ onLogout }: TopBarProps) {
+function AvatarBubble({ avatarUrl, displayName }: { avatarUrl?: string | null; displayName?: string }) {
+  const initials = (displayName ?? "")
+    .split(" ")
+    .map(w => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  return (
+    <Link
+      href="/dashboard/profile"
+      className="flex size-8 items-center justify-center rounded-full border overflow-hidden shadow-inner hover:ring-2 hover:ring-[var(--topbar-active)]/40 transition-all"
+      style={{ backgroundColor: "var(--surface-sunken)", borderColor: "var(--border-strong)" }}
+      title="My Profile"
+    >
+      {avatarUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={avatarUrl} alt={displayName ?? "Profile"} className="w-full h-full object-cover" />
+      ) : initials ? (
+        <span className="text-[10px] font-bold" style={{ color: "var(--text)" }}>{initials}</span>
+      ) : (
+        <User className="size-4" style={{ color: "var(--text)" }} />
+      )}
+    </Link>
+  );
+}
+
+export function TopBar({ onLogout, avatarUrl, displayName }: TopBarProps) {
   const pathname = usePathname();
 
   return (
@@ -96,15 +125,7 @@ export function TopBar({ onLogout }: TopBarProps) {
           <Bell className="size-4" />
         </Button>
 
-        <div
-          className="flex size-8 items-center justify-center rounded-full border shadow-inner"
-          style={{
-            backgroundColor: "var(--surface-sunken)",
-            borderColor: "var(--border-strong)",
-          }}
-        >
-          <User className="size-4" style={{ color: "var(--text)" }} />
-        </div>
+        <AvatarBubble avatarUrl={avatarUrl} displayName={displayName} />
 
         <Button
           variant="ghost"
@@ -127,15 +148,7 @@ export function TopBar({ onLogout }: TopBarProps) {
           <Bell className="size-4" />
         </Button>
 
-        <div
-          className="flex size-8 items-center justify-center rounded-full border shadow-inner"
-          style={{
-            backgroundColor: "var(--surface-sunken)",
-            borderColor: "var(--border-strong)",
-          }}
-        >
-          <User className="size-4" style={{ color: "var(--text)" }} />
-        </div>
+        <AvatarBubble avatarUrl={avatarUrl} displayName={displayName} />
 
         <Button
           variant="ghost"
