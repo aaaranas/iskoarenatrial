@@ -173,6 +173,20 @@ export function TopBar({ onLogout, avatarUrl, displayName }: TopBarProps) {
               borderColor: "hsl(var(--topbar-border))",
             }}
           >
+            {/* Top spacer + label — pushes nav items below the auto-positioned
+                SheetClose X button (absolute right-4 top-4) so it stops
+                overlapping the first nav item's ChevronRight. */}
+            <div
+              className="flex items-center px-6 py-3 border-b"
+              style={{ borderColor: "hsl(var(--topbar-border))" }}
+            >
+              <span
+                className="text-[10px] font-bold uppercase tracking-[0.2em]"
+                style={{ color: "hsl(var(--topbar-text))" }}
+              >
+                Menu
+              </span>
+            </div>
             <nav className="flex flex-col py-2">
               {allNavItems.map((item) => {
                 const active = pathname === item.url;
@@ -181,7 +195,7 @@ export function TopBar({ onLogout, avatarUrl, displayName }: TopBarProps) {
                     <Link
                       href={item.url}
                       className={cn(
-                        "flex items-center justify-between px-6 py-3.5 text-xs font-semibold uppercase tracking-widest transition-colors border-l-2",
+                        "flex items-center justify-between px-6 py-3.5 text-sm font-semibold uppercase tracking-widest transition-colors border-l-2",
                         active ? "border-l-2" : "border-transparent"
                       )}
                       style={{

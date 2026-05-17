@@ -9,7 +9,12 @@ interface LeaderboardPodiumProps {
 export const LeaderboardPodium = ({ titleAlign = "left" }: LeaderboardPodiumProps) => {
   return (
     <section className="space-y-8 animate-in fade-in duration-700 delay-150 pt-4 w-full">
-      <div className="flex items-end gap-4 w-full h-[340px]">
+      {/* Horizontal scroll wrapper — on mobile the podium (3 cards + gaps) is
+          ~592px wide which overflows narrow viewports. Wrapping in
+          overflow-x-auto lets the podium scroll within its container instead
+          of pushing the whole page past the viewport edge. */}
+      <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0 sm:overflow-visible">
+        <div className="flex items-end gap-4 h-[340px] min-w-max sm:min-w-0 sm:w-full">
 
         {/* ── 2nd Place ── */}
         <Card
@@ -204,6 +209,7 @@ export const LeaderboardPodium = ({ titleAlign = "left" }: LeaderboardPodiumProp
           </CardContent>
         </Card>
 
+        </div>
       </div>
     </section>
   );

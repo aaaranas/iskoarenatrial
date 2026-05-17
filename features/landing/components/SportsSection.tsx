@@ -59,14 +59,18 @@ export default function SportsSection() {
         </div>
       </div>
 
-      {/* Sport card grid — auto-fill columns, ~180px min, slightly taller than wide */}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3.5">
+      {/* Sport cards — mobile: horizontal scroll-snap carousel (24 stacked cards
+          on a phone is unreadable; one-card-at-a-time with snap is the standard
+          mobile pattern). Desktop (md+): auto-fill grid stays as the original
+          design intended. -mx-6 + px-6 lets the cards bleed to the edge of the
+          mobile viewport so the snap feels native. */}
+      <div className="flex md:grid overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none gap-3.5 md:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] -mx-6 px-6 md:mx-0 md:px-0 pb-2 md:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {visible.map((s) => {
           const isLive = s.status === "ongoing";
           return (
             <div
               key={s.name}
-              className="group relative flex aspect-[1.05/1] cursor-pointer flex-col justify-between overflow-hidden rounded-[14px] border border-white/[0.06] bg-ia-card p-5 transition-all duration-[250ms] hover:-translate-y-[3px] hover:border-ia-maroon/55 hover:bg-gradient-to-br hover:from-ia-maroon/25 hover:to-ia-card"
+              className="group relative flex aspect-[1.05/1] cursor-pointer flex-col justify-between overflow-hidden rounded-[14px] border border-white/[0.06] bg-ia-card p-5 transition-all duration-[250ms] hover:-translate-y-[3px] hover:border-ia-maroon/55 hover:bg-gradient-to-br hover:from-ia-maroon/25 hover:to-ia-card shrink-0 w-[240px] snap-center md:w-auto md:shrink"
             >
               {/* Top row: icon + optional LIVE badge */}
               <div className="flex items-start justify-between">

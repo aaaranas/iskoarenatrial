@@ -46,7 +46,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* NotificationProvider sits inside RoleProvider so future role-gated
           notifications (e.g. admin-only events) can hook into useRole(). */}
       <NotificationProvider>
-        <div className="flex flex-col min-h-screen bg-surface-page">
+        {/* overflow-x-hidden is a defensive safety net — any single child that
+            accidentally exceeds the viewport width (wide podium, table, image,
+            etc.) gets clipped at the layout boundary instead of horizontally
+            scrolling the entire page on mobile. */}
+        <div className="flex flex-col min-h-screen bg-surface-page overflow-x-hidden">
           <TopBar
             onLogout={handleLogout}
             avatarUrl={auth?.profile?.avatar_url ?? null}
