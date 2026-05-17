@@ -253,6 +253,10 @@ export default function ProfilePage() {
     setSavingField("avatar_url");
     try {
       await updateMutation.mutateAsync({ avatar_url: url });
+      // Refresh both queries: getMyProfile feeds this page's header,
+      // getSession feeds the TopBar avatar bubble via DashboardLayout props.
+      utils.profile.getMyProfile.invalidate();
+      utils.auth.getSession.invalidate();
       toast.success("Profile picture updated");
     } finally {
       setSavingField(null);
