@@ -114,13 +114,12 @@ function LikeButton({ mediaId, initialCount = 0, initialLiked = false, size = 18
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
   }, []);
 
-  // Sync liked/count when server data refetches and the component is still mounted
-  useEffect(() => { setLiked(initialLiked); }, [initialLiked]);
-  useEffect(() => { setCount(initialCount); }, [initialCount]);
+  // H2: gate sync on isPending so an in-flight optimistic update is never overwritten
+  useEffect(() => { if (!toggleMutation.isPending) setLiked(initialLiked); }, [initialLiked, toggleMutation.isPending]);
+  useEffect(() => { if (!toggleMutation.isPending) setCount(initialCount); }, [initialCount, toggleMutation.isPending]);
 
-  // Realtime: reflect other users' likes/unlikes
+  // H3: subscribe for every visitor (anon included) — userId only used inside to dedupe self
   useEffect(() => {
-    if (!userId) return;
     const channel = supabase
       .channel(`media_likes:${mediaId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "media_likes", filter: `media_id=eq.${mediaId}` }, (payload) => {
@@ -140,9 +139,10 @@ function LikeButton({ mediaId, initialCount = 0, initialLiked = false, size = 18
   const toggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!userId || toggleMutation.isPending) return;
-    // Optimistic update — mutation.onSuccess will apply the server's authoritative values
-    setLiked(v => !v);
-    setCount(c => liked ? c - 1 : c + 1);
+    // H1: capture next so both state updates derive from the same value
+    const next = !liked;
+    setLiked(next);
+    setCount(c => c + (next ? 1 : -1));
     toggleMutation.mutate({ mediaId });
   };
 

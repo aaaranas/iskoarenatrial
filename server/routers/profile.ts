@@ -1,10 +1,10 @@
-import { router, publicProcedure } from "../trpc";
+import { router, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
 export const profileRouter = router({
-  getMyProfile: publicProcedure.query(async ({ ctx }) => {
-    if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED" });
+  // C1: uses protectedProcedure — ctx.user is guaranteed non-null, no hand-rolled guard needed
+  getMyProfile: protectedProcedure.query(async ({ ctx }) => {
     const { data, error } = await ctx.supabase
       .from("profiles")
       .select("id, email, full_name, avatar_url, college_affiliation, role")
@@ -14,14 +14,24 @@ export const profileRouter = router({
     return data;
   }),
 
-  updateProfile: publicProcedure
-    .input(z.object({
-      full_name:           z.string().min(2).max(80).optional(),
-      college_affiliation: z.string().max(50).nullable().optional(),
-      avatar_url:          z.string().url().nullable().optional(),
-    }))
+  updateProfile: protectedProcedure
+    .input(
+      z.object({
+        full_name: z.string().min(2).max(80).trim().optional(),
+        // C2: free-form handle — restricted to safe characters to prevent stored-XSS
+        college_affiliation: z
+          .string()
+          .max(30)
+          .trim()
+          .refine(v => /^[a-zA-Z0-9 _\-.]+$/.test(v), "Handle may only contain letters, numbers, spaces, _ - .")
+          .nullable()
+          .optional(),
+        avatar_url: z.string().url().nullable().optional(),
+      })
+      // M4: reject no-op mutations (empty object would still bump updated_at)
+      .refine(o => Object.values(o).some(v => v !== undefined), { message: "No changes provided" })
+    )
     .mutation(async ({ ctx, input }) => {
-      if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED" });
       const { error } = await ctx.supabase
         .from("profiles")
         .update({ ...input, updated_at: new Date().toISOString() })

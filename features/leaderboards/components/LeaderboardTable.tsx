@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   Table,
   TableBody,
@@ -13,30 +13,24 @@ import { Gem, Medal, ChevronDown } from "lucide-react";
 
 // ── Rank medal config ────────────────────────────────────────────────────────
 const MEDAL = [
-  { ring: "ring-yellow-400/40",  border: "border-yellow-400/50",  num: "text-yellow-400",  bar: "bg-yellow-400" },
-  { ring: "ring-zinc-300/30",    border: "border-zinc-300/40",    num: "text-zinc-300",    bar: "bg-zinc-400"  },
-  { ring: "ring-amber-700/40",   border: "border-amber-700/50",   num: "text-amber-600",   bar: "bg-amber-700" },
+  { ring: "ring-yellow-400/40", border: "border-yellow-400/50", num: "text-yellow-400", barColor: "#facc15" },
+  { ring: "ring-zinc-300/30",   border: "border-zinc-300/40",   num: "text-zinc-300",   barColor: "#a1a1aa" },
+  { ring: "ring-amber-700/40",  border: "border-amber-700/50",  num: "text-amber-600",  barColor: "#92400e" },
 ] as const;
-
-function collegeAbbr(college: string | null | undefined) {
-  return college ? college.split(" ")[0] : null;
-}
 
 /* =========================
    Memoized Row Component
 ========================= */
 const LeaderboardRow = React.memo(function LeaderboardRow({ user, index }: any) {
-  const medal = index < 3 ? MEDAL[index] : null;
+  // H4: use rank value (not array index) so filtered lists don't re-assign medals
+  const medal = user.rank <= 3 ? MEDAL[user.rank - 1] : null;
 
   return (
-    <TableRow className="border-none group relative transition-colors duration-200 hover:bg-white/[0.025]">
-      {/* Top-3 left accent bar */}
-      {medal && (
-        <td className="absolute left-0 top-0 bottom-0 w-[3px] p-0 border-none">
-          <div className={`h-full w-full ${medal.bar} opacity-70`} />
-        </td>
-      )}
-
+    // H5: left accent bar as inline border-left on the row itself — no extra <td>
+    <TableRow
+      className="border-none group transition-colors duration-200 hover:bg-white/[0.025]"
+      style={{ borderLeft: `3px solid ${medal ? medal.barColor : "transparent"}` }}
+    >
       {/* Rank */}
       <TableCell className="pl-5 w-[72px]">
         {medal ? (
@@ -52,8 +46,7 @@ const LeaderboardRow = React.memo(function LeaderboardRow({ user, index }: any) 
       {/* Participant: logo + name + college sub-label */}
       <TableCell className="py-3">
         <div className="flex items-center gap-3">
-          {/* College logo circle */}
-          <div className={`relative shrink-0 w-10 h-10 rounded-full overflow-hidden bg-[#1A1A1A] border ${medal ? `border-2 ${medal.border} ring-2 ${medal.ring}` : "border-white/10"} transition-all group-hover:scale-105`}>
+          <div className={`shrink-0 w-10 h-10 rounded-full overflow-hidden bg-[#1A1A1A] border ${medal ? `border-2 ${medal.border} ring-2 ${medal.ring}` : "border-white/10"} transition-all group-hover:scale-105`}>
             {user.logo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={user.logo} alt={user.college ?? user.name} className="w-full h-full object-cover" />
@@ -75,16 +68,16 @@ const LeaderboardRow = React.memo(function LeaderboardRow({ user, index }: any) 
         </div>
       </TableCell>
 
-      {/* College badge */}
+      {/* College badge — M9: use user.org directly (already the abbreviation) */}
       <TableCell className="hidden sm:table-cell">
-        {user.logo && user.college ? (
+        {user.logo && user.org ? (
           <div className="inline-flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-full px-2.5 py-1">
             <div className="w-3.5 h-3.5 rounded-full overflow-hidden shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={user.logo} alt="" className="w-full h-full object-cover" />
             </div>
             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-              {collegeAbbr(user.college)}
+              {user.org}
             </span>
           </div>
         ) : (
@@ -118,10 +111,8 @@ const LeaderboardRow = React.memo(function LeaderboardRow({ user, index }: any) 
 export function LeaderboardTable({ players = [], teams = [] }: any) {
   const [mode, setMode] = useState<"players" | "teams">("players");
 
-  const memoPlayers = useMemo(() => players, [players]);
-  const memoTeams   = useMemo(() => teams,   [teams]);
-
-  const rows = mode === "players" ? memoPlayers : memoTeams;
+  // M1: removed dead useMemo wrappers that just returned the same reference
+  const rows = mode === "players" ? players : teams;
   const isEmpty = rows.length === 0;
 
   return (

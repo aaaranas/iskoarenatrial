@@ -40,7 +40,9 @@ function EditableField({
 
   const handleCancel = () => { setEditing(false); setDraft(value); };
 
+  // M8: guard against double-dispatch while a save is in flight
   const handleKey = (e: React.KeyboardEvent) => {
+    if (saving) return;
     if (e.key === "Enter") handleSave();
     if (e.key === "Escape") handleCancel();
   };
@@ -117,8 +119,9 @@ function AvatarUploader({
 
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop() ?? "jpg";
-      const path = `${userId}/avatar.${ext}`;
+      // M2: fixed path (no extension) so upsert always overwrites the same key
+      // and old files never accumulate in storage
+      const path = `${userId}/avatar`;
 
       const { error: upErr } = await supabase.storage
         .from(AVATARS_BUCKET)
@@ -182,16 +185,19 @@ export default function ProfilePage() {
   const utils = trpc.useUtils();
   const { data: profile, isLoading } = trpc.profile.getMyProfile.useQuery();
   const updateMutation = trpc.profile.updateProfile.useMutation({
-    onSuccess: () => { utils.profile.getMyProfile.invalidate(); utils.auth.getSession.invalidate(); },
     onError: (err) => toast.error(err.message),
   });
 
   const [savingField, setSavingField] = useState<string | null>(null);
 
+  // M3: only invalidate auth.getSession (consumed by TopBar/RoleProvider) when
+  // avatar changes — name/handle edits don't affect anything the session provides
   const save = (field: string, value: string | null) => async () => {
     setSavingField(field);
     try {
       await updateMutation.mutateAsync({ [field]: value });
+      utils.profile.getMyProfile.invalidate();
+      if (field === "avatar_url") utils.auth.getSession.invalidate();
       toast.success("Saved");
     } finally {
       setSavingField(null);

@@ -83,8 +83,9 @@ export default function LeaderboardPage() {
           id:       p.id,
           rank:     i + 1,
           name:     p.name,
-          college,                            // full name for display
-          logo:     collegeLogo(org),         // keyed by org abbreviation
+          college,
+          org,                                // abbreviation for the College badge
+          logo:     collegeLogo(org),
           username: org ? `@${org.toLowerCase()}` : "@unknown",
           points:   "2,400",
         };
@@ -98,9 +99,10 @@ export default function LeaderboardPage() {
       .map((t: any, i: number) => ({
         id:       t.id,
         rank:     i + 1,
-        name:     t.college ?? t.name,        // full college name for display
+        name:     t.college ?? t.name,
         college:  t.college ?? null,
-        logo:     collegeLogo(t.org),          // keyed by org abbreviation
+        org:      t.org     ?? null,           // abbreviation for the College badge
+        logo:     collegeLogo(t.org),
         username: t.org ? `@${t.org.toLowerCase()}` : "@unknown",
         points:   "12,400",
       }));
