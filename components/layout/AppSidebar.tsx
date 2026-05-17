@@ -1,9 +1,10 @@
 "use client"
-import React, { useState, useRef } from "react"
+import React, { useState, useRef, useEffect, useCallback } from "react"
 import Image from 'next/image';
 import {
   LayoutDashboard, BarChart3, Image as ImageIcon,
   Users, Sword, Bell, X, Camera, Loader2, Check,
+  Circle, Trophy, CalendarPlus,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link";
@@ -17,6 +18,176 @@ type ProfileData = {
   email: string;
   avatar_url: string | null;
 };
+
+type NotificationType = "new_match" | "match_live" | "match_finished";
+
+type AppNotification = {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  timestamp: Date;
+  read: boolean;
+  matchId?: string;
+};
+
+// ─── Notification helpers ─────────────────────────────────────────────────────
+
+function buildNotification(
+  type: NotificationType,
+  record: Record<string, any>
+): AppNotification {
+  const id = `${type}-${record.id}-${Date.now()}`;
+  const teamA = record.team_a_name ?? record.home_team ?? "Team A";
+  const teamB = record.team_b_name ?? record.away_team ?? "Team B";
+  const matchLabel = `${teamA} vs ${teamB}`;
+
+  const map: Record<NotificationType, { title: string; body: string }> = {
+    new_match: {
+      title: "New Match Scheduled",
+      body: `${matchLabel} has been added to upcoming matches.`,
+    },
+    match_live: {
+      title: "Match is LIVE 🔴",
+      body: `${matchLabel} has just kicked off!`,
+    },
+    match_finished: {
+      title: "Match Finished",
+      body: `${matchLabel} has ended.`,
+    },
+  };
+
+  return {
+    id,
+    type,
+    title: map[type].title,
+    body: map[type].body,
+    timestamp: new Date(),
+    read: false,
+    matchId: record.id,
+  };
+}
+
+function timeAgo(date: Date): string {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+const notificationIcon: Record<NotificationType, React.ReactNode> = {
+  new_match:      <CalendarPlus size={14} className="text-blue-400" />,
+  match_live:     <Circle size={14} className="text-red-500 fill-red-500 animate-pulse" />,
+  match_finished: <Trophy size={14} className="text-yellow-400" />,
+};
+
+// ─── Notification Panel ───────────────────────────────────────────────────────
+
+function NotificationPanel({
+  notifications,
+  onClose,
+  onMarkAllRead,
+  onMarkRead,
+  anchorRect,
+}: {
+  notifications: AppNotification[];
+  onClose: () => void;
+  onMarkAllRead: () => void;
+  onMarkRead: (id: string) => void;
+  anchorRect: DOMRect | null;
+}) {
+  const unread = notifications.filter(n => !n.read).length;
+
+  const style: React.CSSProperties = anchorRect
+    ? {
+        position: "fixed",
+        top: anchorRect.bottom + 8,
+        right: window.innerWidth - anchorRect.right,
+      }
+    : { position: "fixed", top: 64, right: 24 };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-[90]" onClick={onClose} />
+
+      {/* Panel */}
+      <div
+        style={style}
+        className="w-80 z-[100] bg-zinc-950 border border-zinc-800 rounded-2xl shadow-[0_24px_48px_rgba(0,0,0,0.7)] overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/60">
+          <div className="flex items-center gap-2">
+            <Bell size={14} className="text-zinc-400" />
+            <span className="text-sm font-semibold text-white">Notifications</span>
+            {unread > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-[#A91D3A] text-[10px] font-bold text-white leading-none">
+                {unread}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {unread > 0 && (
+              <button
+                onClick={onMarkAllRead}
+                className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                Mark all read
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="w-6 h-6 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white transition-all"
+            >
+              <X size={11} />
+            </button>
+          </div>
+        </div>
+
+        {/* List */}
+        <div className="max-h-[360px] overflow-y-auto divide-y divide-zinc-800/40">
+          {notifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-2 text-zinc-600">
+              <Bell size={28} strokeWidth={1.2} />
+              <p className="text-xs">No notifications yet</p>
+            </div>
+          ) : (
+            notifications.map(n => (
+              <button
+                key={n.id}
+                onClick={() => onMarkRead(n.id)}
+                className={cn(
+                  "w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-zinc-900/60 transition-colors",
+                  !n.read && "bg-zinc-900/30"
+                )}
+              >
+                <div className="mt-0.5 w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                  {notificationIcon[n.type]}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={cn("text-xs font-semibold truncate", n.read ? "text-zinc-400" : "text-white")}>
+                    {n.title}
+                  </p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5 line-clamp-2 leading-relaxed">
+                    {n.body}
+                  </p>
+                  <p className="text-[10px] text-zinc-600 mt-1">{timeAgo(n.timestamp)}</p>
+                </div>
+                {!n.read && (
+                  <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#A91D3A] flex-shrink-0" />
+                )}
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
 
 // ─── Profile Edit Modal ───────────────────────────────────────────────────────
 
@@ -89,11 +260,12 @@ function ProfileModal({ profile, onClose, onSaved }: {
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center p-4"
       style={{ backdropFilter: "blur(20px)", backgroundColor: "rgba(0,0,0,0.85)" }}
-      onClick={onClose}>
+      onClick={onClose}
+    >
       <div
         className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-sm shadow-[0_32px_64px_rgba(0,0,0,0.8)] overflow-hidden"
-        onClick={e => e.stopPropagation()}>
-
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800/60">
           <div>
@@ -102,7 +274,8 @@ function ProfileModal({ profile, onClose, onSaved }: {
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white transition-all">
+            className="w-7 h-7 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white transition-all"
+          >
             <X size={13} />
           </button>
         </div>
@@ -112,12 +285,12 @@ function ProfileModal({ profile, onClose, onSaved }: {
           <div className="flex flex-col items-center gap-3">
             <div
               className="relative w-20 h-20 rounded-full overflow-hidden bg-zinc-800 border-2 border-zinc-700 hover:border-zinc-500 cursor-pointer transition-all group"
-              onClick={() => fileRef.current?.click()}>
+              onClick={() => fileRef.current?.click()}
+            >
               {avatarPreview
                 ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center text-xl font-bold text-zinc-400 select-none">
-                    {initials}
-                  </div>}
+                : <div className="w-full h-full flex items-center justify-center text-xl font-bold text-zinc-400 select-none">{initials}</div>
+              }
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <Camera size={18} className="text-white" />
               </div>
@@ -126,7 +299,8 @@ function ProfileModal({ profile, onClose, onSaved }: {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors">
+              className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
               Click photo to change
             </button>
           </div>
@@ -145,7 +319,7 @@ function ProfileModal({ profile, onClose, onSaved }: {
             />
           </div>
 
-          {/* Email — read-only identifier */}
+          {/* Email — read-only */}
           <div>
             <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-[0.12em] mb-1.5">
               Email / Username
@@ -161,13 +335,15 @@ function ProfileModal({ profile, onClose, onSaved }: {
             <button
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2.5 rounded-xl border border-zinc-700 text-zinc-400 text-sm hover:text-white hover:border-zinc-500 transition-all disabled:opacity-40">
+              className="px-4 py-2.5 rounded-xl border border-zinc-700 text-zinc-400 text-sm hover:text-white hover:border-zinc-500 transition-all disabled:opacity-40"
+            >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving || !name.trim()}
-              className="flex-1 py-2.5 bg-[#A91D3A] hover:bg-[#c4223f] text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-60 flex items-center justify-center gap-2">
+              className="flex-1 py-2.5 bg-[#A91D3A] hover:bg-[#c4223f] text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            >
               {saving
                 ? <><Loader2 size={13} className="animate-spin" /> Saving…</>
                 : <><Check size={13} /> Save Changes</>}
@@ -197,10 +373,71 @@ const allNavItems = [
 
 export function AppSidebar({ onLogout, adminName, onProfileSaved }: AppSidebarProps) {
   const pathname = usePathname();
-  const [showProfile,   setShowProfile]   = useState(false);
-  const [clientProfile, setClientProfile] = useState<ProfileData | null>(null);
+  const [showProfile,       setShowProfile]       = useState(false);
+  const [clientProfile,     setClientProfile]     = useState<ProfileData | null>(null);
+  const [notifications,     setNotifications]     = useState<AppNotification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [bellRect,          setBellRect]          = useState<DOMRect | null>(null);
+  const bellRef = useRef<HTMLButtonElement>(null);
 
-  const loadProfile = React.useCallback(async () => {
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  // ── Bell click — capture position then toggle ──────────────────────────────
+  const handleBellClick = () => {
+    if (!showNotifications && bellRef.current) {
+      setBellRect(bellRef.current.getBoundingClientRect());
+    }
+    setShowNotifications(v => !v);
+  };
+
+  // ── Push a new notification (deduped) ─────────────────────────────────────
+  const pushNotification = useCallback((notif: AppNotification) => {
+    setNotifications(prev => {
+      if (prev.find(n => n.id === notif.id)) return prev;
+      return [notif, ...prev].slice(0, 50);
+    });
+  }, []);
+
+  // ── Supabase Realtime subscription ────────────────────────────────────────
+  useEffect(() => {
+    const channel = supabase
+      .channel("match-notifications")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "matches" },
+        (payload) => {
+          const notif = buildNotification("new_match", payload.new as Record<string, any>);
+          pushNotification(notif);
+          toast.info(notif.title, { description: notif.body });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "matches" },
+        (payload) => {
+          const oldRecord = payload.old as Record<string, any>;
+          const newRecord = payload.new as Record<string, any>;
+          const oldStatus = oldRecord?.status?.toLowerCase();
+          const newStatus = newRecord?.status?.toLowerCase();
+
+          if (oldStatus === "upcoming" && newStatus === "live") {
+            const notif = buildNotification("match_live", newRecord);
+            pushNotification(notif);
+            toast.warning(notif.title, { description: notif.body });
+          } else if (oldStatus === "live" && newStatus === "finished") {
+            const notif = buildNotification("match_finished", newRecord);
+            pushNotification(notif);
+            toast.success(notif.title, { description: notif.body });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [pushNotification]);
+
+  // ── Profile loading ────────────────────────────────────────────────────────
+  const loadProfile = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { data: row } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
@@ -212,13 +449,14 @@ export function AppSidebar({ onLogout, adminName, onProfileSaved }: AppSidebarPr
     });
   }, []);
 
-  React.useEffect(() => { loadProfile(); }, [loadProfile]);
+  useEffect(() => { loadProfile(); }, [loadProfile]);
 
   const displayName = clientProfile?.full_name || adminName;
   const initials    = displayName.trim().split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2) || "?";
 
   return (
     <>
+      {/* Profile modal */}
       {showProfile && clientProfile && (
         <ProfileModal
           profile={clientProfile}
@@ -247,7 +485,8 @@ export function AppSidebar({ onLogout, adminName, onProfileSaved }: AppSidebarPr
                 pathname === item.url
                   ? "text-[#FF3300]"
                   : "text-zinc-400 hover:text-white"
-              )}>
+              )}
+            >
               {item.label}
             </Link>
           ))}
@@ -255,19 +494,36 @@ export function AppSidebar({ onLogout, adminName, onProfileSaved }: AppSidebarPr
 
         {/* User area */}
         <div className="flex items-center gap-4 pl-4 border-l border-zinc-800/50 h-8">
-          <button className="text-zinc-400 hover:text-white transition-colors">
+
+          {/* Bell button — ref lives on the button itself */}
+          <button
+            ref={bellRef}
+            onClick={handleBellClick}
+            className={cn(
+              "relative transition-colors",
+              showNotifications ? "text-white" : "text-zinc-400 hover:text-white"
+            )}
+            aria-label="Notifications"
+          >
             <Bell className="size-4.5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-[#A91D3A] text-[9px] font-bold text-white flex items-center justify-center leading-none">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
           </button>
 
           {/* Profile button */}
           <button
             onClick={() => clientProfile && setShowProfile(true)}
             title="Edit profile"
-            className="group flex items-center gap-2.5 transition-opacity hover:opacity-90">
+            className="group flex items-center gap-2.5 transition-opacity hover:opacity-90"
+          >
             <div className="relative flex size-8 items-center justify-center rounded-full bg-zinc-800 border border-zinc-600 overflow-hidden group-hover:border-zinc-400 transition-colors shadow-inner">
               {clientProfile?.avatar_url
                 ? <Image src={clientProfile.avatar_url} alt={displayName} fill className="object-cover" />
-                : <span className="text-[11px] font-bold text-zinc-300 select-none">{initials}</span>}
+                : <span className="text-[11px] font-bold text-zinc-300 select-none">{initials}</span>
+              }
             </div>
             <span className="hidden lg:block text-xs text-zinc-400 group-hover:text-white transition-colors max-w-[120px] truncate">
               {displayName}
@@ -276,11 +532,23 @@ export function AppSidebar({ onLogout, adminName, onProfileSaved }: AppSidebarPr
 
           <button
             onClick={onLogout}
-            className="text-xs font-semibold uppercase tracking-wider text-zinc-400 hover:text-white transition-colors">
+            className="text-xs font-semibold uppercase tracking-wider text-zinc-400 hover:text-white transition-colors"
+          >
             Log out
           </button>
         </div>
       </header>
+
+      {/* Notification panel — rendered OUTSIDE <header> to escape z-index/overflow stacking context */}
+      {showNotifications && (
+        <NotificationPanel
+          notifications={notifications}
+          anchorRect={bellRect}
+          onClose={() => setShowNotifications(false)}
+          onMarkAllRead={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+          onMarkRead={(id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))}
+        />
+      )}
     </>
   );
 }
