@@ -1,10 +1,12 @@
 "use client";
 import Image from "next/image";
-import { User, Bell, LogOut, Menu, ChevronRight } from "lucide-react";
+import { User, LogOut, Menu, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+// Bell with unread badge + dropdown panel, fed by NotificationProvider in layout.tsx
+import { NotificationBell } from "@/features/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -116,14 +118,8 @@ export function TopBar({ onLogout, avatarUrl, displayName }: TopBarProps) {
         className="hidden md:flex items-center gap-4 lg:gap-6 pl-4 h-8 shrink-0 border-l"
         style={{ borderColor: "hsl(var(--topbar-border))" }}
       >
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-auto w-auto p-0 hover:bg-transparent"
-          style={{ color: "hsl(var(--topbar-text))" }}
-        >
-          <Bell className="size-4" />
-        </Button>
+        {/* Live notification bell — shares state with mobile bell via NotificationProvider */}
+        <NotificationBell />
 
         <AvatarBubble avatarUrl={avatarUrl} displayName={displayName} />
 
@@ -139,14 +135,8 @@ export function TopBar({ onLogout, avatarUrl, displayName }: TopBarProps) {
 
       {/* ── Right: Mobile only ── */}
       <div className="flex md:hidden flex-1 justify-end items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-auto w-auto p-0 hover:bg-transparent"
-          style={{ color: "hsl(var(--topbar-text))" }}
-        >
-          <Bell className="size-4" />
-        </Button>
+        {/* Same bell component as desktop — both read from the shared provider */}
+        <NotificationBell />
 
         <AvatarBubble avatarUrl={avatarUrl} displayName={displayName} />
 
