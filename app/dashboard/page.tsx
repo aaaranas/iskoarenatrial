@@ -30,9 +30,10 @@ import {
 } from "@/components/dashboard/DashboardPrimitives";
 import {
   NEWS,
-  TICKER_FALLBACK,
   matchToTickerItem,
   toV2Match,
+  isToday,
+  isTomorrow,
   type V2Match,
 } from "@/components/dashboard/dashboard-data";
 
@@ -92,31 +93,71 @@ export default function DashboardPage() {
   const { isAdmin, loading: roleLoading } = useRole();
   const { data: matchesData, isLoading: matchesLoading } = trpc.match.getAll.useQuery();
 
-  // Adapt tRPC matches → V2 shape, then split into "featured" (hero) and "others" (scoreboard).
-  // Memoized so we don't re-derive on every render of the tab state in StandingsWidget.
-  const { featured, others, tickerItems } = useMemo(() => {
-    if (!matchesData) {
-      return { featured: null as V2Match | null, others: [] as V2Match[], tickerItems: TICKER_FALLBACK };
-    }
-    const v2 = matchesData.map(toV2Match);
-    // Prefer a live match for the hero; fall back to next upcoming; finally completed.
-    const featuredMatch =
+  // Adapt tRPC matches → V2 shape, then derive all derived state in one pass.
+  // Re-runs only when match data changes (not on StandingsWidget tab clicks).
+  const { featured, scoreboardMatches, tickerItems, tickerMode, showTicker } = useMemo(() => {
+    const v2 = (matchesData ?? []).map(toV2Match);
+
+    // ── Hero (featured match) ───────────────────────────────────────────────
+    // Picks the most interesting match regardless of date: live first, then
+    // next upcoming, then most-recent completed. Hero is always visible.
+    const featuredMatch: V2Match | null =
       v2.find((m) => m.statusType === "live") ??
       v2.find((m) => m.statusType === "upcoming") ??
       v2[0] ??
       null;
-    // Show up to 6 other matches in the scoreboard, excluding the featured one.
-    const otherMatches = v2.filter((m) => m.id !== featuredMatch?.id).slice(0, 6);
-    // Build ticker from live + upcoming matches (max 8). Fall back to static if empty.
-    const liveAndUpcoming = v2
-      .filter((m) => m.statusType !== "completed")
-      .slice(0, 8)
-      .map(matchToTickerItem);
-    return {
-      featured: featuredMatch,
-      others: otherMatches,
-      tickerItems: liveAndUpcoming.length > 0 ? liveAndUpcoming : TICKER_FALLBACK,
-    };
+
+    // ── Scoreboard (today only) ─────────────────────────────────────────────
+    // Show only matches whose rawDate falls on today's calendar day (local time).
+    // Sort: live → upcoming (chronological) → completed (chronological).
+    // Excludes the featured match since it already appears prominently in the hero.
+    const todayMatches = v2
+      .filter((m) => isToday(m.rawDate) && m.id !== featuredMatch?.id)
+      .sort((a, b) => {
+        // Priority bucket: live=0, upcoming=1, completed=2
+        const bucket = (s: V2Match["statusType"]) =>
+          s === "live" ? 0 : s === "upcoming" ? 1 : 2;
+        const bucketDiff = bucket(a.statusType) - bucket(b.statusType);
+        if (bucketDiff !== 0) return bucketDiff;
+        // Within the same bucket, sort chronologically by rawDate.
+        const dateA = a.rawDate ? new Date(a.rawDate).getTime() : 0;
+        const dateB = b.rawDate ? new Date(b.rawDate).getTime() : 0;
+        return dateA - dateB;
+      });
+
+    // ── Ticker ──────────────────────────────────────────────────────────────
+    // Three states:
+    //   'live'     → today has live or upcoming matches → show them in ticker.
+    //   'upcoming' → today's matches are all done (or none), but tomorrow has
+    //                upcoming matches → show tomorrow's schedule with gold tab.
+    //   hidden     → no future matches at all (event ended) → don't render ticker.
+    const todayActive = v2.filter(
+      (m) => isToday(m.rawDate) && (m.statusType === "live" || m.statusType === "upcoming")
+    );
+    const tomorrowUpcoming = v2.filter(
+      (m) => isTomorrow(m.rawDate) && m.statusType === "upcoming"
+    );
+
+    let tickerMode: "live" | "upcoming" = "live";
+    let showTicker = false;
+    let tickerItems: ReturnType<typeof matchToTickerItem>[] = [];
+
+    if (todayActive.length > 0) {
+      // Today still has live or upcoming — show all of today's matches in ticker.
+      tickerMode = "live";
+      showTicker = true;
+      tickerItems = v2
+        .filter((m) => isToday(m.rawDate))
+        .map(matchToTickerItem);
+    } else if (tomorrowUpcoming.length > 0) {
+      // Today is done, but tomorrow has matches — show them with UPCOMING tab.
+      tickerMode = "upcoming";
+      showTicker = true;
+      tickerItems = tomorrowUpcoming.map(matchToTickerItem);
+    }
+    // else: no future matches → showTicker stays false → ticker is hidden.
+
+    return { featured: featuredMatch, scoreboardMatches: todayMatches, tickerItems, tickerMode, showTicker };
   }, [matchesData]);
 
   // Loading state — neutral spinner over page bg, matches the rest of the app.
@@ -133,8 +174,8 @@ export default function DashboardPage() {
       {/* ─── ① Cinematic hero ─── */}
       <HeroFeaturedMatch match={featured} />
 
-      {/* ─── ② BottomLine ticker ─── */}
-      <LiveTicker items={tickerItems} />
+      {/* ─── ② BottomLine ticker — hidden when event has no future matches ─── */}
+      {showTicker && <LiveTicker items={tickerItems} mode={tickerMode} />}
 
       {/* ─── ③ Main body grid ─── */}
       {/* Mobile: stacked single column. lg+: 1fr + 360px fixed right rail. */}
@@ -143,11 +184,11 @@ export default function DashboardPage() {
         <main className="min-w-0">
           <SectionTitle>SCOREBOARD · TODAY</SectionTitle>
           <div className="flex flex-col gap-2.5 mt-3.5">
-            {others.length > 0 ? (
-              others.map((m) => <ScoreboardRow key={m.id} match={m} />)
+            {scoreboardMatches.length > 0 ? (
+              scoreboardMatches.map((m) => <ScoreboardRow key={m.id} match={m} />)
             ) : (
               <div className="text-sm text-white/40 px-4 py-6 bg-[#0d0d0d] border border-white/[0.07] rounded-[3px]">
-                No additional matches today.
+                No matches scheduled for today.
               </div>
             )}
           </div>

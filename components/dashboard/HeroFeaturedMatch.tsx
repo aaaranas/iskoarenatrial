@@ -1,52 +1,13 @@
 // Dashboard V2 — Cinematic featured-match hero.
-// 420px (lg+) tall section: full-bleed sport photo + two gradient overlays +
-// scorebug (3-column) + live stat tracker panel (right rail).
-//
-// Empty state (no live or upcoming match): same shell, "no matches today" copy.
+// 420px tall section: full-bleed sport photo + dual gradient overlays +
+// scorebug (3-column: home / status / away).
+// Empty state when no match is available.
 "use client";
 
 import Image from "next/image";
 import { Trophy } from "lucide-react";
 import { Eyebrow, StatusPill, CollegeBadge } from "./DashboardPrimitives";
-import { HERO_STATS, PLAYER, type V2Match } from "./dashboard-data";
-
-// ── StatBar — one row of the live stat tracker (home vs away split) ─────────
-function StatBar({
-  label,
-  home,
-  away,
-  invert = false,
-}: {
-  label: string;
-  home: number;
-  away: number;
-  invert?: boolean;
-}) {
-  const total = Math.max(home + away, 1);  // avoid div-by-zero on 0/0 stats
-  const homePct = (home / total) * 100;
-  // For "turnovers" and other "lower-is-better" stats, invert which side wins.
-  const homeWins = invert ? home < away : home > away;
-
-  return (
-    <div>
-      <div className="flex justify-between font-mono text-[9px] tracking-[0.1em] text-white/35 mb-1">
-        <span className={`font-bold ${homeWins ? "text-ia-accent" : ""}`}>{home}</span>
-        <span>{label}</span>
-        <span className={`font-bold ${!homeWins ? "text-ia-accent" : ""}`}>{away}</span>
-      </div>
-      <div className="flex h-1 gap-px rounded-[2px] overflow-hidden">
-        <div
-          className="bg-ia-accent transition-all"
-          style={{ width: `${homePct}%`, opacity: homeWins ? 1 : 0.4 }}
-        />
-        <div
-          className="bg-white transition-all"
-          style={{ width: `${100 - homePct}%`, opacity: !homeWins ? 1 : 0.4 }}
-        />
-      </div>
-    </div>
-  );
-}
+import type { V2Match } from "./dashboard-data";
 
 // ── TeamSide — one side of the scorebug (home or away) ──────────────────────
 function TeamSide({
@@ -152,16 +113,10 @@ export function HeroFeaturedMatch({ match }: { match: V2Match | null }) {
         className="absolute top-0 left-0 w-1.5 h-full pointer-events-none"
         style={{ background: "linear-gradient(180deg, #A91D3A, transparent)" }}
       />
-      {/* Subtle 1px vertical divider 75% from the left — separates content + stat panel on lg+ */}
-      <div
-        className="hidden lg:block absolute top-0 right-1/4 w-px h-full pointer-events-none"
-        style={{ background: "linear-gradient(180deg, transparent, rgba(169,29,58,0.4), transparent)" }}
-      />
-
       {/* Content layer */}
-      <div className="absolute inset-0 px-6 sm:px-10 py-9 flex flex-col lg:flex-row gap-6">
-        {/* Left side — featured match headline + scorebug */}
-        <div className="flex-1 flex flex-col justify-between min-w-0">
+      <div className="absolute inset-0 px-6 sm:px-10 py-9 flex flex-col">
+        {/* Featured match headline + scorebug */}
+        <div className="flex flex-col justify-between h-full min-w-0">
           <div>
             <div className="flex items-center gap-2.5 mb-3.5 flex-wrap">
               <StatusPill type={isLive ? "live" : "upcoming"}>
@@ -222,25 +177,6 @@ export function HeroFeaturedMatch({ match }: { match: V2Match | null }) {
           </div>
         </div>
 
-        {/* Right side — live stat tracker panel. Hidden < lg to avoid crowding mobile. */}
-        <div className="hidden lg:flex w-[280px] self-end flex-col bg-black/70 backdrop-blur-[10px] border border-white/[0.08] rounded-md p-4">
-          <Eyebrow color="accent" mono>LIVE STAT TRACKER</Eyebrow>
-          <div className="mt-3 flex flex-col gap-2.5">
-            {HERO_STATS.map((s) => (
-              <StatBar key={s.label} {...s} />
-            ))}
-          </div>
-          {/* Top performer callout — gradient strip with maroon left border. */}
-          <div
-            className="mt-3.5 px-3 py-2.5 border-l-2 border-ia-accent"
-            style={{ background: "linear-gradient(90deg, rgba(169,29,58,0.13), transparent)" }}
-          >
-            <div className="text-[10px] text-white/35 font-mono tracking-[0.1em]">TOP PERFORMER</div>
-            <div className="font-bebas italic text-lg tracking-[0.05em] mt-0.5 text-white">
-              {PLAYER.firstName} · {PLAYER.stats.PPG} PTS
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );

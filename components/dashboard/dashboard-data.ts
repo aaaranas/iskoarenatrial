@@ -52,10 +52,36 @@ export type V2Match = {
   statusType: StatusType;
   venue: string;
   time: string;         // 'Q3 8:42' | '4:30 PM'
+  rawDate: string | null;   // ISO string from DB — used for date-based filtering
   homeCo: CollegeCode | null;
   awayCo: CollegeCode | null;
   img: string | null;   // hero background photo (sport-derived)
 };
+
+// ── Date helpers ─────────────────────────────────────────────────────────────
+
+/** Returns true if rawDate (ISO string) falls on the same calendar day as refDate (local). */
+export function isSameCalendarDay(rawDate: string | null, refDate: Date): boolean {
+  if (!rawDate) return false;
+  const d = new Date(rawDate);
+  return (
+    d.getFullYear() === refDate.getFullYear() &&
+    d.getMonth()    === refDate.getMonth()    &&
+    d.getDate()     === refDate.getDate()
+  );
+}
+
+/** Returns true if rawDate falls on today (local calendar day). */
+export function isToday(rawDate: string | null): boolean {
+  return isSameCalendarDay(rawDate, new Date());
+}
+
+/** Returns true if rawDate falls on tomorrow (local calendar day). */
+export function isTomorrow(rawDate: string | null): boolean {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return isSameCalendarDay(rawDate, tomorrow);
+}
 
 // Sport → hero photo. Falls back to baseball shot for sports without a stock photo.
 // All images live in /public/*.
@@ -89,7 +115,7 @@ type TrpcMatch = {
   rawDate: string | null;
 };
 
-/** Adapts a tRPC match record into the V2 broadcast shape. */
+/** Adapts a tRPC match record into the V2 broadcast shape, preserving rawDate for date-filtering. */
 export function toV2Match(m: TrpcMatch): V2Match {
   // Normalize status to one of the V2 buckets. tRPC may return mixed casing.
   const lower = (m.statusType || m.status || "").toLowerCase();
@@ -116,6 +142,7 @@ export function toV2Match(m: TrpcMatch): V2Match {
     venue: m.venue,
     time: m.time,
     homeCo: toCollegeCode(m.homeTeamOrg),
+    rawDate: m.rawDate,
     awayCo: toCollegeCode(m.awayTeamOrg),
     img: pickSportPhoto(m.league || ""),
   };
