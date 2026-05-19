@@ -274,4 +274,15 @@ html { scroll-behavior: smooth; }
 @keyframes matchesScroll { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
 @keyframes pulseDot     { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 
+/* Dashboard V2 (broadcast studio) animations.
+   iaPulse — LiveDot ripple. iaTicker — BottomLine marquee. iaScoreTick — score change pop. */
+@keyframes iaPulse      { 0%, 100% { box-shadow: 0 0 0 0 currentColor; opacity: 1; } 50% { box-shadow: 0 0 0 4px transparent; opacity: 0.5; } }
+@keyframes iaTicker     { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+@keyframes iaScoreTick  { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1px); } }
+
+/* Respect reduced-motion: pause the ticker for users who prefer fewer animations. */
+@media (prefers-reduced-motion: reduce) {
+  .ia-ticker-marquee { animation: none !important; }
+}
+
 .page-fade { animation: fadeIn 0.3s ease-in; }
