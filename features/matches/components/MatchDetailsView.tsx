@@ -73,7 +73,7 @@ export const MatchDetailsView = ({ match }: { match: Match }) => {
   // Players eligible for MVP (same team + same sport)
   const eligiblePlayers = useMemo(() =>
     allPlayers.filter((p: any) =>
-      p.team_id === mvpTeamId &&
+      p.college_id === mvpTeamId &&
       p.sport?.name?.toLowerCase() === match.league?.toLowerCase()
     ),
     [allPlayers, mvpTeamId, match.league]
@@ -81,10 +81,12 @@ export const MatchDetailsView = ({ match }: { match: Match }) => {
 
   const mvpPlayer = allPlayers.find((p: any) => p.id === mvpPlayerId);
 
-  // Lineup roster for each side, capped at 6 players shown
+  // Lineup roster for each side, capped at 6 players shown.
+  // Filtering by college_id (not team_id) because in this schema teams ≡ colleges
+  // 1:1 and players are tagged with college_id only; players.team_id is unused.
   const homePlayers = useMemo(() =>
     allPlayers.filter((p: any) =>
-      p.team_id === match.homeTeamId &&
+      p.college_id === match.homeTeamId &&
       p.sport?.name?.toLowerCase() === match.league?.toLowerCase()
     ).slice(0, 6),
     [allPlayers, match.homeTeamId, match.league]
@@ -92,7 +94,7 @@ export const MatchDetailsView = ({ match }: { match: Match }) => {
 
   const awayPlayers = useMemo(() =>
     allPlayers.filter((p: any) =>
-      p.team_id === match.awayTeamId &&
+      p.college_id === match.awayTeamId &&
       p.sport?.name?.toLowerCase() === match.league?.toLowerCase()
     ).slice(0, 6),
     [allPlayers, match.awayTeamId, match.league]
