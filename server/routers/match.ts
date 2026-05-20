@@ -25,32 +25,57 @@ const matchCategory = z.enum([
 export const matchRouter = router({
   // ─────────────────────────────────────────────────────────────
   // GET ALL MATCHES
+  // Optional server-side filters. Input is .optional() so existing callers
+  // that do `trpc.match.getAll.useQuery()` (no args) keep working unchanged.
+  //   - status:   limit to one match_status bucket
+  //   - dateFrom: only matches with match_date >= this ISO timestamp
+  //   - dateTo:   only matches with match_date <= this ISO timestamp
+  //   - limit:    cap the result count (1-100; uncapped when omitted)
   // ─────────────────────────────────────────────────────────────
-  getAll: publicProcedure.query(async () => {
-    const { data, error } = await supabaseAdmin
-      .from("matches")
-      .select(`
-        id,
-        match_date,
-        status,
-        home_score,
-        away_score,
-        notes,
-        category,
-        created_at,
-        home_team:home_team_id (id, name, college, org),
-        away_team:away_team_id (id, name, college, org),
-        sport:sport_id (id, name),
-        venue:venue_id (id, name, location)
-      `)
-      .order("match_date", { ascending: false });
+  getAll: publicProcedure
+    .input(
+      z.object({
+        status:   matchStatus.optional(),
+        dateFrom: z.string().datetime({ offset: true }).optional(),
+        dateTo:   z.string().datetime({ offset: true }).optional(),
+        limit:    z.number().int().min(1).max(100).optional(),
+      }).optional()
+    )
+    .query(async ({ input }) => {
+      // Build the query incrementally so each filter is only added when present.
+      // Supabase's PostgrestFilterBuilder returns `this` from each chain method,
+      // making this composable without losing the typed shape.
+      let query = supabaseAdmin
+        .from("matches")
+        .select(`
+          id,
+          match_date,
+          status,
+          home_score,
+          away_score,
+          notes,
+          category,
+          created_at,
+          home_team:home_team_id (id, name, college, org),
+          away_team:away_team_id (id, name, college, org),
+          sport:sport_id (id, name),
+          venue:venue_id (id, name, location)
+        `)
+        .order("match_date", { ascending: false });
 
-    if (error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: error.message,
-      });
-    }
+      if (input?.status)   query = query.eq("status", input.status);
+      if (input?.dateFrom) query = query.gte("match_date", input.dateFrom);
+      if (input?.dateTo)   query = query.lte("match_date", input.dateTo);
+      if (input?.limit)    query = query.limit(input.limit);
+
+      const { data, error } = await query;
+
+      if (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: error.message,
+        });
+      }
 
     return (data || []).map((match: any) => ({
       id: match.id,

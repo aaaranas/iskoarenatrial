@@ -1,12 +1,12 @@
 // Dashboard V2 — types, mock data, and the tRPC → V2 match adapter.
 //
 // Live data sources:
-//   - matches:   trpc.match.getAll       (wired via toV2Match)
-//   - standings: trpc.match.getStandings (consumed by StandingsWidget)
+//   - matches:        trpc.match.getAll               (wired via toV2Match)
+//   - standings:      trpc.match.getStandings         (consumed by StandingsWidget)
+//   - top performer:  trpc.featuredPlayer.getCurrent  (consumed by TopPerformerCard)
 //
 // Static fallbacks (no backend yet):
-//   - NEWS:   headlines feed (until a news router exists)
-//   - PLAYER: top-performer spotlight (until player-of-the-week feature lands)
+//   - NEWS: headlines feed (until a news router exists)
 
 import { formatMatchTime } from "@/lib/format-match-date";
 
@@ -184,12 +184,4 @@ export const NEWS: NewsItem[] = [
   { id: 2, tag: "Esports",    title: "CCAD Digital Secures MLBB Championship with Flawless Series Sweep", date: "Apr 25", read: "4 min", img: null },
   { id: 3, tag: "Volleyball", title: "COS Scions End Three-Game Skid with Emphatic 3–0 Straight-Set Win", date: "Apr 25", read: "2 min", img: "/iskolarovolley2.jpg" },
 ];
-
-// ── Top performer (static mock — no player-of-the-week feature yet) ─────────
-export const PLAYER = {
-  firstName: 'MARCO "LASER"',
-  lastName: "REYES",
-  photo: "/jonel.jpg",      // placeholder headshot from team folder
-  stats: { PPG: 22.4, RPG: 8.1, APG: 5.3, STL: 2.1 },
-};
 
