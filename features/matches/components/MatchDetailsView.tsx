@@ -116,6 +116,12 @@ export const MatchDetailsView = ({ match }: { match: Match }) => {
         <div className="flex items-center gap-2 text-[#C5A059] mb-2">
           <Trophy size={13} />
           <span className="text-[10px] font-black uppercase tracking-[0.25em]">{match.league}</span>
+          {/* Category badge — rendered only when set. Inherently-mixed sports leave this NULL. */}
+          {match.category && (
+            <span className="px-1.5 py-[1px] border border-[#C5A059]/40 rounded-[2px] text-[8px] font-black uppercase tracking-[0.2em] text-[#C5A059]">
+              {match.category}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3 flex-wrap text-[9px] font-bold uppercase tracking-widest text-zinc-500">
           {match.statusType === "live" ? (

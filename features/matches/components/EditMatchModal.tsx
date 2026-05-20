@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { Match } from "@/types";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { categoriesForSport, type Category } from "@/lib/constants";
 
 interface EditMatchModalProps {
   match: Match;
@@ -30,6 +31,13 @@ export const EditMatchModal = ({ match, open, onOpenChange }: EditMatchModalProp
   // Initialise from rawDate so the calendar pre-selects the existing match date.
   const [date, setDate] = useState<Date | undefined>(
     match.rawDate ? new Date(match.rawDate) : undefined
+  );
+  // Category derives from match.league (sport name). Pre-seed from the row's
+  // current value so the dropdown displays the existing category.
+  const availableCategories = categoriesForSport(match.league);
+  const requiresCategory = availableCategories.length > 0;
+  const [category, setCategory] = useState<Category | "">(
+    (match.category as Category | null) ?? ""
   );
 
   const { data: venues = [] } = trpc.venue.getAll.useQuery();
@@ -51,6 +59,12 @@ export const EditMatchModal = ({ match, open, onOpenChange }: EditMatchModalProp
       toast.error("Scores must be valid numbers");
       return;
     }
+    // Block save if the sport requires a category and admin cleared it.
+    if (requiresCategory && !category) {
+      toast.error("Please select a category for this sport");
+      return;
+    }
+
     editMatch.mutate({
       id: match.id,
       home_score: home,
@@ -58,6 +72,9 @@ export const EditMatchModal = ({ match, open, onOpenChange }: EditMatchModalProp
       status,
       ...(venueId ? { venue_id: venueId } : {}),
       ...(date ? { match_date: date.toISOString() } : {}),
+      // Only send category when the sport supports it. Sports without a
+      // categorical division (Frisbee, Soccer, Chess, Esports) preserve NULL.
+      ...(requiresCategory ? { category: (category as Category) } : {}),
     });
   };
 
@@ -98,6 +115,27 @@ export const EditMatchModal = ({ match, open, onOpenChange }: EditMatchModalProp
               </SelectContent>
             </Select>
           </div>
+
+          {/* Category — shown only when the sport supports categories.
+              Sport itself isn't editable in this modal, so the dropdown
+              options are fixed for the match's lifetime. */}
+          {requiresCategory && (
+            <div className="space-y-2">
+              <Label className="text-[10px] text-zinc-500 uppercase font-bold">
+                Category <span className="text-[#C5A059]">*</span>
+              </Label>
+              <Select value={category} onValueChange={(v) => setCategory(v as Category)}>
+                <SelectTrigger className="bg-black border-white/10">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#0A0A0A] border-white/10 text-white">
+                  {availableCategories.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Match Date */}
           <div className="space-y-2">

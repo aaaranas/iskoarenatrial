@@ -24,6 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { categoriesForSport, type Category } from "@/lib/constants";
 
 interface AddMatchModalProps {
   children: React.ReactNode;
@@ -38,6 +39,9 @@ export const AddMatchModal = ({ children }: AddMatchModalProps) => {
   const [awayTeamId, setAwayTeamId] = useState("");
   const [venueId, setVenueId] = useState("");
   const [date, setDate] = useState<Date>();
+  // Category is required when the selected sport is listed in CATEGORIES_BY_SPORT;
+  // empty string ("") means "not selected yet" or "this sport has no categories".
+  const [category, setCategory] = useState<Category | "">("");
 
   const utils = trpc.useUtils();
 
@@ -69,9 +73,16 @@ export const AddMatchModal = ({ children }: AddMatchModalProps) => {
     setAwayTeamId("");
     setVenueId("");
     setDate(undefined);
+    setCategory("");
   };
 
   const isLoading = sportsLoading || teamsLoading || venuesLoading;
+
+  // Derive available categories from the currently-selected sport. Empty array
+  // means the sport has no categorical division (form hides the dropdown).
+  const selectedSportName = (sports as Array<{ id: string; name: string }>).find((s) => s.id === sportId)?.name ?? null;
+  const availableCategories = categoriesForSport(selectedSportName);
+  const requiresCategory = availableCategories.length > 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +102,12 @@ export const AddMatchModal = ({ children }: AddMatchModalProps) => {
     // 🔥 prevent same team
     if (homeTeamId === awayTeamId) {
       toast.error("Home and Away teams cannot be the same");
+      return;
+    }
+
+    // 🔥 category required only when the selected sport supports categories
+    if (requiresCategory && !category) {
+      toast.error("Please select a category for this sport");
       return;
     }
 
@@ -115,6 +132,8 @@ export const AddMatchModal = ({ children }: AddMatchModalProps) => {
       venue_id: venueId,
       match_date: date.toISOString(),
       status: "upcoming",
+      // Send category only when the sport supports one; otherwise omit (server stores NULL).
+      ...(requiresCategory && category ? { category } : {}),
     });
   };
 
@@ -142,7 +161,16 @@ export const AddMatchModal = ({ children }: AddMatchModalProps) => {
             <div className="space-y-4">
               <Label className="text-xs uppercase text-zinc-500">Sport</Label>
 
-              <Select value={sportId} onValueChange={setSportId}>
+              <Select
+                value={sportId}
+                onValueChange={(v) => {
+                  // Reset category when sport changes — previously-valid value may
+                  // not be a valid category for the new sport (e.g. Mixed Doubles
+                  // for Basketball doesn't exist).
+                  setSportId(v);
+                  setCategory("");
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select sport" />
                 </SelectTrigger>
@@ -161,6 +189,28 @@ export const AddMatchModal = ({ children }: AddMatchModalProps) => {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* CATEGORY — shown only for sports listed in CATEGORIES_BY_SPORT.
+                Inherently-mixed sports (Frisbee, Soccer, Chess, Esports) skip this. */}
+            {requiresCategory && (
+              <div className="space-y-4">
+                <Label className="text-xs uppercase text-zinc-500">
+                  Category <span className="text-[#C5A059]">*</span>
+                </Label>
+                <Select value={category} onValueChange={(v) => setCategory(v as Category)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCategories.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* TEAMS */}
             <div className="grid grid-cols-2 gap-6">
