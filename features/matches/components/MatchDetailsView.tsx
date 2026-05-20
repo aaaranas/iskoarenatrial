@@ -12,6 +12,7 @@ import { FinalizeMatchModal } from "./FinalizeMatchModal";
 import { trpc } from "@/lib/trpc";
 import { useRole } from "@/providers/RoleProvider";
 import { toast } from "sonner";
+import { formatMatchDate, formatMatchTime } from "@/lib/format-match-date";
 import {
   Select,
   SelectContent,
@@ -73,7 +74,7 @@ export const MatchDetailsView = ({ match }: { match: Match }) => {
   const eligiblePlayers = useMemo(() =>
     allPlayers.filter((p: any) =>
       p.team_id === mvpTeamId &&
-      p.sport?.toLowerCase() === match.league?.toLowerCase()
+      p.sport?.name?.toLowerCase() === match.league?.toLowerCase()
     ),
     [allPlayers, mvpTeamId, match.league]
   );
@@ -84,7 +85,7 @@ export const MatchDetailsView = ({ match }: { match: Match }) => {
   const homePlayers = useMemo(() =>
     allPlayers.filter((p: any) =>
       p.team_id === match.homeTeamId &&
-      p.sport?.toLowerCase() === match.league?.toLowerCase()
+      p.sport?.name?.toLowerCase() === match.league?.toLowerCase()
     ).slice(0, 6),
     [allPlayers, match.homeTeamId, match.league]
   );
@@ -92,7 +93,7 @@ export const MatchDetailsView = ({ match }: { match: Match }) => {
   const awayPlayers = useMemo(() =>
     allPlayers.filter((p: any) =>
       p.team_id === match.awayTeamId &&
-      p.sport?.toLowerCase() === match.league?.toLowerCase()
+      p.sport?.name?.toLowerCase() === match.league?.toLowerCase()
     ).slice(0, 6),
     [allPlayers, match.awayTeamId, match.league]
   );
@@ -139,7 +140,7 @@ export const MatchDetailsView = ({ match }: { match: Match }) => {
             </span>
           )}
           <span className="flex items-center gap-1"><MapPin size={10} /> {match.venue}</span>
-          <span className="flex items-center gap-1"><Clock size={10} /> {match.date} · {match.time}</span>
+          <span className="flex items-center gap-1"><Clock size={10} /> {formatMatchDate(match.rawDate)} · {formatMatchTime(match.rawDate)}</span>
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { Match } from "@/types";
 import { MapPin, Edit3, Trash2, Clock, Flag } from "lucide-react";
 import { DeleteMatchModal } from "./DeleteMatchModal";
 import { EditMatchModal } from "./EditMatchModal";
+import { formatMatchDate } from "@/lib/format-match-date";
 
 interface MatchCardProps {
   match: Match;
@@ -144,7 +145,7 @@ export const MatchCard = ({ match, onOpenDetails, onFinalize, onEdit, onDelete }
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-1.5 text-zinc-500">
                 <Clock className="w-2.5 h-2.5" />
-                <span className="text-[9px] font-bold uppercase tracking-widest">{match.date}</span>
+                <span className="text-[9px] font-bold uppercase tracking-widest">{formatMatchDate(match.rawDate)}</span>
               </div>
               <span className="text-[8px] font-black text-[#C5A059] uppercase tracking-widest">{match.category || "Intramurals"}</span>
             </div>

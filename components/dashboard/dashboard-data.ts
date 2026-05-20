@@ -8,6 +8,8 @@
 //   - NEWS:   headlines feed (until a news router exists)
 //   - PLAYER: top-performer spotlight (until player-of-the-week feature lands)
 
+import { formatMatchTime } from "@/lib/format-match-date";
+
 // ── College codes ────────────────────────────────────────────────────────────
 // teams.org is the canonical college code per project memory.
 export type CollegeCode = "COS" | "CSS" | "CCAD" | "SOM";
@@ -98,6 +100,7 @@ function pickSportPhoto(sport: string): string | null {
 }
 
 // Shape returned by trpc.match.getAll. Kept loose because we pull only what we need.
+// `time` is no longer on the server response (O8 — locale leaks) — derived from rawDate.
 type TrpcMatch = {
   id: string;
   league: string;
@@ -110,7 +113,6 @@ type TrpcMatch = {
   status: string;
   statusType: string;
   venue: string;
-  time: string;
   rawDate: string | null;
 };
 
@@ -123,11 +125,15 @@ export function toV2Match(m: TrpcMatch): V2Match {
     lower === "completed" || lower === "final" || lower === "finished" ? "completed" :
     "upcoming";
 
+  // Format the wall-clock string client-side from the ISO rawDate so the user's
+  // locale drives the output (was server-formatted previously — locale could leak).
+  const time = formatMatchTime(m.rawDate);
+
   // Live matches show their clock; upcoming show wall time; completed show 'FINAL'.
   const statusLabel =
     statusType === "live" ? "LIVE" :
     statusType === "completed" ? "FINAL" :
-    m.time || "TBD";
+    time || "TBD";
 
   return {
     id: m.id,
@@ -139,7 +145,7 @@ export function toV2Match(m: TrpcMatch): V2Match {
     status: statusLabel,
     statusType,
     venue: m.venue,
-    time: m.time,
+    time,
     homeCo: toCollegeCode(m.homeTeamOrg),
     rawDate: m.rawDate,
     awayCo: toCollegeCode(m.awayTeamOrg),

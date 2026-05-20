@@ -11,6 +11,7 @@
 import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import { trpc } from "@/lib/trpc";
+import { formatMatchTime } from "@/lib/format-match-date";
 import {
   LIVE_MATCHES,
   COLLEGE_COLORS,
@@ -45,8 +46,6 @@ function toLiveMatch(m: {
   awayScore: number | null;
   status: string;
   rawDate: string | null;
-  date: string;
-  time: string;
   venue: string;
 }, index: number): LiveMatch {
   const statusLower = m.status?.toLowerCase() ?? "upcoming";
@@ -54,9 +53,12 @@ function toLiveMatch(m: {
     statusLower === "live"      ? "live"     :
     statusLower === "completed" ? "finished" : "upcoming";
 
+  // Format wall-clock client-side (server no longer sends a pre-formatted string).
+  const time = formatMatchTime(m.rawDate);
+
   const statusLabel =
     statusType === "live"     ? "LIVE"     :
-    statusType === "finished" ? "FINISHED" : m.time;
+    statusType === "finished" ? "FINISHED" : time;
 
   return {
     id:         index + 1,        // numeric id for React key
@@ -68,7 +70,7 @@ function toLiveMatch(m: {
     status:     statusLabel,
     statusType,
     venue:      m.venue,
-    time:       m.time,
+    time,
     cat:        "Traditional",    // category not exposed by the router; default ok
     homeCo:     inferCollegeCode(m.homeTeam),
     awayCo:     inferCollegeCode(m.awayTeam),

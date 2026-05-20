@@ -67,19 +67,10 @@ export const matchRouter = router({
       league: match.sport?.name || "Unknown Sport",
       venue: match.venue?.name || "TBD",
       venueId: match.venue?.id ?? null,
-      // rawDate is the unformatted ISO string — used by client code for
-      // locale-independent comparisons (e.g. "is this today?"). The formatted
-      // date/time strings below are display-only.
+      // rawDate is the unformatted ISO string. Display formatting now happens
+      // client-side via lib/format-match-date so the user's locale drives the
+      // output (server locale on Vercel may differ from the viewer's).
       rawDate: match.match_date as string | null,
-      date: match.match_date
-        ? new Date(match.match_date).toLocaleDateString()
-        : "TBD",
-      time: match.match_date
-        ? new Date(match.match_date).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-        : "TBD",
       status: match.status || "upcoming",
       statusType: (match.status || "upcoming").toLowerCase(),
       // category is one of the match_category enum values or NULL for inherently-mixed sports.

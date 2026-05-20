@@ -12,6 +12,7 @@ import {
 import { Match } from "@/types";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { formatMatchDate } from "@/lib/format-match-date";
 
 interface DeleteMatchModalProps {
   match: Match;
@@ -63,7 +64,7 @@ export const DeleteMatchModal = ({
               {match.homeTeam} <span className="text-zinc-600">vs</span> {match.awayTeam}
             </p>
             <p className="text-xs text-zinc-500 mt-1">
-              {match.league} • {match.date}
+              {match.league} • {formatMatchDate(match.rawDate)}
             </p>
           </div>
           <p className="mt-4 text-sm text-[#A91D3A]">
