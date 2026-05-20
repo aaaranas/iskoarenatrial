@@ -10,7 +10,7 @@
 // Live data: trpc.match.getAll. Standings/news/player stay mock-backed until
 // the corresponding routers (TM3/TM5) exist.
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Loader2, Plus, Image as ImageIcon, FileEdit } from "lucide-react";
 
@@ -23,13 +23,13 @@ import { ScoreboardRow } from "@/components/dashboard/ScoreboardRow";
 import { StandingsWidget } from "@/components/dashboard/StandingsWidget";
 import { TopPerformerCard } from "@/components/dashboard/TopPerformerCard";
 import { NewsCard } from "@/components/dashboard/NewsCard";
+import { MediaPreviewModal, type PreviewMediaItem } from "@/components/dashboard/MediaPreviewModal";
 import {
   BracketPreview,
   Eyebrow,
   SectionTitle,
 } from "@/components/dashboard/DashboardPrimitives";
 import {
-  NEWS,
   matchToTickerItem,
   toV2Match,
   isToday,
@@ -92,6 +92,16 @@ function BracketCard() {
 export default function DashboardPage() {
   const { isAdmin, loading: roleLoading } = useRole();
   const { data: matchesData, isLoading: matchesLoading } = trpc.match.getAll.useQuery();
+
+  // Headlines — 3 latest media uploads. publicProcedure so no auth needed.
+  const { data: mediaData } = trpc.media.getAll.useQuery();
+  const headlineItems = useMemo<PreviewMediaItem[]>(
+    () => (mediaData ?? []).slice(0, 3),
+    [mediaData]
+  );
+
+  // Which media item (if any) has the preview modal open.
+  const [selectedMedia, setSelectedMedia] = useState<PreviewMediaItem | null>(null);
 
   // Adapt tRPC matches → V2 shape, then derive all derived state in one pass.
   // Re-runs only when match data changes (not on StandingsWidget tab clicks).
@@ -195,11 +205,21 @@ export default function DashboardPage() {
 
           <div className="mt-8">
             <SectionTitle>HEADLINES</SectionTitle>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3.5">
-              {NEWS.slice(0, 3).map((n) => (
-                <NewsCard key={n.id} news={n} />
-              ))}
-            </div>
+            {headlineItems.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3.5">
+                {headlineItems.map((item) => (
+                  <NewsCard
+                    key={item.id}
+                    item={item}
+                    onClick={() => setSelectedMedia(item)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3.5 text-sm text-white/40 px-4 py-6 bg-[#0d0d0d] border border-white/[0.07] rounded-[3px]">
+                No media uploads yet.
+              </p>
+            )}
           </div>
         </main>
 
@@ -212,6 +232,14 @@ export default function DashboardPage() {
           {isAdmin && <MatchOpsCard />}
         </aside>
       </div>
+
+      {/* Media preview modal — rendered in a portal above everything */}
+      {selectedMedia && (
+        <MediaPreviewModal
+          item={selectedMedia}
+          onClose={() => setSelectedMedia(null)}
+        />
+      )}
     </div>
   );
 }
