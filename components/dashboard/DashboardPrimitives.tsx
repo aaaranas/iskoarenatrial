@@ -5,10 +5,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { Loader2 } from "lucide-react";
-import { trpc } from "@/lib/trpc";
-import { useRole } from "@/providers/RoleProvider";
 import { COLLEGE_LOGOS, COLLEGE_COLORS, type CollegeCode } from "./dashboard-data";
 
 // ── LiveDot ──────────────────────────────────────────────────────────────────
@@ -157,93 +153,3 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ── BracketPreview ───────────────────────────────────────────────────────────
-// Live double-elimination bracket widget. Reads from trpc.tournament.getCurrent
-// (latest active tournament). Shows all non-pending slots in a compact vertical
-// list grouped by phase. Empty state with admin CTA when no active tournament.
-export function BracketPreview({ compact = false }: { compact?: boolean }) {
-  const { isAdmin } = useRole();
-  const { data: tournament, isLoading } = trpc.tournament.getCurrent.useQuery();
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-20">
-        <Loader2 size={14} className="animate-spin text-white/25" />
-      </div>
-    );
-  }
-
-  if (!tournament) {
-    return (
-      <div className="flex flex-col items-center gap-2 py-5 text-center">
-        <p className="text-[10px] text-white/30 uppercase tracking-[0.18em]">No active tournament</p>
-        {isAdmin && (
-          <Link
-            href="/dashboard/brackets"
-            className="text-[9px] text-ia-accent font-black uppercase tracking-widest hover:underline"
-          >
-            Set up bracket →
-          </Link>
-        )}
-      </div>
-    );
-  }
-
-  // Show non-pending slots; group by phase
-  const slots = tournament.slots ?? [];
-  const visible = slots.filter((s) => s.status !== "pending" || s.homeTeamId);
-
-  const BracketRow = ({ slot }: { slot: typeof slots[0] }) => {
-    const homeWon = slot.winnerId && slot.winnerId === slot.homeTeamId;
-    const awayWon = slot.winnerId && slot.winnerId === slot.awayTeamId;
-    const homeColor = slot.homeTeamOrg ? (COLLEGE_COLORS[slot.homeTeamOrg as CollegeCode] ?? "#fff") : "#555";
-    const awayColor = slot.awayTeamOrg ? (COLLEGE_COLORS[slot.awayTeamOrg as CollegeCode] ?? "#fff") : "#555";
-
-    return (
-      <div className="rounded-[3px] border border-white/[0.07] overflow-hidden mb-1.5 last:mb-0">
-        <div className="px-2 py-0.5 bg-white/[0.02] border-b border-white/[0.05]">
-          <span className="text-[7px] font-black uppercase tracking-[0.2em] text-white/25">{slot.roundLabel}</span>
-        </div>
-        {/* Home */}
-        <div className={`flex items-center gap-1.5 px-2 py-1 ${homeWon ? "bg-ia-accent/10" : ""}`}>
-          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: homeColor }} />
-          <span className={`flex-1 text-[10px] truncate ${homeWon ? "font-bold text-white" : "text-white/55"}`}>
-            {slot.homeTeamOrg ?? "TBD"}
-          </span>
-          <span className={`font-mono text-[10px] ${homeWon ? "font-black text-white" : "text-white/30"}`}>
-            {slot.homeScore ?? "—"}
-          </span>
-        </div>
-        <div className="h-px bg-white/[0.05]" />
-        {/* Away */}
-        <div className={`flex items-center gap-1.5 px-2 py-1 ${awayWon ? "bg-ia-accent/10" : ""}`}>
-          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: awayColor }} />
-          <span className={`flex-1 text-[10px] truncate ${awayWon ? "font-bold text-white" : "text-white/55"}`}>
-            {slot.awayTeamOrg ?? "TBD"}
-          </span>
-          <span className={`font-mono text-[10px] ${awayWon ? "font-black text-white" : "text-white/30"}`}>
-            {slot.awayScore ?? "—"}
-          </span>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="space-y-0">
-      {visible.length === 0 ? (
-        <p className="text-center text-[10px] text-white/30 uppercase tracking-[0.18em] py-3">
-          Bracket seeded — awaiting first results
-        </p>
-      ) : (
-        visible.map((s) => <BracketRow key={s.id} slot={s} />)
-      )}
-      <Link
-        href="/dashboard/brackets"
-        className="block text-center text-[9px] text-white/30 hover:text-ia-accent font-mono uppercase tracking-widest pt-1 transition-colors"
-      >
-        Full bracket →
-      </Link>
-    </div>
-  );
-}

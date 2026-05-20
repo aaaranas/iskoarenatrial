@@ -3,7 +3,7 @@ import React, { useState, useRef } from "react"
 import Image from 'next/image';
 import {
   LayoutDashboard, BarChart3, Image as ImageIcon,
-  Users, Sword, Bell, X, Camera, Loader2, Check, GitBranch,
+  Users, Sword, Bell, X, Camera, Loader2, Check,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link";
@@ -190,7 +190,6 @@ interface AppSidebarProps {
 const allNavItems = [
   { label: "Dashboard",    icon: LayoutDashboard, url: "/dashboard"              },
   { label: "Matches",      icon: Sword,           url: "/dashboard/matches"      },
-  { label: "Brackets",     icon: GitBranch,       url: "/dashboard/brackets"     },
   { label: "Leaderboards", icon: BarChart3,       url: "/dashboard/leaderboards" },
   { label: "Media",        icon: ImageIcon,       url: "/dashboard/media"        },
   { label: "Teams",        icon: Users,           url: "/dashboard/teams"        },

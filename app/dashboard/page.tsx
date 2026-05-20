@@ -25,7 +25,6 @@ import { TopPerformerCard } from "@/components/dashboard/TopPerformerCard";
 import { NewsCard } from "@/components/dashboard/NewsCard";
 import { MediaPreviewModal, type PreviewMediaItem } from "@/components/dashboard/MediaPreviewModal";
 import {
-  BracketPreview,
   Eyebrow,
   SectionTitle,
 } from "@/components/dashboard/DashboardPrimitives";
@@ -67,29 +66,6 @@ function MatchOpsCard() {
           <span className="font-bebas tracking-[0.08em]">UPLOAD MEDIA</span>
         </Link>
       </div>
-    </div>
-  );
-}
-
-// ── Bracket card wrapper ────────────────────────────────────────────────────
-// Title + sport come from the live active tournament; falls back to "BRACKET"
-// when no active tournament exists (BracketPreview handles that empty state).
-function BracketCard() {
-  const { data: tournament } = trpc.tournament.getCurrent.useQuery();
-
-  const eyebrowLabel = tournament
-    ? [tournament.sportName, tournament.category].filter(Boolean).join(" · ").toUpperCase() + " · BRACKET"
-    : "TOURNAMENT BRACKET";
-
-  return (
-    <div className="bg-[#0d0d0d] border border-white/[0.07] rounded-[3px] px-3.5 py-3">
-      <div className="flex items-center justify-between mb-2.5">
-        <Eyebrow color="gold" mono>{eyebrowLabel}</Eyebrow>
-        <Link href="/dashboard/brackets" className="text-[10px] text-ia-accent font-mono hover:underline">
-          VIEW ALL →
-        </Link>
-      </div>
-      <BracketPreview compact />
     </div>
   );
 }
@@ -229,11 +205,10 @@ export default function DashboardPage() {
           </div>
         </main>
 
-        {/* Right column — standings + spotlight + bracket. Sticky-ish on lg+. */}
+        {/* Right column — standings + spotlight. Sticky-ish on lg+. */}
         <aside className="min-w-0 flex flex-col gap-4">
           <StandingsWidget />
           <TopPerformerCard />
-          <BracketCard />
           {/* Admin-only widget appears at the bottom of the right rail. */}
           {isAdmin && <MatchOpsCard />}
         </aside>

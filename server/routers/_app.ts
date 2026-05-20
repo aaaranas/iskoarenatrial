@@ -10,7 +10,6 @@ import { mediaRouter }           from './media';
 import { highlightRouter }       from './highlight';
 import { profileRouter }         from './profile';
 import { featuredPlayerRouter }  from './featuredPlayer';
-import { tournamentRouter }       from './tournament';
 
 export const appRouter = router({
   match:          matchRouter,
@@ -24,7 +23,6 @@ export const appRouter = router({
   highlight:      highlightRouter,
   profile:        profileRouter,
   featuredPlayer: featuredPlayerRouter,
-  tournament:     tournamentRouter,
 });
 
 export type AppRouter = typeof appRouter;

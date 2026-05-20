@@ -24,7 +24,6 @@ interface TopBarProps {
 const allNavItems = [
   { label: "Dashboard",    url: "/dashboard" },
   { label: "Matches",      url: "/dashboard/matches" },
-  { label: "Brackets",     url: "/dashboard/brackets" },
   { label: "Leaderboards", url: "/dashboard/leaderboards" },
   { label: "Media",        url: "/dashboard/media" },
   { label: "Teams",        url: "/dashboard/teams" },
