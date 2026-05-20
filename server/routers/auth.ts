@@ -81,8 +81,9 @@ export const authRouter = router({
       return { success: true };
     }),
 
-  // Admin-only — promotes an existing user to a privileged role.
-  // Protected by adminProcedure: only super_admin or college_admin can call this.
+  // Admin-only — promotes an existing user to the 'admin' role.
+  // Protected by adminProcedure: caller must already be an admin (two-role model:
+  // 'admin' | 'user'). There is no super_admin or college_admin tier.
   promoteToAdmin: adminProcedure
     .input(
       z.object({

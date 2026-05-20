@@ -23,6 +23,7 @@ export const matchRouter = router({
         status,
         home_score,
         away_score,
+        notes,
         created_at,
         home_team:home_team_id (id, name, college, org),
         away_team:away_team_id (id, name, college, org),
@@ -42,10 +43,12 @@ export const matchRouter = router({
       id: match.id,
       homeTeam: match.home_team?.name || "TBD",
       homeTeamId: match.home_team?.id ?? null,
-      homeTeamOrg: (match.home_team?.org || "").toLowerCase(),
+      // teams.org is the canonical college code — normalize to uppercase ('COS','CSS','CCAD','SOM')
+      // so client-side lookups (COLLEGE_LOGOS, toCollegeCode) hit without re-casing.
+      homeTeamOrg: (match.home_team?.org || "").toUpperCase(),
       awayTeam: match.away_team?.name || "TBD",
       awayTeamId: match.away_team?.id ?? null,
-      awayTeamOrg: (match.away_team?.org || "").toLowerCase(),
+      awayTeamOrg: (match.away_team?.org || "").toUpperCase(),
       homeScore: match.home_score,
       awayScore: match.away_score,
       league: match.sport?.name || "Unknown Sport",
@@ -68,6 +71,8 @@ export const matchRouter = router({
       statusType: (match.status || "upcoming").toLowerCase(),
       category: "Intramurals",
       isOwner: false,
+      // notes is nullable — empty string and null both render as "no notes" in the UI.
+      notes: (match.notes as string | null) ?? null,
     }));
   }),
 
@@ -183,6 +188,43 @@ export const matchRouter = router({
       const { data, error } = await supabaseAdmin
         .from("matches")
         .delete()
+        .eq("id", input.id)
+        .select()
+        .single();
+
+      if (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: error.message,
+        });
+      }
+
+      return data;
+    }),
+
+  // ─────────────────────────────────────────────────────────────
+  // UPDATE NOTES — admin-only, free-form text saved on the match row.
+  // Trimmed; empty string is stored as NULL so the UI's "no notes" branch
+  // is the single source of truth for emptiness.
+  // ─────────────────────────────────────────────────────────────
+  updateNotes: adminProcedure
+    .input(
+      z.object({
+        id: uuid,
+        // 2000 chars is enough for a recap paragraph but small enough to keep
+        // the matches row from bloating on accidental paste-bombs.
+        notes: z.string().max(2000),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const trimmed = input.notes.trim();
+      const value = trimmed.length === 0 ? null : trimmed;
+
+      // Cast required until types/supabase.ts is regenerated to include the
+      // matches.notes column added by the migration that pairs with this code.
+      const { data, error } = await supabaseAdmin
+        .from("matches")
+        .update({ notes: value } as never)
         .eq("id", input.id)
         .select()
         .single();

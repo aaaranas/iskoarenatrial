@@ -4,13 +4,14 @@ import React, { useState, useMemo } from "react";
 import { Match } from "@/types";
 import {
   MapPin, Clock, Trophy, Pencil, Check, X,
-  Star, Users, FileText, ArrowRight,
+  Star, Users, FileText, Loader2,
 } from "lucide-react";
 import { SheetTitle } from "@/components/ui/sheet";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { FinalizeMatchModal } from "./FinalizeMatchModal";
 import { trpc } from "@/lib/trpc";
 import { useRole } from "@/providers/RoleProvider";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -19,25 +20,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// Keys are uppercase to match the canonical teams.org form returned by trpc.match.getAll.
+// Keep in sync with COLLEGE_LOGOS in components/dashboard/dashboard-data.ts.
 const COLLEGE_LOGOS: Record<string, string> = {
-  cos:  "/colleges/cos_logo.jpg",
-  css:  "/colleges/css_logo.jpg",
-  ccad: "/colleges/ccad_logo.jpg",
-  som:  "/colleges/som_logo.jpg",
+  COS:  "/colleges/cos_logo.jpg",
+  CSS:  "/colleges/css_logo.jpg",
+  CCAD: "/colleges/ccad_logo.jpg",
+  SOM:  "/colleges/som_logo.jpg",
 };
 
 const COLLEGE_FULL_NAMES: Record<string, string> = {
-  cos:  "College of Science",
-  css:  "College of Social Sciences",
-  ccad: "Communication Arts and Design",
-  som:  "School of Management",
+  COS:  "College of Science",
+  CSS:  "College of Social Sciences",
+  CCAD: "Communication Arts and Design",
+  SOM:  "School of Management",
 };
 
 
 export const MatchDetailsView = ({ match }: { match: Match }) => {
   const { isAdmin } = useRole();
+  const utils = trpc.useUtils();
   const [finalizeOpen, setFinalizeOpen] = useState(false);
   const [isEditingMvp, setIsEditingMvp] = useState(false);
+  // Notes editing state: draft seeds from the row's current value each time the
+  // Edit button is clicked so the textarea reflects the latest server state.
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState<string>(match.notes ?? "");
   const [mvpPlayerId, setMvpPlayerId] = useState<string>("");
   const [mvpTeamId, setMvpTeamId] = useState<string>(() => {
     // Pre-select the winner's team on completed matches
@@ -49,6 +57,17 @@ export const MatchDetailsView = ({ match }: { match: Match }) => {
   });
 
   const { data: allPlayers = [] } = trpc.players.getAll.useQuery();
+
+  // Notes mutation: on success, invalidate the match list so the drawer (which
+  // reads from getAll's cache via its parent) re-renders with the saved value.
+  const updateNotes = trpc.match.updateNotes.useMutation({
+    onSuccess: () => {
+      toast.success("Notes saved.");
+      utils.match.getAll.invalidate();
+      setIsEditingNotes(false);
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
   // Players eligible for MVP (same team + same sport)
   const eligiblePlayers = useMemo(() =>
@@ -321,41 +340,72 @@ export const MatchDetailsView = ({ match }: { match: Match }) => {
             </div>
           </section>
 
-          {/* ── Match Notes — placeholder until notes field is added to matches table ── */}
+          {/* ── Match Notes — admin-editable free-form text persisted on matches.notes ── */}
           <section>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <FileText size={13} className="text-[#C5A059]" />
                 <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400">Match Notes</h3>
               </div>
-              {isAdmin && (
-                <button className="flex items-center gap-1.5 px-3 h-6 border border-white/10 text-zinc-400 hover:text-white text-[9px] font-black uppercase tracking-widest rounded-sm transition-all">
-                  Edit
+              {/* Edit button: shown only when admin AND not already editing */}
+              {isAdmin && !isEditingNotes && (
+                <button
+                  onClick={() => {
+                    // Reseed draft from latest match.notes so we don't show a stale buffer
+                    setNotesDraft(match.notes ?? "");
+                    setIsEditingNotes(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3 h-6 border border-white/10 text-zinc-400 hover:text-white text-[9px] font-black uppercase tracking-widest rounded-sm transition-all"
+                >
+                  <Pencil size={9} /> Edit
                 </button>
               )}
+              {/* Save + Cancel buttons: shown only while admin is editing */}
+              {isAdmin && isEditingNotes && (
+                <div className="flex gap-2">
+                  <button
+                    disabled={updateNotes.isPending}
+                    onClick={() => updateNotes.mutate({ id: match.id, notes: notesDraft })}
+                    className="flex items-center gap-1 px-3 h-6 bg-[#C5A059] text-black text-[9px] font-black uppercase tracking-widest rounded-sm disabled:opacity-60"
+                  >
+                    {updateNotes.isPending ? <Loader2 size={9} className="animate-spin" /> : <Check size={9} />} Save
+                  </button>
+                  <button
+                    disabled={updateNotes.isPending}
+                    onClick={() => { setIsEditingNotes(false); setNotesDraft(match.notes ?? ""); }}
+                    className="flex items-center gap-1 px-3 h-6 border border-white/10 text-zinc-400 text-[9px] font-black uppercase tracking-widest rounded-sm disabled:opacity-60"
+                  >
+                    <X size={9} /> Cancel
+                  </button>
+                </div>
+              )}
             </div>
-            <div className="border border-white/5 rounded-sm p-4">
-              <p className="text-[11px] text-zinc-500 leading-relaxed">No notes yet for this match.</p>
-            </div>
+
+            {isEditingNotes ? (
+              /* Textarea — capped to match server-side Zod constraint (2000 chars) */
+              <textarea
+                value={notesDraft}
+                onChange={(e) => setNotesDraft(e.target.value)}
+                maxLength={2000}
+                rows={5}
+                placeholder="Add notes about this match — recap, key plays, attendance, etc."
+                className="w-full bg-black border border-white/10 rounded-sm p-3 text-[11px] text-zinc-200 leading-relaxed placeholder:text-zinc-700 focus:outline-none focus:border-[#C5A059]/40 resize-none"
+              />
+            ) : (
+              /* Read-only display: render notes when present, otherwise empty-state hint */
+              <div className="border border-white/5 rounded-sm p-4">
+                {match.notes ? (
+                  <p className="text-[11px] text-zinc-300 leading-relaxed whitespace-pre-wrap">{match.notes}</p>
+                ) : (
+                  <p className="text-[11px] text-zinc-500 leading-relaxed">
+                    {isAdmin ? "No notes yet — press Edit to add some." : "No notes yet for this match."}
+                  </p>
+                )}
+              </div>
+            )}
           </section>
 
-          {/* ── What's Next — placeholder until bracket data is available ── */}
-          <section>
-            <div className="flex items-center gap-2 mb-4">
-              <ArrowRight size={13} className="text-[#C5A059]" />
-              <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400">What's Next</h3>
-            </div>
-            <div className="border border-white/5 rounded-sm p-4 flex items-center gap-4">
-              <div className="w-8 h-8 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                <Trophy size={14} className="text-[#C5A059]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[8px] text-zinc-600 uppercase tracking-widest mb-0.5">Winner Advances To</p>
-                <p className="text-[11px] font-black uppercase tracking-tight">Semifinal</p>
-              </div>
-              <ArrowRight size={14} className="text-zinc-700 shrink-0" />
-            </div>
-          </section>
+          {/* "What's Next" / bracket preview removed — re-add once tournaments schema lands. */}
 
           {/* ── End This Match CTA — live matches, admin only ── */}
           {match.statusType === "live" && isAdmin && (

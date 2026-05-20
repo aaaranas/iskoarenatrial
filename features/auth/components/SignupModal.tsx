@@ -13,7 +13,9 @@ import { X, Loader2 } from "lucide-react";
 interface SignupPageProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (fullName: string, email: string, password: string, role: string) => Promise<{ success: boolean; message: string }>;
+  // Role is intentionally not accepted: server-side auth.signup always assigns role:"user".
+  // Promotion to admin happens via a separate adminProcedure (auth.promoteToAdmin).
+  onSubmit: (fullName: string, email: string, password: string) => Promise<{ success: boolean; message: string }>;
   onToggleLogin: () => void;
 }
 
@@ -33,8 +35,8 @@ export default function SignupPage({ isOpen, onClose, onSubmit, onToggleLogin }:
     setIsLoading(true);
     const fullName = `${firstName} ${lastName}`.trim();
     try {
-      // Always passes "user" — role is ignored by the server (hardcoded to null)
-      const result = await onSubmit(fullName, email, password, "user");
+      // Server-side signup always assigns role:"user"; no client-side role choice exists.
+      const result = await onSubmit(fullName, email, password);
       setStatus({ text: result.message, success: result.success });
       if (result.success) { setFirstName(""); setLastName(""); setEmail(""); setPassword(""); }
     } catch {

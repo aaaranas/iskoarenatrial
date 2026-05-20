@@ -44,6 +44,9 @@ export interface Match {
   venueId: string | null; // Venue UUID — used by EditMatchModal to pre-select
   category?: string; // Match category (e.g., "Intramurals")
   isOwner?: boolean; // UI logic: true if created_by === current_user.id
+  // Free-form admin-editable notes shown in the Match Details drawer.
+  // Persisted on the matches.notes column; null/empty when not yet written.
+  notes: string | null;
 }
 
 export interface MatchUI {

@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase/client";
+import { createContext, useContext } from "react";
+import { trpc } from "@/lib/trpc";
 
 // Matches actual DB values: "admin" | "user". null = unauthenticated or no row.
 type Role = "admin" | "user" | null;
@@ -19,31 +19,16 @@ const RoleContext = createContext<RoleContextValue>({
 });
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
-  const [role,    setRole]    = useState<Role>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchRole = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      setRole((profile?.role as Role) ?? null);
-      setLoading(false);
-    };
-
-    fetchRole();
-  }, []);
-
-  const isAdmin = !loading && role === "admin";
+  // Shares the tRPC cache with DashboardLayout's getSession call — React Query
+  // dedupes by query key, so this hook does NOT issue a second network request.
+  // Previously this provider made two extra round-trips (auth.getUser + a separate
+  // profiles select) that duplicated the layout's session fetch on every load.
+  const { data, isLoading } = trpc.auth.getSession.useQuery();
+  const role: Role = ((data?.profile as { role?: string } | null)?.role as Role) ?? null;
+  const isAdmin = !isLoading && role === "admin";
 
   return (
-    <RoleContext.Provider value={{ role, isAdmin, loading }}>
+    <RoleContext.Provider value={{ role, isAdmin, loading: isLoading }}>
       {children}
     </RoleContext.Provider>
   );

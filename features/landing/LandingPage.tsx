@@ -79,13 +79,12 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
   };
 
   // --- SUPABASE SIGNUP HANDLER ---
-  // Adapter between SignupPage's onSubmit signature (positional args, legacy
-  // shape) and the tRPC auth.signup procedure (structured input).
+  // Adapter between SignupPage's onSubmit signature (positional args) and the
+  // tRPC auth.signup procedure (structured input). Server always sets role:"user".
   const handleSignupSubmit = async (
     fullName: string,
     email: string,
     password: string,
-    _role: string, // unused — server always sets role = "user" on public signup
   ) => {
     try {
       await signupMutation.mutateAsync({
