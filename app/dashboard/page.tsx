@@ -72,18 +72,24 @@ function MatchOpsCard() {
 }
 
 // ── Bracket card wrapper ────────────────────────────────────────────────────
-// Wraps the <BracketPreview> primitive with the same card chrome as the
-// other right-rail widgets (border + eyebrow + "VIEW ALL" link).
+// Title + sport come from the live active tournament; falls back to "BRACKET"
+// when no active tournament exists (BracketPreview handles that empty state).
 function BracketCard() {
+  const { data: tournament } = trpc.tournament.getCurrent.useQuery();
+
+  const eyebrowLabel = tournament
+    ? [tournament.sportName, tournament.category].filter(Boolean).join(" · ").toUpperCase() + " · BRACKET"
+    : "TOURNAMENT BRACKET";
+
   return (
     <div className="bg-[#0d0d0d] border border-white/[0.07] rounded-[3px] px-3.5 py-3">
       <div className="flex items-center justify-between mb-2.5">
-        <Eyebrow color="gold" mono>BASKETBALL · BRACKET</Eyebrow>
-        <span className="text-[10px] text-ia-accent font-mono">VIEW ALL →</span>
+        <Eyebrow color="gold" mono>{eyebrowLabel}</Eyebrow>
+        <Link href="/dashboard/brackets" className="text-[10px] text-ia-accent font-mono hover:underline">
+          VIEW ALL →
+        </Link>
       </div>
-      <div className="overflow-x-auto">
-        <BracketPreview compact />
-      </div>
+      <BracketPreview compact />
     </div>
   );
 }
