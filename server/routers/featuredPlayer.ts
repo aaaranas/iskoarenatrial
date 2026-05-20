@@ -29,9 +29,14 @@ type CurrentFeaturedPlayer = {
 export const featuredPlayerRouter = router({
   // PUBLIC — returns the latest row, hydrated with player + sport info,
   // or `null` if no entry has ever been set.
+  //
+  // We split this into two single-level queries instead of one nested join.
+  // PostgREST nested-relation hints (transitive FKs through two tables) are
+  // brittle in this codebase — the established pattern is one-level joins.
   getCurrent: publicProcedure.query(async (): Promise<CurrentFeaturedPlayer> => {
-    // `as any` bypasses stale Supabase types (the featured_players table
-    // hasn't been added to types/supabase.ts yet). Runtime select works.
+    // ── Step 1: featured_players + immediate player join ──────────────────
+    // `as any` bypasses stale Supabase types — the featured_players table
+    // hasn't been added to types/supabase.ts yet. Runtime select works.
     const result = await ((supabaseAdmin as any).from("featured_players"))
       .select(`
         id,
@@ -42,10 +47,7 @@ export const featuredPlayerRouter = router({
         stat_3_label, stat_3_value,
         stat_4_label, stat_4_value,
         created_at,
-        player:player_id (
-          id, name, photo_url, jersey_number,
-          sport:sport_id (id, name)
-        )
+        player:player_id (id, name, photo_url, jersey_number, sport_id)
       `)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -61,6 +63,25 @@ export const featuredPlayerRouter = router({
     // maybeSingle returns null when the table is empty — handle gracefully.
     const row = result.data as any | null;
     if (!row) return null;
+
+    // ── Step 2: resolve sport name (only when the player has a sport_id) ──
+    // Avoiding nested joins keeps this query under the well-tested pattern.
+    let sportName: string | null = null;
+    const playerSportId = row.player?.sport_id as string | null | undefined;
+    if (playerSportId) {
+      const sportResult = await supabaseAdmin
+        .from("sports")
+        .select("name")
+        .eq("id", playerSportId)
+        .maybeSingle();
+      // Non-fatal: log and fall back to null so the card still renders
+      // without a sport line if the sport lookup happens to fail.
+      if (sportResult.error) {
+        console.error("featuredPlayer.getCurrent: sport lookup failed:", sportResult.error.message);
+      } else {
+        sportName = sportResult.data?.name ?? null;
+      }
+    }
 
     // Compact the 4 stat slots into an array of only the filled ones, so the
     // UI can render exactly what was saved (0-4 columns).
@@ -80,7 +101,7 @@ export const featuredPlayerRouter = router({
       playerName:   row.player?.name ?? "Unknown",
       photoUrl:     row.player?.photo_url ?? null,
       jerseyNumber: row.player?.jersey_number ?? null,
-      sportName:    row.player?.sport?.name ?? null,
+      sportName,
       stats,
       createdAt:    row.created_at,
     };
