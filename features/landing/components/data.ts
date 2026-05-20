@@ -109,82 +109,9 @@ export const LIVE_MATCHES: LiveMatch[] = [
   { id: 6, sport: "Valorant",   home: "SOM Tycoons", away: "COS Scions",   homeScore: null, awayScore: null, status: "6:00 PM", statusType: "upcoming", venue: "Online",   time: "6:00 PM", cat: "Esports",     homeCo: "SOM",  awayCo: "COS",  img: null                     },
 ];
 
-// ---------------------------------------------------------------------------
-// STANDINGS (Standings table with sport tabs)
-// ---------------------------------------------------------------------------
-// Mock W-L-PCT-GB rows per sport. Object keyed by sport name so the section
-// can render tabs from Object.keys(STANDINGS) and switch active rows.
-export interface StandingsRow {
-  code: CollegeCode;
-  w: number;
-  l: number;
-  pct: string;     // pre-formatted (".800") so the display is mock-stable
-  gb: string;      // games-behind ("—" for the leader)
-}
-
-// TODO real-data hook: compute from trpc.match.getAll grouped by sport,
-// summing W/L per team. PCT = w / (w+l). GB = (leader.w - own.w + own.l - leader.l) / 2.
-export const STANDINGS: Record<string, StandingsRow[]> = {
-  Basketball: [
-    { code: "CSS",  w: 4, l: 1, pct: ".800", gb: "—"   },
-    { code: "COS",  w: 3, l: 2, pct: ".600", gb: "1.0" },
-    { code: "CCAD", w: 2, l: 3, pct: ".400", gb: "2.0" },
-    { code: "SOM",  w: 1, l: 4, pct: ".200", gb: "3.0" },
-  ],
-  Volleyball: [
-    { code: "CCAD", w: 5, l: 0, pct: "1.000", gb: "—"   },
-    { code: "SOM",  w: 3, l: 2, pct: ".600",  gb: "2.0" },
-    { code: "CSS",  w: 2, l: 3, pct: ".400",  gb: "3.0" },
-    { code: "COS",  w: 0, l: 5, pct: ".000",  gb: "5.0" },
-  ],
-  MLBB: [
-    { code: "CSS",  w: 6, l: 1, pct: ".857", gb: "—"   },
-    { code: "CCAD", w: 5, l: 2, pct: ".714", gb: "1.0" },
-    { code: "SOM",  w: 2, l: 5, pct: ".286", gb: "4.0" },
-    { code: "COS",  w: 1, l: 6, pct: ".143", gb: "5.0" },
-  ],
-  Chess: [
-    { code: "COS",  w: 4, l: 0, pct: "1.000", gb: "—"   },
-    { code: "SOM",  w: 3, l: 1, pct: ".750",  gb: "1.0" },
-    { code: "CSS",  w: 1, l: 3, pct: ".250",  gb: "3.0" },
-    { code: "CCAD", w: 0, l: 4, pct: ".000",  gb: "4.0" },
-  ],
-};
-
-// ---------------------------------------------------------------------------
-// PLAYER (Isko of the Week — Spotlight section)
-// ---------------------------------------------------------------------------
-// Single featured player, rotated weekly by the editorial team.
-export interface FeaturedPlayer {
-  name: string;
-  nickname: string;
-  college: CollegeCode;
-  collegeFull: string;
-  sport: string;
-  number: number;
-  year: string;
-  stats: Record<string, number | string>;  // small per-sport stat block (4-6 entries)
-  quote: string;
-  awards: string[];
-  photo: string;  // path under /public — uses dev-team headshots as placeholders
-}
-
-// TODO real-data hook: needs a featured_players or weekly_spotlight table in
-// Supabase. For v1, edited manually here. Photo is a dev-team headshot
-// placeholder (jonel.jpg) until real player photography arrives.
-export const PLAYER: FeaturedPlayer = {
-  name: "Marco Reyes",
-  nickname: "Laser",
-  college: "CSS",
-  collegeFull: "College of Social Sciences",
-  sport: "Basketball",
-  number: 23,
-  year: "3rd Year · BS Psychology",
-  stats: { PPG: 22.4, RPG: 8.1, APG: 5.3, STL: 2.1 },
-  quote: "Every game I play is for my college, my blockmates, my Isko family.",
-  awards: ["Top Scorer · Apr 20", "Player of the Week · Apr 13", "Most Assists · Apr 6"],
-  photo: "/jonel.jpg",
-};
+// NOTE: STANDINGS and PLAYER were removed — both sections now read live data.
+// StandingsSection  → trpc.match.getStandings (aggregated W/L from completed matches)
+// SpotlightSection  → trpc.featuredPlayer.getCurrent (admin-curated via /dashboard)
 
 // ---------------------------------------------------------------------------
 // NEWS (News masonry section)

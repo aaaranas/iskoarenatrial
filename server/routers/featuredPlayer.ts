@@ -13,7 +13,7 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { TRPCError } from "@trpc/server";
 
-// Shape returned to the dashboard. Computed in getCurrent.
+// Shape returned to the dashboard and landing page. Computed in getCurrent.
 type CurrentFeaturedPlayer = {
   id: string;
   label: string;
@@ -22,6 +22,9 @@ type CurrentFeaturedPlayer = {
   photoUrl: string | null;
   jerseyNumber: number | null;
   sportName: string | null;
+  // College org code (COS/CSS/CCAD/SOM) — resolved from players.college_id → teams.org.
+  // Null when the player has no college_id or the team lookup fails.
+  collegeOrg: string | null;
   stats: { label: string; value: number }[]; // 0-4 entries
   createdAt: string;
 } | null;
@@ -47,7 +50,7 @@ export const featuredPlayerRouter = router({
         stat_3_label, stat_3_value,
         stat_4_label, stat_4_value,
         created_at,
-        player:player_id (id, name, photo_url, jersey_number, sport_id)
+        player:player_id (id, name, photo_url, jersey_number, sport_id, college_id)
       `)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -64,24 +67,30 @@ export const featuredPlayerRouter = router({
     const row = result.data as any | null;
     if (!row) return null;
 
-    // ── Step 2: resolve sport name (only when the player has a sport_id) ──
-    // Avoiding nested joins keeps this query under the well-tested pattern.
-    let sportName: string | null = null;
-    const playerSportId = row.player?.sport_id as string | null | undefined;
-    if (playerSportId) {
-      const sportResult = await supabaseAdmin
-        .from("sports")
-        .select("name")
-        .eq("id", playerSportId)
-        .maybeSingle();
-      // Non-fatal: log and fall back to null so the card still renders
-      // without a sport line if the sport lookup happens to fail.
-      if (sportResult.error) {
-        console.error("featuredPlayer.getCurrent: sport lookup failed:", sportResult.error.message);
-      } else {
-        sportName = sportResult.data?.name ?? null;
-      }
+    // ── Step 2: resolve sport name + college org in parallel ─────────────
+    // Two independent lookups — run them together via Promise.all for speed.
+    const playerSportId    = row.player?.sport_id   as string | null | undefined;
+    const playerCollegeId  = row.player?.college_id as string | null | undefined;
+
+    const [sportResult, collegeResult] = await Promise.all([
+      playerSportId
+        ? supabaseAdmin.from("sports").select("name").eq("id", playerSportId).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+      playerCollegeId
+        ? supabaseAdmin.from("teams").select("org").eq("id", playerCollegeId).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
+
+    // Both lookups are non-fatal: card still renders if either query errors.
+    if (sportResult.error) {
+      console.error("featuredPlayer.getCurrent: sport lookup failed:", sportResult.error.message);
     }
+    if (collegeResult.error) {
+      console.error("featuredPlayer.getCurrent: college lookup failed:", collegeResult.error.message);
+    }
+
+    const sportName   = (sportResult.data  as any)?.name ?? null;
+    const collegeOrg  = (collegeResult.data as any)?.org  ?? null;
 
     // Compact the 4 stat slots into an array of only the filled ones, so the
     // UI can render exactly what was saved (0-4 columns).
@@ -102,6 +111,7 @@ export const featuredPlayerRouter = router({
       photoUrl:     row.player?.photo_url ?? null,
       jerseyNumber: row.player?.jersey_number ?? null,
       sportName,
+      collegeOrg,
       stats,
       createdAt:    row.created_at,
     };
