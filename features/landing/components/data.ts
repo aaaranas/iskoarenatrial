@@ -109,42 +109,31 @@ export const LIVE_MATCHES: LiveMatch[] = [
   { id: 6, sport: "Valorant",   home: "SOM Tycoons", away: "COS Scions",   homeScore: null, awayScore: null, status: "6:00 PM", statusType: "upcoming", venue: "Online",   time: "6:00 PM", cat: "Esports",     homeCo: "SOM",  awayCo: "COS",  img: null                     },
 ];
 
-// NOTE: STANDINGS and PLAYER were removed — both sections now read live data.
+// NOTE: STANDINGS, PLAYER, and NEWS were removed — all three sections now read live data.
 // StandingsSection  → trpc.match.getStandings (aggregated W/L from completed matches)
 // SpotlightSection  → trpc.featuredPlayer.getCurrent (admin-curated via /dashboard)
+// NewsSection       → trpc.media.getAll, images only (latest 5 uploads as media cards)
 
 // ---------------------------------------------------------------------------
-// NEWS (News masonry section)
+// NEWS TAG COLORS  (used by NewsSection for media-item tag pill tinting)
 // ---------------------------------------------------------------------------
-export interface NewsArticle {
-  id: number;
-  tag: string;       // matches a key in NEWS_TAG_COLORS
-  title: string;
-  author: string;
-  date: string;
-  read: string;      // e.g. "3 min"
-  img: string | null;
-}
-
-// Per-tag accent color used for the tag pill + the "no image" placeholder.
-// Most tags map to college brand colors; Feature uses gold; Frisbee gets pink.
+// Media items may be tagged with sport names or custom labels. The colours
+// below are matched against item.tag || item.sport. Unknown tags fall back
+// to ia-maroon (#A91D3A) — defined as the default inside NewsSection.
 export const NEWS_TAG_COLORS: Record<string, string> = {
   Basketball: "#3B82F6",
-  Esports:    "#A78BFA",
   Volleyball: "#10B981",
-  Feature:    "#D4AF37",
+  Badminton:  "#F59E0B",
+  Soccer:     "#10B981",
   Frisbee:    "#F472B6",
+  MLBB:       "#A78BFA",
+  Valorant:   "#A78BFA",
+  "Dota 2":   "#A78BFA",
+  CODM:       "#A78BFA",
+  Esports:    "#A78BFA",
+  Feature:    "#D4AF37",
+  Chess:      "#D4AF37",
 };
-
-// TODO real-data hook: ingest from a CMS or a `news` table in Supabase.
-// Mock content kept in line with the design's Apr 2026 dating.
-export const NEWS: NewsArticle[] = [
-  { id: 1, tag: "Basketball", title: "CSS Stallions Dominate Finals Opener with Clutch Fourth Quarter Run",  author: "IskoArena Staff", date: "Apr 26", read: "3 min", img: "/iskolarobaseball.jpg" },
-  { id: 2, tag: "Esports",    title: "CCAD Digital Secures MLBB Championship with Flawless Series Sweep",   author: "Isko Media",      date: "Apr 25", read: "4 min", img: null },
-  { id: 3, tag: "Volleyball", title: "COS Scions End Three-Game Skid with Emphatic 3–0 Straight-Set Win",   author: "IskoArena Staff", date: "Apr 25", read: "2 min", img: "/iskolarovolley2.jpg" },
-  { id: 4, tag: "Feature",    title: "Inside IskoArena: Meet the Student Team Behind UP Cebu's Sports Hub", author: "Isko Media",      date: "Apr 24", read: "6 min", img: null },
-  { id: 5, tag: "Frisbee",    title: "CCAD Goes for Back-to-Back Crown as Frisbee Season Officially Opens", author: "IskoArena Staff", date: "Apr 23", read: "3 min", img: "/iskolarofrisbee.jpg" },
-];
 
 // ---------------------------------------------------------------------------
 // SPORTS (Sports categories grid)
@@ -174,11 +163,11 @@ export interface TeamMember {
 }
 
 export const TEAM: TeamMember[] = [
-  { name: "Ako",    role: "Team Leader", photo: "/ako.jpg"   },
-  { name: "Andre",  role: "Frontend",    photo: "/andre.jpg" },
-  { name: "Jonel",  role: "Frontend",    photo: "/jonel.jpg" },
-  { name: "Rex",    role: "Frontend",    photo: "/rex.jpg"   },
-  { name: "Dom",    role: "Backend",     photo: "/dom.jpg"   },
+  { name: "Dominique Himaya", role: "Team Lead",            photo: "/dom.jpg"   },
+  { name: "Francis Betonio",  role: "Full Stack Developer", photo: "/ako.jpg"   },
+  { name: "Andre Milan",      role: "Full Stack Developer", photo: "/andre.jpg" },
+  { name: "Jonel Dinopol",    role: "Full Stack Developer", photo: "/jonel.jpg" },
+  { name: "Rex Escarro",      role: "Full Stack Developer", photo: "/rex.jpg"   },
 ];
 
 // TODO real-data hook: trpc.sport.getAll returns 24 sports already (seeded).
@@ -201,10 +190,12 @@ export const SPORTS: SportItem[] = [
   { name: "Scrabble",          cat: "Mind & Culture", icon: "🔤", status: "upcoming" },
   { name: "Sudoku",            cat: "Mind & Culture", icon: "#",  status: "upcoming" },
   { name: "Tetris",            cat: "Mind & Culture", icon: "▦",  status: "upcoming" },
-  { name: "Rubik's Cube",      cat: "Mind & Culture", icon: "⬛", status: "upcoming" },
-  { name: "Blockblast",        cat: "Mind & Culture", icon: "💥", status: "upcoming" },
+  // Names below match sports.name in the DB exactly — required for the
+  // live/upcoming status overlay in SportsSection to resolve correctly.
+  { name: "Rubiks Cube",       cat: "Mind & Culture", icon: "⬛", status: "upcoming" },
+  { name: "Block Blast",       cat: "Mind & Culture", icon: "💥", status: "upcoming" },
   { name: "Cosplay",           cat: "Mind & Culture", icon: "🎭", status: "upcoming" },
-  { name: "Dancesport",        cat: "Mind & Culture", icon: "💃", status: "ongoing"  },
+  { name: "Dancesports",       cat: "Mind & Culture", icon: "💃", status: "ongoing"  },
   { name: "Cheerdance",        cat: "Mind & Culture", icon: "📣", status: "upcoming" },
   { name: "Mr. & Ms. Fitness", cat: "Mind & Culture", icon: "🏋", status: "upcoming" },
   { name: "Pinoy Games",       cat: "Mind & Culture", icon: "🪅", status: "upcoming" },
