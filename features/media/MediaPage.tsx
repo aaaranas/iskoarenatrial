@@ -1126,11 +1126,13 @@ function PostDetailModal({ item, onClose, onEdit, onDelete, onShare, isAdmin }: 
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ backdropFilter: "blur(24px)", backgroundColor: "rgba(0,0,0,0.85)" }}
       onClick={onClose}>
-      <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg shadow-[0_32px_64px_rgba(0,0,0,0.8)] overflow-hidden max-h-[90vh] flex flex-col"
+      <div
+        className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full shadow-[0_32px_64px_rgba(0,0,0,0.8)] overflow-hidden max-h-[90vh] flex flex-col lg:flex-row lg:h-[88vh]"
+        style={{ maxWidth: "min(95vw, 860px)" }}
         onClick={e => e.stopPropagation()}>
 
-        {/* Image */}
-        <div className="relative shrink-0 bg-zinc-900" style={{ aspectRatio: "1/1", maxHeight: "50vh" }}>
+        {/* ── Image carousel ── */}
+        <div className="relative shrink-0 bg-zinc-900 aspect-square max-h-[44vh] lg:aspect-auto lg:max-h-none lg:w-[52%] overflow-hidden">
           <img src={currentUrl} alt="" aria-hidden
             className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-50 pointer-events-none" />
           <img src={currentUrl} alt={item.title}
@@ -1183,42 +1185,43 @@ function PostDetailModal({ item, onClose, onEdit, onDelete, onShare, isAdmin }: 
           </div>
         </div>
 
-        {/* Info + Comments — flex-1 so comments section fills remaining height */}
+        {/* ── Right panel: title / caption / comments ── */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          {/* Post info */}
-          <div className="px-4 pt-3 pb-2 shrink-0">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="text-white font-semibold text-sm">{item.title}</h3>
-                <div className="flex items-center gap-2 mt-1">
-                  {item.sport && <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: cfg.accent }}>{item.sport}</span>}
-                  {item.sport && <span className="text-zinc-700">·</span>}
-                  {item.tag && <span className="text-[9px] font-bold tracking-widest text-white/50 bg-white/10 px-2 py-0.5 rounded-full">{item.tag}</span>}
-                  {item.tag && <span className="text-zinc-700">·</span>}
-                  <span className="text-zinc-600 text-[10px]"
-                    title={new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}>
-                    {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <LikeButton mediaId={item.id} initialCount={item.likeCount} initialLiked={item.userHasLiked} size={18} />
-                {isAdmin && <button onClick={onShare} className="text-zinc-600 hover:text-[#A91D3A] transition-colors"><BookMarked size={18} /></button>}
-                <button onClick={() => setSaved(v => !v)} className={`transition-all duration-200 ${saved ? "text-white" : "text-zinc-600 hover:text-zinc-300"}`}>
-                  <Bookmark size={18} fill={saved ? "currentColor" : "none"} />
-                </button>
+
+          {/* Title + actions */}
+          <div className="px-4 pt-3 pb-2.5 shrink-0 border-b border-zinc-800/60 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-white font-semibold text-sm leading-snug">{item.title}</h3>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {item.sport && <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: cfg.accent }}>{item.sport}</span>}
+                {item.sport && <span className="text-zinc-700">·</span>}
+                {item.tag && <span className="text-[9px] font-bold tracking-widest text-white/50 bg-white/10 px-2 py-0.5 rounded-full">{item.tag}</span>}
+                {item.tag && <span className="text-zinc-700">·</span>}
+                <span className="text-zinc-600 text-[10px]"
+                  title={new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}>
+                  {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                </span>
               </div>
             </div>
-            {item.caption && (
-              <div className="border-t border-zinc-800/60 pt-2 mt-2 max-h-32 overflow-y-auto">
-                <p className="text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap">{item.caption}</p>
-              </div>
-            )}
+            <div className="flex items-center gap-3 shrink-0">
+              <LikeButton mediaId={item.id} initialCount={item.likeCount} initialLiked={item.userHasLiked} size={18} />
+              {isAdmin && <button onClick={onShare} className="text-zinc-600 hover:text-[#A91D3A] transition-colors"><BookMarked size={18} /></button>}
+              <button onClick={() => setSaved(v => !v)} className={`transition-all duration-200 ${saved ? "text-white" : "text-zinc-600 hover:text-zinc-300"}`}>
+                <Bookmark size={18} fill={saved ? "currentColor" : "none"} />
+              </button>
+            </div>
           </div>
 
+          {/* Caption — own scrollable section, generous space for long match reports */}
+          {item.caption && (
+            <div className="shrink-0 px-4 py-3 max-h-36 lg:max-h-56 overflow-y-auto border-b border-zinc-800/60">
+              <p className="text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap">{item.caption}</p>
+            </div>
+          )}
+
           {/* Comments */}
-          <div className="flex-1 flex flex-col min-h-0 border-t border-zinc-800/60">
-            <div className="px-4 py-2 shrink-0 flex items-center gap-2">
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="px-4 py-2 shrink-0 flex items-center gap-2 border-b border-zinc-800/40">
               <MessageCircle size={12} className="text-zinc-600" />
               <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-600">Comments</span>
             </div>
