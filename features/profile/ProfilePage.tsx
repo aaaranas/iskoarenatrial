@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { supabase } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -182,6 +183,7 @@ function AvatarUploader({
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
+  const router = useRouter();
   const utils = trpc.useUtils();
   const { data: profile, isLoading } = trpc.profile.getMyProfile.useQuery();
   const updateMutation = trpc.profile.updateProfile.useMutation({
@@ -193,16 +195,23 @@ export default function ProfilePage() {
   const [emailSaving, setEmailSaving] = useState(false);
 
   // ── Password change state ───────────────────────────────────────────────
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const changePassword = trpc.profile.changePassword.useMutation({
-    onSuccess: () => {
-      toast.success("Password changed successfully.");
+    onSuccess: async () => {
+      toast.success("Password changed successfully. You will be logged out.");
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmPw("");
+      // Brief pause so the user can read the toast before the page redirects
+      await new Promise(resolve => setTimeout(resolve, 1800));
+      await supabase.auth.signOut();
+      router.push("/");
     },
     onError: (err) => toast.error(err.message),
   });
@@ -407,6 +416,28 @@ export default function ProfilePage() {
           </div>
 
           <div className="px-6 md:px-8 py-6 space-y-4">
+            {/* Current password */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Current Password</span>
+              <div className="relative">
+                <input
+                  type={showCurrentPw ? "text" : "password"}
+                  value={currentPassword}
+                  onChange={e => setCurrentPassword(e.target.value)}
+                  placeholder="Enter your current password"
+                  disabled={changePassword.isPending}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 pr-9 text-sm text-white outline-none focus:border-[#A91D3A]/60 focus:ring-1 focus:ring-[#A91D3A]/30 transition-all disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPw(v => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-300 transition-colors"
+                >
+                  {showCurrentPw ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
+            </div>
+
             {/* New password */}
             <div className="flex flex-col gap-1.5">
               <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">New Password</span>
@@ -415,7 +446,7 @@ export default function ProfilePage() {
                   type={showPw ? "text" : "password"}
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  placeholder="Min. 6 characters"
+                  placeholder="Min. 8 chars, uppercase, number, symbol"
                   disabled={changePassword.isPending}
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 pr-9 text-sm text-white outline-none focus:border-[#A91D3A]/60 focus:ring-1 focus:ring-[#A91D3A]/30 transition-all disabled:opacity-50"
                 />
@@ -437,7 +468,7 @@ export default function ProfilePage() {
                   type={showConfirm ? "text" : "password"}
                   value={confirmPw}
                   onChange={e => setConfirmPw(e.target.value)}
-                  placeholder="Re-enter password"
+                  placeholder="Re-enter new password"
                   disabled={changePassword.isPending}
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 pr-9 text-sm text-white outline-none focus:border-[#A91D3A]/60 focus:ring-1 focus:ring-[#A91D3A]/30 transition-all disabled:opacity-50"
                 />
@@ -453,12 +484,22 @@ export default function ProfilePage() {
 
             {/* Save button */}
             <button
-              onClick={() => {
-                if (newPassword.length < 6) return toast.error("Password must be at least 6 characters.");
+              onClick={async () => {
+                if (!currentPassword) return toast.error("Enter your current password.");
+                if (newPassword.length < 8) return toast.error("New password must be at least 8 characters.");
+                if (!/[A-Z]/.test(newPassword)) return toast.error("New password must contain at least one uppercase letter.");
+                if (!/[0-9]/.test(newPassword)) return toast.error("New password must contain at least one number.");
+                if (!/[^A-Za-z0-9]/.test(newPassword)) return toast.error("New password must contain at least one special character (e.g. ! @ # $).");
                 if (newPassword !== confirmPw) return toast.error("Passwords do not match.");
+                // Verify current password client-side before sending to server
+                const { error: authErr } = await supabase.auth.signInWithPassword({
+                  email: profile.email,
+                  password: currentPassword,
+                });
+                if (authErr) return toast.error("Current password is incorrect.");
                 changePassword.mutate({ password: newPassword });
               }}
-              disabled={changePassword.isPending || !newPassword || !confirmPw}
+              disabled={changePassword.isPending || !currentPassword || !newPassword || !confirmPw}
               className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold text-white bg-[#A91D3A] hover:bg-[#A91D3A]/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {changePassword.isPending

@@ -42,12 +42,19 @@ export const profileRouter = router({
     }),
 
   // ── Change password ─────────────────────────────────────────────────────
-  // Uses the admin client so no current-password prompt is needed — the
-  // active session (validated by protectedProcedure) is proof of identity.
+  // Uses the admin client so the current-password check is handled client-side
+  // via supabase.auth.signInWithPassword before this mutation is ever called.
+  // The active session (validated by protectedProcedure) is proof of identity.
   changePassword: protectedProcedure
     .input(
       z.object({
-        password: z.string().min(6, "Password must be at least 6 characters").max(72),
+        password: z
+          .string()
+          .min(8, "Password must be at least 8 characters")
+          .max(72)
+          .refine(v => /[A-Z]/.test(v), "Password must contain at least one uppercase letter")
+          .refine(v => /[0-9]/.test(v), "Password must contain at least one number")
+          .refine(v => /[^A-Za-z0-9]/.test(v), "Password must contain at least one special character"),
       })
     )
     .mutation(async ({ ctx, input }) => {
