@@ -28,7 +28,7 @@ import { EditMatchModal } from "./EditMatchModal";
 
 const FILTER_OPTIONS = {
   category: ["Men", "Women", "Men Singles", "Men Doubles", "Women Singles", "Women Doubles", "Mixed Doubles"],
-  location: ["UP High School Gymnasium", "AS Hall", "Admin Field", "SOM Court", "PAH"],
+  location: ["UP High School Gymnasium", "AS Hall", "Admin Field", "SOM Court", "PAH",  "AS Field", "AVR", "Community Center", "Game City", "High School Open Field", "HQ Pickleball Cebu", "Metro Sports Center", "Performing Arts Hall", "Admin Court"],
   college: ["CCAD", "SOM", "COS", "CSS"],
   sport: ["Badminton", "Basketball", "Volleyball", "Table Tennis", "Larong Pinoy", "Pickleball", "Petanque", "Mobile Legends (ESPORTS)", "DOTA 2 (ESPORTS)", "Valorant (ESPORTS)", "Football"],
   status: ["Live", "Upcoming", "Completed"]
