@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { College } from "./CollegeRow";
+import { PlayerPhotoUploader } from "./PlayerPhotoUploader";
 import { supabase } from "@/lib/supabase/client";
 import { useRole } from "@/providers/RoleProvider";
 import { toast } from "sonner";
@@ -495,12 +496,30 @@ export function CollegeProfilePage({
                 </div>
               </div>
 
-              {/* User-editable fields only */}
+              {/* Player photo upload — replaces the old "Photo URL" text input */}
+              <div className="flex items-center gap-4">
+                <PlayerPhotoUploader
+                  currentUrl={addForm.photo_url || null}
+                  playerName={addForm.name || "?"}
+                  accentColor={color}
+                  onUploaded={(url) => setAddForm((f) => ({ ...f, photo_url: url }))}
+                  size={72}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1">Player Photo</p>
+                  <p className="text-[11px] text-white/30 leading-snug">
+                    {addForm.photo_url
+                      ? "Photo selected — will be saved with the player"
+                      : "Click the box to upload a photo (optional)"}
+                  </p>
+                </div>
+              </div>
+
+              {/* User-editable text fields (photo_url handled above) */}
               {[
                 { key: "name",          placeholder: "Full name *" },
                 { key: "position",      placeholder: "Position (e.g. Point Guard)" },
                 { key: "jersey_number", placeholder: "Jersey # (optional)" },
-                { key: "photo_url",     placeholder: "Photo URL (optional)" },
               ].map(({ key, placeholder }) => (
                 <input
                   key={key}
@@ -513,7 +532,10 @@ export function CollegeProfilePage({
             </div>
             <div className="px-6 pb-5 flex gap-3">
               <button
-                onClick={() => { setShowAddPlayer(false); setAddForm({ name: "", position: "", jersey_number: "", photo_url: "" }); }}
+                onClick={() => {
+                  setShowAddPlayer(false);
+                  setAddForm({ name: "", position: "", jersey_number: "", photo_url: "" });
+                }}
                 className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/50 text-sm font-semibold hover:text-white transition-all"
               >Cancel</button>
               <button

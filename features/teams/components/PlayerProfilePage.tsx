@@ -21,6 +21,7 @@ import { supabase } from "@/lib/supabase/client";
 import { trpc } from "@/lib/trpc";
 import { useRole } from "@/providers/RoleProvider";
 import { toast } from "sonner";
+import { PlayerPhotoUploader } from "./PlayerPhotoUploader";
 import {
   formatMatchDate,
   formatMatchTime,
@@ -54,12 +55,12 @@ function getInitials(name: string) {
 }
 
 // Field config for the Player Info card — drives both view and edit modes.
+// photo_url is handled separately by PlayerPhotoUploader (not a text input).
 type FieldKey = "name" | "position" | "jersey_number" | "photo_url";
-const INFO_FIELDS: Array<{ key: FieldKey; label: string; type: "text" | "number" | "url"; }> = [
+const INFO_FIELDS: Array<{ key: FieldKey; label: string; type: "text" | "number"; }> = [
   { key: "name",          label: "Full Name",  type: "text"   },
   { key: "position",      label: "Position",   type: "text"   },
   { key: "jersey_number", label: "Jersey No.", type: "number" },
-  { key: "photo_url",     label: "Photo URL",  type: "url"    },
 ];
 
 export function PlayerProfilePage({
@@ -367,6 +368,42 @@ export function PlayerProfilePage({
             )}
           </p>
 
+          {/* Photo — uploader in edit mode, thumbnail in view mode */}
+          <div className="flex items-center gap-4 mb-4 px-4 py-3 bg-[#0a0a0a] border border-[#111] rounded-xl">
+            {isEditing ? (
+              <>
+                <PlayerPhotoUploader
+                  currentUrl={draft.photo_url}
+                  playerName={draft.name}
+                  accentColor={collegeColor}
+                  onUploaded={(url) => setDraft((d) => ({ ...d, photo_url: url }))}
+                  size={64}
+                />
+                <div className="min-w-0">
+                  <p className="text-[10px] text-[#444] font-semibold mb-1">Photo</p>
+                  <p className="text-[10px] text-[#555] leading-snug">
+                    {draft.photo_url ? "Photo uploaded — click to change" : "Click the box to upload"}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center font-bebas text-xl"
+                     style={{ background: current.photo_url ? undefined : `${collegeColor}22`, color: collegeColor }}>
+                  {current.photo_url
+                    ? <img src={current.photo_url} alt={current.name} className="w-full h-full object-cover" />
+                    : (current.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase())}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-[#444] font-semibold mb-0.5">Photo</p>
+                  <p className="text-[10px] text-[#555] truncate">
+                    {current.photo_url ? "Photo set" : "No photo"}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+
           <div className="bg-[#0a0a0a] border border-[#111] rounded-xl overflow-hidden mb-6">
             {INFO_FIELDS.map(({ key, label, type }, i) => {
               const isLast = i === INFO_FIELDS.length - 1;
@@ -385,7 +422,6 @@ export function PlayerProfilePage({
                           : (String(draft[key] ?? ""))
                       }
                       onChange={(e) => updateField(key, e.target.value)}
-                      placeholder={key === "photo_url" ? "https://…" : ""}
                       className="bg-[#111] border border-[#1f1f1f] focus:border-[#A91D3A]/50 rounded-md px-2 py-1 text-[11px] text-white outline-none transition-all text-right font-bold flex-1 min-w-0 max-w-[12rem]"
                     />
                   ) : (
