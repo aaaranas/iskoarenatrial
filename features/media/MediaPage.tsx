@@ -174,13 +174,14 @@ function CommentsSection({ mediaId, isAdmin }: { mediaId: string; isAdmin: boole
       })
       .catch((e) => console.error("[CommentsSection] auth fetch failed", e));
 
-    supabase.from("media_comments").select("id, user_id, user_name, content, created_at")
-      .eq("media_id", mediaId).order("created_at", { ascending: true })
-      .then(({ data, error }) => {
-        if (error) { console.error("[CommentsSection] comments fetch error", error); return; }
-        if (Array.isArray(data)) setComments(data as CommentRow[]);
-      })
-      .catch((e) => console.error("[CommentsSection] comments fetch failed", e));
+    // async IIFE so .catch() lands on a real Promise — Supabase query builder returns PromiseLike, not Promise
+    (async () => {
+      const { data, error } = await supabase.from("media_comments")
+        .select("id, user_id, user_name, content, created_at")
+        .eq("media_id", mediaId).order("created_at", { ascending: true });
+      if (error) { console.error("[CommentsSection] comments fetch error", error); return; }
+      if (Array.isArray(data)) setComments(data as CommentRow[]);
+    })().catch((e) => console.error("[CommentsSection] comments fetch failed", e));
 
     const channel = supabase.channel(`media_comments:${mediaId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "media_comments", filter: `media_id=eq.${mediaId}` },
