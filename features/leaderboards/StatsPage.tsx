@@ -307,7 +307,7 @@ export default function LeaderboardPage() {
       />
 
       {/* ── 01 · PODIUM ── */}
-      <section className="max-w-[1440px] mx-auto px-20 pt-20">
+      <section className="max-w-[1440px] mx-auto px-4 sm:px-8 md:px-20 pt-10 md:pt-20">
         <SectionHeader
           eyebrow="01 · Overall Dominance"
           title="THE PODIUM"
@@ -316,11 +316,11 @@ export default function LeaderboardPage() {
         <PodiumBoard podium={podium} heights={podiumHeights} />
 
         {fourth && (
-          <div className="flex items-center gap-6 mt-12 px-6">
-            <div className="font-mono text-[10px] font-bold uppercase text-zinc-500 w-[140px] flex-shrink-0" style={{ letterSpacing: "0.3em" }}>
+          <div className="flex flex-wrap items-center gap-3 md:gap-6 mt-8 md:mt-12">
+            <div className="font-mono text-[10px] font-bold uppercase text-zinc-500 w-full md:w-[140px] md:flex-shrink-0" style={{ letterSpacing: "0.3em" }}>
               04 · OUTSIDER
             </div>
-            <div className="flex-1 flex items-center gap-5 px-6 py-[18px] bg-white/[0.02] border border-white/[0.06]">
+            <div className="flex-1 flex flex-wrap items-center gap-4 md:gap-5 px-4 md:px-6 py-4 md:py-[18px] bg-white/[0.02] border border-white/[0.06] min-w-0">
               <CollegeLogo code={fourth.code} accent={fourth.accent} size={48} />
               <div>
                 <div className="font-bebas italic text-[28px] text-zinc-200 leading-none">{fourth.code}</div>
@@ -340,7 +340,7 @@ export default function LeaderboardPage() {
       </section>
 
       {/* ── 02 · MATCH CARDS — horizontal draggable carousel ── */}
-      <section className="max-w-[1440px] mx-auto px-20 pt-20">
+      <section className="max-w-[1440px] mx-auto px-4 sm:px-8 md:px-20 pt-10 md:pt-20">
         <SectionHeader
           eyebrow="02 · By the Sport"
           title="MATCH CARDS"
@@ -350,7 +350,7 @@ export default function LeaderboardPage() {
       </section>
 
       {/* ── 03 · INSIGHTS ── */}
-      <section className="max-w-[1440px] mx-auto px-20 pt-20">
+      <section className="max-w-[1440px] mx-auto px-4 sm:px-8 md:px-20 pt-10 md:pt-20">
         <SectionHeader eyebrow="03 · Insights" title="ARENA NOTES" subtitle="Numbers worth shouting." />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
           {insights.map((item, idx) => (
@@ -366,7 +366,7 @@ export default function LeaderboardPage() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="flex justify-between items-center px-20 py-12 mt-20 border-t border-white/[0.06]">
+      <footer className="flex justify-between items-center flex-wrap gap-4 px-4 sm:px-8 md:px-20 py-8 md:py-12 mt-12 md:mt-20 border-t border-white/[0.06]">
         <div className="flex flex-col">
           <div className="font-bebas italic text-[22px]" style={{ letterSpacing: "0.05em" }}>
             ISKO<span style={{ color: GOLD }}>·</span>ARENA
@@ -394,13 +394,13 @@ function Hero({ tickerItems }: { tickerItems: string[] }) {
     <header className="relative overflow-hidden h-[560px] border-b border-white/[0.05]">
       <div className="absolute inset-0" style={{ background: "repeating-linear-gradient(-30deg, #0a0a0a 0 24px, #0e0e0e 24px 48px)", opacity: 0.45 }} />
       <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 30% 50%, rgba(169,29,58,.22), transparent 55%), linear-gradient(180deg, transparent 60%, #050505 100%)" }} />
-      <div className="relative z-10 max-w-[1440px] mx-auto h-full px-20 pt-[90px] pb-0 flex flex-col justify-between">
+      <div className="relative z-10 max-w-[1440px] mx-auto h-full px-4 sm:px-8 md:px-20 pt-10 md:pt-[90px] pb-0 flex flex-col justify-between">
         <div>
           <div className="flex items-center gap-2.5 font-mono text-[11px] font-bold uppercase" style={{ color: GOLD, letterSpacing: "0.3em" }}>
             <span style={{ color: RED, fontSize: 10 }}>●</span>
             <span>IskoLaro 2026 · Live Ledger</span>
           </div>
-          <h1 className="font-bebas italic mt-6 mb-0 text-[#f3f1ec]" style={{ fontSize: 240, lineHeight: 0.82, letterSpacing: "-0.02em", fontWeight: 400 }}>
+          <h1 className="font-bebas italic mt-4 md:mt-6 mb-0 text-[#f3f1ec]" style={{ fontSize: "clamp(64px, 16vw, 240px)", lineHeight: 0.82, letterSpacing: "-0.02em", fontWeight: 400 }}>
             LEADER<br />BOARD<span style={{ color: GOLD }}>.</span>
           </h1>
           <p className="text-lg text-zinc-400 max-w-[540px] mt-4 leading-snug">
@@ -410,7 +410,7 @@ function Hero({ tickerItems }: { tickerItems: string[] }) {
             TRACK COLLEGE PERFORMANCE · CELEBRATE EXCELLENCE
           </p>
         </div>
-        <div className="relative flex items-center gap-5 font-mono text-[11px] text-zinc-300 -mx-20 px-6 py-3.5 border-y border-white/[0.06]" style={{ background: "rgba(0,0,0,.4)", backdropFilter: "blur(8px)", letterSpacing: "0.08em" }}>
+        <div className="relative flex items-center gap-3 md:gap-5 font-mono text-[10px] md:text-[11px] text-zinc-300 -mx-4 sm:-mx-8 md:-mx-20 px-4 md:px-6 py-3 md:py-3.5 border-y border-white/[0.06] overflow-x-auto" style={{ background: "rgba(0,0,0,.4)", backdropFilter: "blur(8px)", letterSpacing: "0.06em" }}>
           <span className="font-black flex-shrink-0" style={{ color: RED, letterSpacing: "0.3em", fontSize: 10 }}>● LIVE</span>
           {items.map((item, i) => (
             <span key={i} className="flex items-center gap-5">
@@ -436,7 +436,7 @@ function Toolbar(props: {
 }) {
   return (
     <div className="sticky top-16 z-30 bg-[#080808] border-b border-white/[0.06]">
-      <div className="max-w-[1440px] mx-auto px-20 py-4 flex items-center gap-8 flex-wrap">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-8 md:px-20 py-3 md:py-4 flex items-center gap-4 md:gap-8 flex-wrap">
         <ToolbarGroup label="SPORT">
           {props.sportList.map(s => (
             <ToolbarPill key={s} active={s === props.activeSport} onClick={() => props.setActiveSport(s)}>{s}</ToolbarPill>
@@ -488,7 +488,7 @@ function SectionHeader({ eyebrow, title, subtitle }: { eyebrow: string; title: s
       <div className="font-mono text-[11px] font-bold uppercase flex items-center gap-2.5 mb-3.5" style={{ color: GOLD, letterSpacing: "0.3em" }}>
         <span style={{ color: RED }}>◆</span>{eyebrow}
       </div>
-      <h2 className="font-bebas italic text-[#f3f1ec] m-0" style={{ fontSize: 96, lineHeight: 0.9, letterSpacing: "-0.01em", fontWeight: 400 }}>{title}</h2>
+      <h2 className="font-bebas italic text-[#f3f1ec] m-0" style={{ fontSize: "clamp(44px, 8vw, 96px)", lineHeight: 0.9, letterSpacing: "-0.01em", fontWeight: 400 }}>{title}</h2>
       <p className="text-base text-zinc-500 mt-3 max-w-[540px]">{subtitle}</p>
       <div className="h-px mt-6" style={{ background: "linear-gradient(90deg, rgba(197,160,89,.5), transparent)" }} />
     </div>
@@ -548,13 +548,22 @@ function PodiumBoard({ podium, heights }: { podium: (Standing | undefined)[]; he
         <div className="absolute left-0 right-0 top-[60%] h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)" }} />
         <div className="absolute top-0 bottom-0 left-1/2 w-px" style={{ background: "linear-gradient(180deg, transparent, rgba(197,160,89,0.18), transparent)" }} />
       </div>
-      <div className="relative flex items-end justify-center gap-6 pt-10">
+      {/* On mobile: flex-col (1st → 2nd → 3rd via CSS order). On desktop: row with 1st lifted. */}
+      <div className="relative flex flex-col md:flex-row items-center md:items-end justify-center gap-4 md:gap-6 pt-6 md:pt-10">
         {podium.map((c, i) => {
           if (!c) return null;
           const rank  = c.rank;
           const isWin = rank === 1;
+          // Mobile: 1st→order-1, 2nd→order-2, 3rd→order-3 (natural order).
+          // Desktop: 2nd(left)→md:order-1, 1st(centre)→md:order-2, 3rd(right)→md:order-3.
+          const mobileOrder = rank === 1 ? "order-1" : rank === 2 ? "order-2" : "order-3";
+          const desktopOrder = rank === 1 ? "md:order-2" : rank === 2 ? "md:order-1" : "md:order-3";
           return (
-            <div key={c.code} className="flex flex-col items-center transition-transform duration-300" style={{ flex: "0 1 320px", transform: `translateY(${isWin ? -20 : 0}px)` }}>
+            <div
+              key={c.code}
+              className={`flex flex-col items-center transition-transform duration-300 w-full max-w-[320px] md:max-w-none ${mobileOrder} ${desktopOrder}`}
+              style={{ flex: "0 1 320px", transform: isWin ? "translateY(-20px)" : undefined }}
+            >
               <div className="w-full px-6 py-7 backdrop-blur-md flex flex-col items-center relative" style={{ background: "rgba(10,10,10,0.85)", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <div className="absolute -top-3.5 -right-3.5 w-11 h-11 rounded-full font-bebas italic font-black flex items-center justify-center" style={{ background: rank === 1 ? GOLD : rank === 2 ? SILVER : BRONZE, color: "#0a0a0a", fontSize: 18, boxShadow: "0 8px 24px rgba(0,0,0,0.4)", border: "2px solid #050505" }}>
                   {rank === 1 ? "01" : rank === 2 ? "02" : "03"}
@@ -573,7 +582,7 @@ function PodiumBoard({ podium, heights }: { podium: (Standing | undefined)[]; he
                   <FinishPill n={c.finishes[3]} label="4th" color="#555"   />
                 </div>
               </div>
-              <div className="w-[90%] relative flex flex-col justify-center items-center overflow-hidden" style={{ height: heights[i], background: "linear-gradient(180deg, #1a1c20 0%, #0a0a0a 100%)", border: "1px solid rgba(255,255,255,0.06)", borderTop: "none" }}>
+              <div className="w-[90%] relative hidden md:flex flex-col justify-center items-center overflow-hidden" style={{ height: heights[i], background: "linear-gradient(180deg, #1a1c20 0%, #0a0a0a 100%)", border: "1px solid rgba(255,255,255,0.06)", borderTop: "none" }}>
                 <div className="absolute top-0 left-0 right-0 h-1.5" style={{ background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />
                 <div className="font-bebas italic absolute top-1/2 -translate-y-1/2 leading-none" style={{ fontSize: 96, color: "rgba(255,255,255,0.04)" }}>0{rank}</div>
                 <div className="font-mono text-[11px] font-bold uppercase text-zinc-500 relative z-10" style={{ letterSpacing: "0.3em" }}>

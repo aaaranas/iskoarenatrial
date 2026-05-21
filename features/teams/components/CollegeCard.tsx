@@ -147,6 +147,7 @@ export function CollegeCard({
               color: color,
               letterSpacing: "0.3em",
               textTransform: "uppercase",
+              whiteSpace: "nowrap",  // prevents the pill from warping into a circle on narrow screens
             }}>
               {org} · {college.playerCount ?? 0} PLAYERS · {college.sports.length} SPORTS
             </span>
