@@ -36,6 +36,15 @@ const RED    = "#A91D3A";
 
 const POINTS = [20, 15, 10, 5] as const;
 
+// Real college logos — files live in /public/colleges/
+const COLLEGE_LOGOS: Record<string, string> = {
+  COS:  "/colleges/cos_logo.jpg",
+  CSS:  "/colleges/css_logo.jpg",
+  CCAD: "/colleges/ccad_logo.jpg",
+  SOM:  "/colleges/som_logo.jpg",
+};
+
+// Per-college accent colours — match `college-*` tokens in tailwind.config.ts.
 const COLLEGE_ACCENT: Record<string, string> = {
   COS:  "#3B82F6",
   CSS:  "#10B981",
@@ -50,31 +59,42 @@ const COLLEGE_LONG: Record<string, string> = {
   SOM:  "Tycoons",
 };
 
-const SPORT_ICON: Record<string, string> = {
-  "Basketball · M": "◐",
-  "Basketball · W": "◑",
-  "Volleyball · M": "◇",
-  "Volleyball · W": "◈",
+// Sport icons keyed by canonical DB sport name (not by event key).
+// Covers all 24 sports in the seeded sports table.
+const SPORT_ICON_BY_SPORT: Record<string, string> = {
+  Basketball:          "🏀",
+  Volleyball:          "🏐",
+  Badminton:           "🏸",
+  "Table Tennis":      "🏓",
+  Soccer:              "⚽",
+  Softball:            "🥎",
+  Pickleball:          "🎾",
+  Petanque:            "⚙️",
+  Frisbee:             "🥏",
+  MLBB:                "⚔️",
+  CODM:                "🎯",
+  Valorant:            "◈",
+  "Dota 2":            "🔮",
+  Chess:               "♟️",
+  Scrabble:            "🔤",
+  Sudoku:              "#",
+  Tetris:              "▦",
+  "Rubiks Cube":       "⬛",
+  "Block Blast":       "💥",
+  Cosplay:             "🎭",
+  Dancesports:         "💃",
+  Cheerdance:          "📣",
+  "Mr. & Ms. Fitness": "🏋",
+  "Pinoy Games":       "🪅",
 };
-
-// The 4 events that constitute the IskoLaro standings. Each maps to
-// completed matches with the matching sport (m.league) and category.
-const SPORT_EVENTS = [
-  { key: "Basketball · M", sport: "Basketball", category: "Men"   },
-  { key: "Basketball · W", sport: "Basketball", category: "Women" },
-  { key: "Volleyball · M", sport: "Volleyball", category: "Men"   },
-  { key: "Volleyball · W", sport: "Volleyball", category: "Women" },
-] as const;
-
-const SPORT_LIST = ["All", ...SPORT_EVENTS.map(e => e.key)];
 
 // Returns a canonical day key (YYYY-MM-DD string in local time) from an ISO rawDate.
 function toDayKey(rawDate: string): string {
-  const d = new Date(rawDate);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const d   = new Date(rawDate);
+  const y   = d.getFullYear();
+  const mo  = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return `${y}-${mo}-${day}`;
 }
 
 type Standing = {
@@ -86,25 +106,26 @@ type Standing = {
   rank: number;
 };
 
-type GameDay = { key: string; label: string; shortLabel: string };
+type GameDay    = { key: string; label: string; shortLabel: string };
+type SportEvent = { key: string; sport: string; category: string | null };
 
 // ─────────────────────────────────────────────────────────────────────────
 //  PAGE
 // ─────────────────────────────────────────────────────────────────────────
 export default function LeaderboardPage() {
-  const [activeSport,   setActiveSport]   = useState("All");
-  const [activeDay,     setActiveDay]     = useState("all"); // "all" or a YYYY-MM-DD key
-  const [searchQuery,   setSearchQuery]   = useState("");
+  const [activeSport,  setActiveSport]  = useState("All");
+  const [activeDay,    setActiveDay]    = useState("all"); // "all" or YYYY-MM-DD
+  const [searchQuery,  setSearchQuery]  = useState("");
 
   // Single data source — all derived state is computed from this.
   const { data: matchesData, isLoading } = trpc.match.getAll.useQuery(undefined, {
     staleTime: 30_000,
   });
 
-  // ── Game days — derived from unique calendar days with matches ─────────
+  // ── Game days — unique calendar days that have at least one match ──────
   const gameDays = useMemo((): GameDay[] => {
     if (!matchesData) return [];
-    const seen = new Map<string, Date>(); // key → Date (for display)
+    const seen = new Map<string, Date>();
     for (const m of matchesData) {
       if (!m.rawDate) continue;
       const key = toDayKey(m.rawDate);
@@ -114,10 +135,34 @@ export default function LeaderboardPage() {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, date], i) => ({
         key,
-        label: `Day ${i + 1} · ${date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`,
+        label:      `Day ${i + 1} · ${date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`,
         shortLabel: `Day ${i + 1}`,
       }));
   }, [matchesData]);
+
+  // ── All sport+category combinations present in match data ─────────────
+  // This drives both the toolbar SPORT pills and the match-cards grid.
+  // Sports with a category appear as "Basketball · M"; inherently-mixed
+  // sports (Chess, Frisbee, MLBB, …) appear as just "Chess".
+  const dynamicSportEvents = useMemo((): SportEvent[] => {
+    if (!matchesData) return [];
+    const seen = new Map<string, SportEvent>();
+    for (const m of matchesData) {
+      const key = m.category ? `${m.league} · ${m.category}` : m.league;
+      if (!seen.has(key)) seen.set(key, { key, sport: m.league, category: m.category ?? null });
+    }
+    return Array.from(seen.values()).sort((a, b) => {
+      const sc = a.sport.localeCompare(b.sport);
+      if (sc !== 0) return sc;
+      return (a.category ?? "").localeCompare(b.category ?? "");
+    });
+  }, [matchesData]);
+
+  // Dynamic SPORT_LIST = "All" + every discovered event key
+  const sportList = useMemo(
+    () => ["All", ...dynamicSportEvents.map(e => e.key)],
+    [dynamicSportEvents]
+  );
 
   // ── Matches filtered to the active game day ───────────────────────────
   const dayMatches = useMemo(() => {
@@ -126,19 +171,21 @@ export default function LeaderboardPage() {
     return matchesData.filter(m => m.rawDate && toDayKey(m.rawDate) === activeDay);
   }, [matchesData, activeDay]);
 
-  // ── Event standings derived from completed matches in scope ───────────
-  // For each event, tally W/L per college from completed matches, then rank
-  // by win-pct descending to determine placement.
+  // ── Event standings — tally W/L per college for every dynamic event ───
   const { EVENTS, RECORDS } = useMemo(() => {
-    const EVENTS: Record<string, [string, string, string, string]> = {};
-    const RECORDS: Record<string, Record<string, string>> = {};
+    const EVENTS:  Record<string, [string, string, string, string]> = {};
+    const RECORDS: Record<string, Record<string, string>>            = {};
 
-    for (const { key, sport, category } of SPORT_EVENTS) {
-      const eventMatches = dayMatches.filter(
-        m => m.statusType === "completed" && m.league === sport && m.category === category
+    for (const { key, sport, category } of dynamicSportEvents) {
+      // Filter to completed matches matching this event's sport + category.
+      // category=null → matches where the match has no category (inherently mixed).
+      const eventMatches = dayMatches.filter(m =>
+        m.statusType === "completed" &&
+        m.league === sport &&
+        (category === null ? !m.category : m.category === category)
       );
 
-      // Seed tallies for all 4 colleges so the table always has 4 rows.
+      // Seed tallies for all 4 colleges (so rows always appear even at 0-0).
       const tally: Record<string, { w: number; l: number }> = {
         COS: { w: 0, l: 0 }, CSS: { w: 0, l: 0 },
         CCAD: { w: 0, l: 0 }, SOM: { w: 0, l: 0 },
@@ -150,35 +197,37 @@ export default function LeaderboardPage() {
         if (!home || !away || !tally[home] || !tally[away]) continue;
         const hs = m.homeScore ?? 0;
         const as_ = m.awayScore ?? 0;
-        if (hs === as_) continue; // ties skipped (shouldn't happen in intramurals)
+        if (hs === as_) continue; // ties skipped
         if (hs > as_) { tally[home].w++; tally[away].l++; }
         else           { tally[away].w++; tally[home].l++; }
       }
 
-      // Sort by win-pct desc; on tie, more wins wins.
+      // Sort by win-pct desc; tie-break by raw win count.
       const sorted = Object.entries(tally)
         .map(([code, { w, l }]) => ({ code, w, l, pct: (w + l) === 0 ? 0 : w / (w + l) }))
         .sort((a, b) => b.pct - a.pct || b.w - a.w);
 
       const hasAnyGame = sorted.some(s => s.w + s.l > 0);
-
       if (!hasAnyGame) {
-        EVENTS[key] = ["?", "?", "?", "?"];
+        EVENTS[key]  = ["?", "?", "?", "?"];
         RECORDS[key] = {};
       } else {
-        EVENTS[key] = sorted.map(s => s.code) as [string, string, string, string];
+        EVENTS[key]  = sorted.map(s => s.code) as [string, string, string, string];
         RECORDS[key] = Object.fromEntries(sorted.map(s => [s.code, `${s.w}-${s.l}`]));
       }
     }
 
     return { EVENTS, RECORDS };
-  }, [dayMatches]);
+  }, [dayMatches, dynamicSportEvents]);
 
   // ── Aggregate standings ───────────────────────────────────────────────
   const standings = useMemo((): Standing[] => {
     const codes = Object.keys(COLLEGE_ACCENT);
     const agg: Record<string, Standing> = Object.fromEntries(
-      codes.map(c => [c, { code: c, long: COLLEGE_LONG[c] ?? c, accent: COLLEGE_ACCENT[c], total: 0, finishes: [0, 0, 0, 0] as [number, number, number, number], rank: 0 }])
+      codes.map(c => [c, {
+        code: c, long: COLLEGE_LONG[c] ?? c, accent: COLLEGE_ACCENT[c],
+        total: 0, finishes: [0, 0, 0, 0] as [number, number, number, number], rank: 0,
+      }])
     );
 
     const eventsToCount = activeSport === "All"
@@ -213,10 +262,10 @@ export default function LeaderboardPage() {
   // ── Insights ──────────────────────────────────────────────────────────
   const insights = useMemo(() => {
     if (standings.length < 2 || standings.every(s => s.total === 0)) return [
-      { label: "Top Margin",    value: "—", sub: "No completed events yet"  },
-      { label: "Most Golds",    value: "—", sub: "No event winners yet"      },
-      { label: "Sweep Watch",   value: "—", sub: "No undefeated run yet"     },
-      { label: "Biggest Upset", value: "—", sub: "No data available"         },
+      { label: "Top Margin",    value: "—", sub: "No completed events yet" },
+      { label: "Most Golds",    value: "—", sub: "No event winners yet"     },
+      { label: "Sweep Watch",   value: "—", sub: "No undefeated run yet"    },
+      { label: "Biggest Upset", value: "—", sub: "No data available"        },
     ];
 
     const topMargin = standings[0].total - standings[1].total;
@@ -233,14 +282,12 @@ export default function LeaderboardPage() {
       }
     }
 
-    // Biggest Upset: college with the largest gap between best and worst event scores
-    // (most wins in one event vs fewest in another — meaningful for a 5-day sprint)
+    // Biggest Upset: college with the largest win-swing across all events
     let upsetCode = "—";
     let upsetSub  = "No contrast yet";
-    const CODES = Object.keys(COLLEGE_ACCENT);
-    let maxGap = 0;
-    for (const code of CODES) {
-      const eventWins = SPORT_EVENTS.map(({ key }) => {
+    let maxGap    = 0;
+    for (const code of Object.keys(COLLEGE_ACCENT)) {
+      const eventWins = dynamicSportEvents.map(({ key }) => {
         const rec = RECORDS[key]?.[code];
         return rec ? Number(rec.split("-")[0]) : 0;
       });
@@ -254,7 +301,7 @@ export default function LeaderboardPage() {
       { label: "Sweep Watch",   value: sweepCode,                                   sub: sweepSub },
       { label: "Biggest Upset", value: upsetCode !== "—" ? upsetCode : "—",         sub: upsetSub },
     ];
-  }, [standings, RECORDS]);
+  }, [standings, RECORDS, dynamicSportEvents]);
 
   // ── Live ticker ───────────────────────────────────────────────────────
   const tickerItems = useMemo((): string[] => {
@@ -263,7 +310,7 @@ export default function LeaderboardPage() {
       .filter(m => isToday(m.rawDate) && (m.statusType === "live" || m.statusType === "completed"))
       .slice(0, 5)
       .map(m => {
-        const cat    = m.category ? ` ${m.category}` : "";
+        const cat     = m.category ? ` ${m.category}` : "";
         const homeOrg = m.homeTeamOrg || "?";
         const awayOrg = m.awayTeamOrg || "?";
         if (m.statusType === "live")
@@ -274,13 +321,13 @@ export default function LeaderboardPage() {
       });
   }, [matchesData]);
 
-  // ── Podium setup ──────────────────────────────────────────────────────
-  const base           = displayStandings.length >= 4 ? displayStandings : standings;
-  const podium         = [base[1], base[0], base[2]];
-  const podiumHeights  = [220, 320, 170];
-  const fourth         = base[3];
+  // ── Podium setup (visual order: 2nd | 1st | 3rd) ─────────────────────
+  const base          = displayStandings.length >= 4 ? displayStandings : standings;
+  const podium        = [base[1], base[0], base[2]];
+  const podiumHeights = [220, 320, 170];
+  const fourth        = base[3];
 
-  // Which match cards to show (filtered by activeSport)
+  // Match cards: show all events unless a specific sport is active.
   const visibleEvents = activeSport === "All"
     ? Object.entries(EVENTS)
     : Object.entries(EVENTS).filter(([k]) => k === activeSport);
@@ -302,7 +349,7 @@ export default function LeaderboardPage() {
 
       {/* ── TOOLBAR — top-16 sits flush below the 64px TopBar ── */}
       <Toolbar
-        sportList={SPORT_LIST}
+        sportList={sportList}
         activeSport={activeSport}
         setActiveSport={setActiveSport}
         gameDays={gameDays}
@@ -321,7 +368,7 @@ export default function LeaderboardPage() {
         />
         <PodiumBoard podium={podium} heights={podiumHeights} />
 
-        {/* 4th place sidecar — delta removed (5-day event, no weekly comparison) */}
+        {/* 4th place sidecar */}
         {fourth && (
           <div className="flex items-center gap-6 mt-12 px-6">
             <div className="font-mono text-[10px] font-bold uppercase text-zinc-500 w-[140px] flex-shrink-0" style={{ letterSpacing: "0.3em" }}>
@@ -346,18 +393,24 @@ export default function LeaderboardPage() {
         )}
       </section>
 
-      {/* ── 02 · MATCH CARDS ── */}
+      {/* ── 02 · MATCH CARDS — one card per sport+category found in matches ── */}
       <section className="max-w-[1440px] mx-auto px-20 pt-20">
         <SectionHeader
           eyebrow="02 · By the Sport"
           title="MATCH CARDS"
-          subtitle="Each bracket, ranked. Four colleges, four placements, twenty points to the victor."
+          subtitle="Every discipline tracked. Four colleges, four placements, twenty points to the victor."
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {visibleEvents.map(([event, places]) => (
-            <MatchCard key={event} event={event} places={places} records={RECORDS[event] ?? {}} />
-          ))}
-        </div>
+        {visibleEvents.length === 0 ? (
+          <div className="text-center py-20 font-mono text-[11px] text-zinc-600 uppercase tracking-widest">
+            No matches found for this sport
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {visibleEvents.map(([event, places]) => (
+              <MatchCard key={event} event={event} places={places} records={RECORDS[event] ?? {}} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ── 03 · INSIGHTS ── */}
@@ -405,10 +458,8 @@ function Hero({ tickerItems }: { tickerItems: string[] }) {
     <header className="relative overflow-hidden h-[560px] border-b border-white/[0.05]">
       <div className="absolute inset-0" style={{ background: "repeating-linear-gradient(-30deg, #0a0a0a 0 24px, #0e0e0e 24px 48px)", opacity: 0.45 }} />
       <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 30% 50%, rgba(169,29,58,.22), transparent 55%), linear-gradient(180deg, transparent 60%, #050505 100%)" }} />
-
       <div className="relative z-10 max-w-[1440px] mx-auto h-full px-20 pt-[90px] pb-0 flex flex-col justify-between">
         <div>
-          {/* updated kicker — "IskoLaro 2026" instead of generic "Season 2026" */}
           <div className="flex items-center gap-2.5 font-mono text-[11px] font-bold uppercase" style={{ color: GOLD, letterSpacing: "0.3em" }}>
             <span style={{ color: RED, fontSize: 10 }}>●</span>
             <span>IskoLaro 2026 · Live Ledger</span>
@@ -423,11 +474,7 @@ function Hero({ tickerItems }: { tickerItems: string[] }) {
             TRACK COLLEGE PERFORMANCE · CELEBRATE EXCELLENCE
           </p>
         </div>
-
-        <div
-          className="relative flex items-center gap-5 font-mono text-[11px] text-zinc-300 -mx-20 px-6 py-3.5 border-y border-white/[0.06]"
-          style={{ background: "rgba(0,0,0,.4)", backdropFilter: "blur(8px)", letterSpacing: "0.08em" }}
-        >
+        <div className="relative flex items-center gap-5 font-mono text-[11px] text-zinc-300 -mx-20 px-6 py-3.5 border-y border-white/[0.06]" style={{ background: "rgba(0,0,0,.4)", backdropFilter: "blur(8px)", letterSpacing: "0.08em" }}>
           <span className="font-black flex-shrink-0" style={{ color: RED, letterSpacing: "0.3em", fontSize: 10 }}>● LIVE</span>
           {items.map((item, i) => (
             <span key={i} className="flex items-center gap-5">
@@ -442,7 +489,7 @@ function Hero({ tickerItems }: { tickerItems: string[] }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-//  TOOLBAR — game-day filter instead of Weekly/Monthly/Season
+//  TOOLBAR — game-day filter + dynamic sport pills
 // ─────────────────────────────────────────────────────────────────────────
 function Toolbar(props: {
   sportList: string[];
@@ -455,18 +502,12 @@ function Toolbar(props: {
   setSearchQuery: (s: string) => void;
 }) {
   return (
-    // top-16 — flush below the fixed 64px TopBar, no overlap.
     <div className="sticky top-16 z-30 bg-[#080808] border-b border-white/[0.06]">
       <div className="max-w-[1440px] mx-auto px-20 py-4 flex items-center gap-8 flex-wrap">
-
-        {/* GAME DAY — only visible when the DB has matches with dates */}
         {props.gameDays.length > 0 && (
           <>
             <ToolbarGroup label="GAME DAY">
-              {/* "All Days" default pill */}
-              <ToolbarPill active={props.activeDay === "all"} onClick={() => props.setActiveDay("all")}>
-                All Days
-              </ToolbarPill>
+              <ToolbarPill active={props.activeDay === "all"} onClick={() => props.setActiveDay("all")}>All Days</ToolbarPill>
               {props.gameDays.map(d => (
                 <ToolbarPill key={d.key} active={props.activeDay === d.key} onClick={() => props.setActiveDay(d.key)}>
                   {d.shortLabel}
@@ -476,28 +517,16 @@ function Toolbar(props: {
             <ToolbarDivider />
           </>
         )}
-
-        {/* SPORT */}
         <ToolbarGroup label="SPORT">
           {props.sportList.map(s => (
-            <ToolbarPill key={s} active={s === props.activeSport} onClick={() => props.setActiveSport(s)}>
-              {s}
-            </ToolbarPill>
+            <ToolbarPill key={s} active={s === props.activeSport} onClick={() => props.setActiveSport(s)}>{s}</ToolbarPill>
           ))}
         </ToolbarGroup>
         <ToolbarDivider />
-
-        {/* QUERY */}
         <ToolbarGroup label="QUERY">
           <div className="flex items-center gap-2 px-3.5 py-2 bg-[#0e0e0e] border border-white/[0.06] min-w-[200px]">
             <Search className="w-3 h-3 text-zinc-600" />
-            <input
-              value={props.searchQuery}
-              onChange={e => props.setSearchQuery(e.target.value)}
-              placeholder="college name..."
-              className="bg-transparent border-none outline-none text-[10px] font-bold uppercase text-zinc-200 placeholder:text-zinc-600 w-full"
-              style={{ letterSpacing: "0.2em" }}
-            />
+            <input value={props.searchQuery} onChange={e => props.setSearchQuery(e.target.value)} placeholder="college name..." className="bg-transparent border-none outline-none text-[10px] font-bold uppercase text-zinc-200 placeholder:text-zinc-600 w-full" style={{ letterSpacing: "0.2em" }} />
           </div>
         </ToolbarGroup>
       </div>
@@ -509,18 +538,14 @@ function ToolbarGroup({ label, children }: { label: string; children: React.Reac
   return (
     <div className="flex items-center gap-3.5">
       <span className="font-mono text-[9px] font-bold uppercase text-zinc-500" style={{ letterSpacing: "0.3em" }}>{label}</span>
-      <div className="flex gap-1.5">{children}</div>
+      <div className="flex gap-1.5 flex-wrap">{children}</div>
     </div>
   );
 }
 
 function ToolbarPill({ active, onClick, children }: { active: boolean; onClick?: () => void; children: React.ReactNode }) {
   return (
-    <button
-      onClick={onClick}
-      className="text-[10px] font-black uppercase px-3.5 py-2 transition-colors cursor-pointer"
-      style={{ letterSpacing: "0.18em", background: active ? RED : "transparent", color: active ? "#fff" : "#9a9a9a", border: active ? `1px solid ${RED}` : "1px solid rgba(255,255,255,0.08)" }}
-    >
+    <button onClick={onClick} className="text-[10px] font-black uppercase px-3.5 py-2 transition-colors cursor-pointer" style={{ letterSpacing: "0.18em", background: active ? RED : "transparent", color: active ? "#fff" : "#9a9a9a", border: active ? `1px solid ${RED}` : "1px solid rgba(255,255,255,0.08)" }}>
       {children}
     </button>
   );
@@ -545,13 +570,38 @@ function SectionHeader({ eyebrow, title, subtitle }: { eyebrow: string; title: s
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-//  COLLEGE LOGO
+//  COLLEGE LOGO — uses real /colleges/*.jpg; falls back to gradient disc
 // ─────────────────────────────────────────────────────────────────────────
 function CollegeLogo({ code, accent, size = 64, ring = false }: { code: string; accent: string; size?: number; ring?: boolean }) {
+  const logoSrc = COLLEGE_LOGOS[code];
   return (
-    <div className="rounded-full font-bebas text-white relative flex items-center justify-center flex-shrink-0" style={{ width: size, height: size, background: `linear-gradient(135deg, ${accent} 0%, #0a0a0a 130%)`, border: "1px solid rgba(255,255,255,0.12)", boxShadow: ring ? `0 0 0 3px ${GOLD}, 0 0 0 5px #050505, 0 0 0 6px rgba(255,255,255,.06)` : "none", fontSize: size * 0.42, letterSpacing: "0.04em" }}>
-      <div className="absolute inset-0 rounded-full pointer-events-none" style={{ background: "repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,0,0,.18) 6px 7px)", mixBlendMode: "overlay" }} />
-      <span className="relative z-10">{code}</span>
+    <div
+      className="rounded-full flex-shrink-0 overflow-hidden"
+      style={{
+        width:  size,
+        height: size,
+        border: "1px solid rgba(255,255,255,0.12)",
+        boxShadow: ring
+          ? `0 0 0 3px ${GOLD}, 0 0 0 5px #050505, 0 0 0 6px rgba(255,255,255,.06)`
+          : "none",
+        // background shown through transparent parts of the image / as fallback
+        background: `linear-gradient(135deg, ${accent} 0%, #0a0a0a 130%)`,
+      }}
+    >
+      {logoSrc ? (
+        // Real college logo image — fills the circular clip
+        <img
+          src={logoSrc}
+          alt={code}
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        />
+      ) : (
+        // Fallback for unknown codes: gradient disc + code text
+        <div className="w-full h-full relative flex items-center justify-center font-bebas text-white" style={{ fontSize: size * 0.42, letterSpacing: "0.04em" }}>
+          <div className="absolute inset-0" style={{ background: "repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,0,0,.18) 6px 7px)", mixBlendMode: "overlay" }} />
+          <span className="relative z-10">{code}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -582,11 +632,12 @@ function PodiumBoard({ podium, heights }: { podium: (Standing | undefined)[]; he
       <div className="relative flex items-end justify-center gap-6 pt-10">
         {podium.map((c, i) => {
           if (!c) return null;
-          const rank = c.rank;
+          const rank  = c.rank;
           const isWin = rank === 1;
           return (
             <div key={c.code} className="flex flex-col items-center transition-transform duration-300" style={{ flex: "0 1 320px", transform: `translateY(${isWin ? -20 : 0}px)` }}>
               <div className="w-full px-6 py-7 backdrop-blur-md flex flex-col items-center relative" style={{ background: "rgba(10,10,10,0.85)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                {/* Medal badge */}
                 <div className="absolute -top-3.5 -right-3.5 w-11 h-11 rounded-full font-bebas italic font-black flex items-center justify-center" style={{ background: rank === 1 ? GOLD : rank === 2 ? SILVER : BRONZE, color: "#0a0a0a", fontSize: 18, boxShadow: "0 8px 24px rgba(0,0,0,0.4)", border: "2px solid #050505" }}>
                   {rank === 1 ? "01" : rank === 2 ? "02" : "03"}
                 </div>
@@ -604,6 +655,7 @@ function PodiumBoard({ podium, heights }: { podium: (Standing | undefined)[]; he
                   <FinishPill n={c.finishes[3]} label="4th" color="#555"   />
                 </div>
               </div>
+              {/* Tier block */}
               <div className="w-[90%] relative flex flex-col justify-center items-center overflow-hidden" style={{ height: heights[i], background: "linear-gradient(180deg, #1a1c20 0%, #0a0a0a 100%)", border: "1px solid rgba(255,255,255,0.06)", borderTop: "none" }}>
                 <div className="absolute top-0 left-0 right-0 h-1.5" style={{ background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />
                 <div className="font-bebas italic absolute top-1/2 -translate-y-1/2 leading-none" style={{ fontSize: 96, color: "rgba(255,255,255,0.04)" }}>0{rank}</div>
@@ -621,27 +673,41 @@ function PodiumBoard({ podium, heights }: { podium: (Standing | undefined)[]; he
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-//  MATCH CARD
+//  MATCH CARD — one per sport event
 // ─────────────────────────────────────────────────────────────────────────
-function MatchCard({ event, places, records }: { event: string; places: [string, string, string, string]; records: Record<string, string> }) {
-  const [name, division] = event.split("·").map(s => s.trim());
+function MatchCard({ event, places, records }: {
+  event:   string;
+  places:  [string, string, string, string];
+  records: Record<string, string>;
+}) {
+  // event key format: "Basketball · M" (with category) or "Chess" (without)
+  const parts    = event.split("·").map(s => s.trim());
+  const name     = parts[0];           // sport display name
+  const division = parts[1] ?? null;   // category abbreviation or null
+
   const champCode   = places[0];
   const champAccent = COLLEGE_ACCENT[champCode] ?? "#444";
   const hasData     = champCode !== "?" && champCode !== "";
+  const sportIcon   = SPORT_ICON_BY_SPORT[name] ?? "◇";
 
   return (
-    <article aria-labelledby={`matchcard-${event.replace(/\s/g, "")}`} className="bg-[#0a0a0a] border border-white/[0.06] p-6 relative">
+    <article aria-labelledby={`matchcard-${event.replace(/[\s·]/g, "")}`} className="bg-[#0a0a0a] border border-white/[0.06] p-6 relative">
+      {/* Card header: icon + name + optional division + status chip */}
       <div className="flex items-center gap-3.5 pb-4 border-b border-white/[0.05]">
-        <div className="text-3xl leading-none" style={{ color: GOLD, fontFamily: "serif" }} aria-hidden="true">{SPORT_ICON[event] ?? "◇"}</div>
+        <div className="text-3xl leading-none" style={{ color: GOLD, fontFamily: "serif" }} aria-hidden="true">{sportIcon}</div>
         <div className="flex-1 min-w-0">
-          <div id={`matchcard-${event.replace(/\s/g, "")}`} className="font-bebas italic text-2xl text-[#f3f1ec] leading-none">{name}</div>
-          <div className="text-[10px] font-black uppercase text-zinc-600 mt-1" style={{ letterSpacing: "0.3em" }}>{division} BRACKET</div>
+          <div id={`matchcard-${event.replace(/[\s·]/g, "")}`} className="font-bebas italic text-2xl text-[#f3f1ec] leading-none">{name}</div>
+          {/* Division label shown only when the event has a category (e.g. "M BRACKET") */}
+          {division && (
+            <div className="text-[10px] font-black uppercase text-zinc-600 mt-1" style={{ letterSpacing: "0.3em" }}>{division} BRACKET</div>
+          )}
         </div>
         <div className="text-[9px] font-black uppercase px-2 py-1" style={{ color: hasData ? RED : "#555", background: hasData ? "rgba(169,29,58,0.1)" : "rgba(255,255,255,0.03)", border: hasData ? "1px solid rgba(169,29,58,0.3)" : "1px solid rgba(255,255,255,0.06)", letterSpacing: "0.3em" }}>
           {hasData ? "FINAL" : "NO DATA"}
         </div>
       </div>
 
+      {/* Champion spotlight */}
       <div className="flex items-center gap-4 py-4 border-b border-white/[0.05]">
         {hasData ? (
           <>
@@ -661,16 +727,25 @@ function MatchCard({ event, places, records }: { event: string; places: [string,
         )}
       </div>
 
+      {/* Runners-up rows (2nd–4th) */}
       <div className="flex flex-col mt-3">
         {places.slice(1).map((code, i) => {
-          const rank   = i + 2;
-          const accent = COLLEGE_ACCENT[code] ?? "#444";
-          const isReal = code !== "?" && code !== "";
+          const rank    = i + 2;
+          const accent  = COLLEGE_ACCENT[code] ?? "#444";
+          const isReal  = code !== "?" && code !== "";
+          const logoSrc = isReal ? COLLEGE_LOGOS[code] : null;
           return (
             <div key={`${code}-${i}`} className="flex items-center gap-3.5 py-3 border-b border-white/[0.04] last:border-b-0">
               <span className="font-mono text-[11px] text-zinc-500 w-6">0{rank}</span>
-              <div className="w-7 h-7 rounded-full font-bebas font-black flex items-center justify-center text-white flex-shrink-0" style={{ background: isReal ? `linear-gradient(135deg, ${accent}, #0a0a0a 130%)` : "#1a1a1a", fontSize: 10, border: "1px solid rgba(255,255,255,0.1)" }}>
-                {isReal ? code.slice(0, 3) : "—"}
+              {/* Small logo chip — uses real image when available */}
+              <div className="w-7 h-7 rounded-full flex-shrink-0 overflow-hidden" style={{ background: isReal ? `linear-gradient(135deg, ${accent}, #0a0a0a 130%)` : "#1a1a1a", border: "1px solid rgba(255,255,255,0.1)" }}>
+                {logoSrc ? (
+                  <img src={logoSrc} alt={code} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                ) : (
+                  <span className="flex items-center justify-center w-full h-full font-bebas font-black text-white" style={{ fontSize: 10 }}>
+                    {isReal ? code.slice(0, 3) : "—"}
+                  </span>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-bebas italic text-xl text-zinc-300 leading-none">{isReal ? code : "TBD"}</div>
