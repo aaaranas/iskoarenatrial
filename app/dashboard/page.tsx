@@ -1,14 +1,12 @@
 "use client";
 
 // IskoArena Dashboard V2 — Broadcast Studio.
-// Replaces the previous admin/user split with a single live-broadcast layout.
 // Cinematic featured-match hero → BottomLine ticker → main body grid:
-//   left rail: scoreboard list + headlines
-//   right rail: standings (tabbed) + top performer + bracket preview
-//                + admin-only: match ops shortcuts
+//   left rail:  scoreboard list + headlines (live media uploads)
+//   right rail: standings (trpc.match.getStandings) + top performer
+//               (trpc.featuredPlayer.getCurrent) + admin match ops
 //
-// Live data: trpc.match.getAll. Standings/news/player stay mock-backed until
-// the corresponding routers (TM3/TM5) exist.
+// All sections are wired to live data.
 
 import { useMemo, useState } from "react";
 import Link from "next/link";

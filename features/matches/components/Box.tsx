@@ -26,12 +26,14 @@ import { FinalizeMatchModal } from "./FinalizeMatchModal";
 import { DeleteMatchModal } from "./DeleteMatchModal";
 import { EditMatchModal } from "./EditMatchModal";
 
-const FILTER_OPTIONS = {
+// Category and college options are static (driven by schema constants).
+// Sport options come from the DB — fetched inside Box and passed to FILTER_OPTIONS
+// so the dropdown always reflects the real sports table without a redeploy.
+const STATIC_FILTER_OPTIONS = {
   category: ["Men", "Women", "Men Singles", "Men Doubles", "Women Singles", "Women Doubles", "Mixed Doubles"],
   location: ["UP High School Gymnasium", "AS Hall", "Admin Field", "SOM Court", "PAH"],
   college: ["CCAD", "SOM", "COS", "CSS"],
-  sport: ["Badminton", "Basketball", "Volleyball", "Table Tennis", "Larong Pinoy", "Pickleball", "Petanque", "Mobile Legends (ESPORTS)", "DOTA 2 (ESPORTS)", "Valorant (ESPORTS)", "Football"],
-  status: ["Live", "Upcoming", "Completed"]
+  status: ["Live", "Upcoming", "Completed"],
 };
 
 const ITEMS_PER_PAGE = 8;
@@ -41,6 +43,13 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
   const matches = (matchesData as Match[]) || [];
   const [matchToFinalize, setMatchToFinalize] = useState<Match | null>(null);
   const { isAdmin } = useRole();
+
+  // Live sport list from the DB — auto-updates when sports are added without a redeploy.
+  const { data: sportsData } = trpc.sport.getAll.useQuery();
+  const FILTER_OPTIONS = useMemo(() => ({
+    ...STATIC_FILTER_OPTIONS,
+    sport: (sportsData as Array<{ id: string; name: string }> ?? []).map(s => s.name),
+  }), [sportsData]);
 
   const { data: auth } = trpc.auth.getSession.useQuery();
 

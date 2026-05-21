@@ -1,5 +1,7 @@
 import { router, publicProcedure } from "../trpc";
-import { supabase } from "@/lib/supabase/client";
+// Must use supabaseAdmin (service role) in server routers — browser client
+// has no auth context on the server and may be blocked by RLS.
+import { supabaseAdmin } from "@/lib/supabase/server";
 import { z } from "zod";
 
 export const statsRouter = router({
@@ -13,7 +15,7 @@ export const statsRouter = router({
       // stats table is owned by TM3 and isn't in the generated Database types
       // yet; cast to any to unblock typing. Remove this cast once types/supabase.ts
       // is regenerated with the stats schema.
-      let query = (supabase as any)
+      let query = (supabaseAdmin as any)
         .from("stats")
         .select(`
           *,

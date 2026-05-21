@@ -87,7 +87,6 @@ export function isTomorrow(rawDate: string | null): boolean {
 
 // Sport photo selection is delegated to lib/sport-photos.ts which maps every
 // DB sport name to real photos in public/sport/<folder>/.
-// pickSportPhoto is re-exported for use in this module.
 
 // Shape returned by trpc.match.getAll. Kept loose because we pull only what we need.
 // `time` is no longer on the server response (O8 — locale leaks) — derived from rawDate.

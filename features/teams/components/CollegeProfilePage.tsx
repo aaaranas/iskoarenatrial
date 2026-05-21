@@ -12,10 +12,11 @@ const COLLEGE_IDENTITY: Record<string, {
   mascot: string; color: string; tagline: string;
   photo: string; logo: string;
 }> = {
-  COS:  { mascot: "SCIONS",    color: "#F4D27A", tagline: "BUILT IN THE LAB. BORN IN THE ARENA.",  photo: "/iskolarobadminton.jpg", logo: "/colleges/cos_logo.jpg" },
-  CSS:  { mascot: "STALLIONS", color: "#E11D48", tagline: "HOOVES DOWN. EYES UP. FOREVER FIRST.",  photo: "/iskolarobaseball.jpg",  logo: "/colleges/css_logo.jpg" },
-  CCAD: { mascot: "PHOENIX",   color: "#22C55E", tagline: "RISE. BURN. RISE AGAIN.",               photo: "/iskolarofrisbee2.jpg",  logo: "/colleges/ccad_logo.jpg" },
-  SOM:  { mascot: "TYCOONS",   color: "#3B82F6", tagline: "EVERY POINT IS PROFIT.",                photo: "/iskolarovolley.jpg",    logo: "/colleges/som_logo.jpg" },
+  // Hero photos now use real Iskolaro photos from public/sport/.
+  COS:  { mascot: "SCIONS",    color: "#F4D27A", tagline: "BUILT IN THE LAB. BORN IN THE ARENA.",  photo: "/sport/basketball/IMG_7166.JPG",   logo: "/colleges/cos_logo.jpg"  },
+  CSS:  { mascot: "STALLIONS", color: "#E11D48", tagline: "HOOVES DOWN. EYES UP. FOREVER FIRST.",  photo: "/sport/volleyball/IMG_5987.JPG",   logo: "/colleges/css_logo.jpg"  },
+  CCAD: { mascot: "PHOENIX",   color: "#22C55E", tagline: "RISE. BURN. RISE AGAIN.",               photo: "/sport/cheerdance/IMG_3555.jpg",    logo: "/colleges/ccad_logo.jpg" },
+  SOM:  { mascot: "TYCOONS",   color: "#3B82F6", tagline: "EVERY POINT IS PROFIT.",                photo: "/sport/soccer/DSC_5696.jpg",        logo: "/colleges/som_logo.jpg"  },
 };
 
 // Canonical full college name keyed by org code — matches teams.college rows.

@@ -19,7 +19,7 @@ export default function Hero() {
       {/* Photo background layer — grayscaled and darkened so headline copy reads cleanly */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/iskolarobaseball.jpg"
+          src="/sport/basketball/IMG_7168.JPG"
           alt=""
           fill
           priority
