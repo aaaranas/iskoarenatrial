@@ -9,6 +9,7 @@
 //   - NEWS: headlines feed (until a news router exists)
 
 import { formatMatchTime } from "@/lib/format-match-date";
+import { pickSportPhoto } from "@/lib/sport-photos";
 
 // ── College codes ────────────────────────────────────────────────────────────
 // teams.org is the canonical college code per project memory.
@@ -84,20 +85,9 @@ export function isTomorrow(rawDate: string | null): boolean {
   return isSameCalendarDay(rawDate, tomorrow);
 }
 
-// Sport → hero photo. Falls back to baseball shot for sports without a stock photo.
-// All images live in /public/*.
-const SPORT_PHOTOS: Record<string, string> = {
-  basketball: "/iskolarobaseball.jpg",   // re-used: cinematic crowd shot
-  volleyball: "/iskolarovolley.jpg",
-  badminton:  "/iskolarobadminton.jpg",
-  frisbee:    "/iskolarofrisbee.jpg",
-  soccer:     "/iskolarosocer.jpg",
-  football:   "/iskolarosocer.jpg",
-};
-
-function pickSportPhoto(sport: string): string | null {
-  return SPORT_PHOTOS[sport.toLowerCase()] ?? null;
-}
+// Sport photo selection is delegated to lib/sport-photos.ts which maps every
+// DB sport name to real photos in public/sport/<folder>/.
+// pickSportPhoto is re-exported for use in this module.
 
 // Shape returned by trpc.match.getAll. Kept loose because we pull only what we need.
 // `time` is no longer on the server response (O8 — locale leaks) — derived from rawDate.
@@ -149,7 +139,8 @@ export function toV2Match(m: TrpcMatch): V2Match {
     homeCo: toCollegeCode(m.homeTeamOrg),
     rawDate: m.rawDate,
     awayCo: toCollegeCode(m.awayTeamOrg),
-    img: pickSportPhoto(m.league || ""),
+    // Pass match ID as seed → deterministic per-match photo within the sport's folder.
+    img: pickSportPhoto(m.league || "", m.id),
   };
 }
 

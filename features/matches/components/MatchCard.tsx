@@ -5,6 +5,7 @@ import { MapPin, Edit3, Trash2, Clock, Flag } from "lucide-react";
 import { DeleteMatchModal } from "./DeleteMatchModal";
 import { EditMatchModal } from "./EditMatchModal";
 import { formatMatchDate } from "@/lib/format-match-date";
+import { pickSportPhoto } from "@/lib/sport-photos";
 
 interface MatchCardProps {
   match: Match;
@@ -23,15 +24,10 @@ export const MatchCard = ({ match, onOpenDetails, onFinalize, onEdit, onDelete }
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const suppressNextClick = useRef(false);
 
-  const idHash = match.id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const fallbackImages = [
-    "/iskolarobaseball.jpg",
-    "/iskolarofrisbee.jpg",
-    "/iskolarosocer.jpg",
-    "/iskolarofrisbee2.jpg",
-    "/iskolarovolley.jpg"
-  ];
-  const cardImage = fallbackImages[idHash % fallbackImages.length];
+  // Use the real sport photo for this match (deterministic by match ID).
+  // Falls back to the first volleyball shot if no sport folder exists yet.
+  const cardImage =
+    pickSportPhoto(match.league, match.id) ?? "/sport/volleyball/IMG_5987.JPG";
 
   const handleEditOpenChange = (open: boolean) => {
     if (!open) {

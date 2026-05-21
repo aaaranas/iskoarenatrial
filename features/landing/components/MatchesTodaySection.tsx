@@ -12,6 +12,7 @@ import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import { trpc } from "@/lib/trpc";
 import { formatMatchTime } from "@/lib/format-match-date";
+import { pickSportPhoto } from "@/lib/sport-photos";
 import {
   LIVE_MATCHES,
   COLLEGE_COLORS,
@@ -74,7 +75,8 @@ function toLiveMatch(m: {
     cat:        "Traditional",    // category not exposed by the router; default ok
     homeCo:     inferCollegeCode(m.homeTeam),
     awayCo:     inferCollegeCode(m.awayTeam),
-    img:        null,
+    // Deterministic sport photo — same match always shows the same image.
+    img:        pickSportPhoto(m.league || "", m.id),
   };
 }
 
@@ -117,6 +119,19 @@ function MatchesTodayCard({ m }: { m: LiveMatch }) {
       className="relative flex flex-shrink-0 flex-col gap-3.5 overflow-hidden rounded-[18px] border border-white/[0.06] bg-ia-card px-5 py-5 shadow-[0_6px_24px_rgba(0,0,0,0.35)]"
       style={{ width: "clamp(280px, 28vw, 340px)" }}
     >
+      {/* Subtle sport photo background — 12% opacity so the card's dark surface
+          stays dominant while giving each sport a distinct visual identity.
+          The bottom-up gradient fades the photo into the card for legibility. */}
+      {m.img && (
+        <div className="pointer-events-none absolute inset-0">
+          <img
+            src={m.img}
+            alt=""
+            className="h-full w-full object-cover opacity-[0.12]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-ia-card via-ia-card/70 to-transparent" />
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <span className="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[2px] text-white/65">
           {m.sport}
