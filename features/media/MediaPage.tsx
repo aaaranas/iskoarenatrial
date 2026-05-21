@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useId } from "react";
 import {
   Grid3X3, Film, Plus, Play, Image as ImageIcon, LayoutList,
   Heart, Share2, Bookmark, Camera, X, Upload,
@@ -96,6 +96,8 @@ function LikeButton({ mediaId, initialCount = 0, initialLiked = false, size = 18
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialCount);
   const [userId, setUserId] = useState<string | null>(null);
+  // per-instance suffix so two LikeButtons with the same mediaId (grid + modal) don't share a Supabase channel
+  const instanceId = useId();
 
   // onSuccess/onError for revert live in mutate() call — see toggle()
   const toggleMutation = trpc.media.toggleLike.useMutation();
@@ -111,7 +113,8 @@ function LikeButton({ mediaId, initialCount = 0, initialLiked = false, size = 18
   // H3: subscribe for every visitor (anon included) — userId only used inside to dedupe self
   useEffect(() => {
     const channel = supabase
-      .channel(`media_likes:${mediaId}`)
+      // include instanceId in topic — Supabase keys channels by topic; two instances sharing a topic would re-use the same already-subscribed channel and throw on .on()
+      .channel(`media_likes:${mediaId}:${instanceId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "media_likes", filter: `media_id=eq.${mediaId}` }, (payload) => {
         if (payload.eventType === "INSERT") {
           const uid = (payload.new as any).user_id;
@@ -124,7 +127,7 @@ function LikeButton({ mediaId, initialCount = 0, initialLiked = false, size = 18
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [mediaId, userId]);
+  }, [mediaId, userId, instanceId]);
 
   const toggle = (e: React.MouseEvent) => {
     e.stopPropagation();
