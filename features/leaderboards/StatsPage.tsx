@@ -11,8 +11,8 @@
 //
 // EVENT CONTEXT
 //   IskoLaro is a 5-day event (Mon–Fri). All matches for the year happen in one
-//   week. The toolbar shows "All Days" or a specific game-day filter; days are
-//   detected dynamically from match rawDate values so no hardcoded dates needed.
+//   week. The Game Day filter was removed per Dominique's request — public
+//   viewers see aggregate standings across all 5 days by default.
 //
 // PLACEMENT MODEL
 //   For each event (sport + category), completed matches determine the W-L
@@ -23,8 +23,9 @@
 //     rank 3 → 4th →  5 pts
 // ─────────────────────────────────────────────────────────────────────────
 
-import { useMemo, useState } from "react";
-import { Loader2, Search } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { Loader2, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import useEmblaCarousel from "embla-carousel-react";
 import { trpc } from "@/lib/trpc";
 import { isToday } from "@/components/dashboard/dashboard-data";
 
@@ -44,7 +45,6 @@ const COLLEGE_LOGOS: Record<string, string> = {
   SOM:  "/colleges/som_logo.jpg",
 };
 
-// Per-college accent colours — match `college-*` tokens in tailwind.config.ts.
 const COLLEGE_ACCENT: Record<string, string> = {
   COS:  "#3B82F6",
   CSS:  "#10B981",
@@ -59,8 +59,7 @@ const COLLEGE_LONG: Record<string, string> = {
   SOM:  "Tycoons",
 };
 
-// Sport icons keyed by canonical DB sport name (not by event key).
-// Covers all 24 sports in the seeded sports table.
+// Sport icons keyed by canonical DB sport name. Covers all 24 sports.
 const SPORT_ICON_BY_SPORT: Record<string, string> = {
   Basketball:          "🏀",
   Volleyball:          "🏐",
@@ -88,15 +87,6 @@ const SPORT_ICON_BY_SPORT: Record<string, string> = {
   "Pinoy Games":       "🪅",
 };
 
-// Returns a canonical day key (YYYY-MM-DD string in local time) from an ISO rawDate.
-function toDayKey(rawDate: string): string {
-  const d   = new Date(rawDate);
-  const y   = d.getFullYear();
-  const mo  = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${mo}-${day}`;
-}
-
 type Standing = {
   code: string;
   long: string;
@@ -106,7 +96,6 @@ type Standing = {
   rank: number;
 };
 
-type GameDay    = { key: string; label: string; shortLabel: string };
 type SportEvent = { key: string; sport: string; category: string | null };
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -114,7 +103,6 @@ type SportEvent = { key: string; sport: string; category: string | null };
 // ─────────────────────────────────────────────────────────────────────────
 export default function LeaderboardPage() {
   const [activeSport,  setActiveSport]  = useState("All");
-  const [activeDay,    setActiveDay]    = useState("all"); // "all" or YYYY-MM-DD
   const [searchQuery,  setSearchQuery]  = useState("");
 
   // Single data source — all derived state is computed from this.
@@ -122,28 +110,7 @@ export default function LeaderboardPage() {
     staleTime: 30_000,
   });
 
-  // ── Game days — unique calendar days that have at least one match ──────
-  const gameDays = useMemo((): GameDay[] => {
-    if (!matchesData) return [];
-    const seen = new Map<string, Date>();
-    for (const m of matchesData) {
-      if (!m.rawDate) continue;
-      const key = toDayKey(m.rawDate);
-      if (!seen.has(key)) seen.set(key, new Date(m.rawDate));
-    }
-    return Array.from(seen.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, date], i) => ({
-        key,
-        label:      `Day ${i + 1} · ${date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`,
-        shortLabel: `Day ${i + 1}`,
-      }));
-  }, [matchesData]);
-
   // ── All sport+category combinations present in match data ─────────────
-  // This drives both the toolbar SPORT pills and the match-cards grid.
-  // Sports with a category appear as "Basketball · M"; inherently-mixed
-  // sports (Chess, Frisbee, MLBB, …) appear as just "Chess".
   const dynamicSportEvents = useMemo((): SportEvent[] => {
     if (!matchesData) return [];
     const seen = new Map<string, SportEvent>();
@@ -158,18 +125,10 @@ export default function LeaderboardPage() {
     });
   }, [matchesData]);
 
-  // Dynamic SPORT_LIST = "All" + every discovered event key
   const sportList = useMemo(
     () => ["All", ...dynamicSportEvents.map(e => e.key)],
     [dynamicSportEvents]
   );
-
-  // ── Matches filtered to the active game day ───────────────────────────
-  const dayMatches = useMemo(() => {
-    if (!matchesData) return [];
-    if (activeDay === "all") return matchesData;
-    return matchesData.filter(m => m.rawDate && toDayKey(m.rawDate) === activeDay);
-  }, [matchesData, activeDay]);
 
   // ── Event standings — tally W/L per college for every dynamic event ───
   const { EVENTS, RECORDS } = useMemo(() => {
@@ -177,15 +136,12 @@ export default function LeaderboardPage() {
     const RECORDS: Record<string, Record<string, string>>            = {};
 
     for (const { key, sport, category } of dynamicSportEvents) {
-      // Filter to completed matches matching this event's sport + category.
-      // category=null → matches where the match has no category (inherently mixed).
-      const eventMatches = dayMatches.filter(m =>
+      const eventMatches = (matchesData ?? []).filter(m =>
         m.statusType === "completed" &&
         m.league === sport &&
         (category === null ? !m.category : m.category === category)
       );
 
-      // Seed tallies for all 4 colleges (so rows always appear even at 0-0).
       const tally: Record<string, { w: number; l: number }> = {
         COS: { w: 0, l: 0 }, CSS: { w: 0, l: 0 },
         CCAD: { w: 0, l: 0 }, SOM: { w: 0, l: 0 },
@@ -195,14 +151,13 @@ export default function LeaderboardPage() {
         const home = m.homeTeamOrg?.toUpperCase();
         const away = m.awayTeamOrg?.toUpperCase();
         if (!home || !away || !tally[home] || !tally[away]) continue;
-        const hs = m.homeScore ?? 0;
+        const hs  = m.homeScore ?? 0;
         const as_ = m.awayScore ?? 0;
-        if (hs === as_) continue; // ties skipped
+        if (hs === as_) continue;
         if (hs > as_) { tally[home].w++; tally[away].l++; }
         else           { tally[away].w++; tally[home].l++; }
       }
 
-      // Sort by win-pct desc; tie-break by raw win count.
       const sorted = Object.entries(tally)
         .map(([code, { w, l }]) => ({ code, w, l, pct: (w + l) === 0 ? 0 : w / (w + l) }))
         .sort((a, b) => b.pct - a.pct || b.w - a.w);
@@ -218,7 +173,7 @@ export default function LeaderboardPage() {
     }
 
     return { EVENTS, RECORDS };
-  }, [dayMatches, dynamicSportEvents]);
+  }, [matchesData, dynamicSportEvents]);
 
   // ── Aggregate standings ───────────────────────────────────────────────
   const standings = useMemo((): Standing[] => {
@@ -248,7 +203,6 @@ export default function LeaderboardPage() {
     return sorted;
   }, [EVENTS, activeSport]);
 
-  // Search filter on the podium (code or mascot).
   const displayStandings = useMemo(() =>
     searchQuery
       ? standings.filter(s =>
@@ -272,7 +226,6 @@ export default function LeaderboardPage() {
     const maxGolds  = Math.max(...standings.map(s => s.finishes[0]));
     const goldCodes = standings.filter(s => s.finishes[0] === maxGolds).map(s => s.code).join(", ");
 
-    // Sweep Watch: first college with 0 losses in any event with games played
     let sweepCode = "—";
     let sweepSub  = "No undefeated run yet";
     outer: for (const [event, rec] of Object.entries(RECORDS)) {
@@ -282,7 +235,6 @@ export default function LeaderboardPage() {
       }
     }
 
-    // Biggest Upset: college with the largest win-swing across all events
     let upsetCode = "—";
     let upsetSub  = "No contrast yet";
     let maxGap    = 0;
@@ -321,13 +273,11 @@ export default function LeaderboardPage() {
       });
   }, [matchesData]);
 
-  // ── Podium setup (visual order: 2nd | 1st | 3rd) ─────────────────────
   const base          = displayStandings.length >= 4 ? displayStandings : standings;
   const podium        = [base[1], base[0], base[2]];
   const podiumHeights = [220, 320, 170];
   const fourth        = base[3];
 
-  // Match cards: show all events unless a specific sport is active.
   const visibleEvents = activeSport === "All"
     ? Object.entries(EVENTS)
     : Object.entries(EVENTS).filter(([k]) => k === activeSport);
@@ -347,14 +297,11 @@ export default function LeaderboardPage() {
       {/* ── HERO ── */}
       <Hero tickerItems={tickerItems} />
 
-      {/* ── TOOLBAR — top-16 sits flush below the 64px TopBar ── */}
+      {/* ── TOOLBAR — Sport pills + Query (no game-day filter) ── */}
       <Toolbar
         sportList={sportList}
         activeSport={activeSport}
         setActiveSport={setActiveSport}
-        gameDays={gameDays}
-        activeDay={activeDay}
-        setActiveDay={setActiveDay}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
       />
@@ -368,7 +315,6 @@ export default function LeaderboardPage() {
         />
         <PodiumBoard podium={podium} heights={podiumHeights} />
 
-        {/* 4th place sidecar */}
         {fourth && (
           <div className="flex items-center gap-6 mt-12 px-6">
             <div className="font-mono text-[10px] font-bold uppercase text-zinc-500 w-[140px] flex-shrink-0" style={{ letterSpacing: "0.3em" }}>
@@ -393,24 +339,14 @@ export default function LeaderboardPage() {
         )}
       </section>
 
-      {/* ── 02 · MATCH CARDS — one card per sport+category found in matches ── */}
+      {/* ── 02 · MATCH CARDS — horizontal draggable carousel ── */}
       <section className="max-w-[1440px] mx-auto px-20 pt-20">
         <SectionHeader
           eyebrow="02 · By the Sport"
           title="MATCH CARDS"
-          subtitle="Every discipline tracked. Four colleges, four placements, twenty points to the victor."
+          subtitle="Every discipline tracked. Drag the deck or use the arrows to browse all events."
         />
-        {visibleEvents.length === 0 ? (
-          <div className="text-center py-20 font-mono text-[11px] text-zinc-600 uppercase tracking-widest">
-            No matches found for this sport
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {visibleEvents.map(([event, places]) => (
-              <MatchCard key={event} event={event} places={places} records={RECORDS[event] ?? {}} />
-            ))}
-          </div>
-        )}
+        <MatchCardsCarousel visibleEvents={visibleEvents} records={RECORDS} />
       </section>
 
       {/* ── 03 · INSIGHTS ── */}
@@ -489,34 +425,18 @@ function Hero({ tickerItems }: { tickerItems: string[] }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-//  TOOLBAR — game-day filter + dynamic sport pills
+//  TOOLBAR — sport pills + query (game-day filter removed)
 // ─────────────────────────────────────────────────────────────────────────
 function Toolbar(props: {
   sportList: string[];
   activeSport: string;
   setActiveSport: (s: string) => void;
-  gameDays: GameDay[];
-  activeDay: string;
-  setActiveDay: (d: string) => void;
   searchQuery: string;
   setSearchQuery: (s: string) => void;
 }) {
   return (
     <div className="sticky top-16 z-30 bg-[#080808] border-b border-white/[0.06]">
       <div className="max-w-[1440px] mx-auto px-20 py-4 flex items-center gap-8 flex-wrap">
-        {props.gameDays.length > 0 && (
-          <>
-            <ToolbarGroup label="GAME DAY">
-              <ToolbarPill active={props.activeDay === "all"} onClick={() => props.setActiveDay("all")}>All Days</ToolbarPill>
-              {props.gameDays.map(d => (
-                <ToolbarPill key={d.key} active={props.activeDay === d.key} onClick={() => props.setActiveDay(d.key)}>
-                  {d.shortLabel}
-                </ToolbarPill>
-              ))}
-            </ToolbarGroup>
-            <ToolbarDivider />
-          </>
-        )}
         <ToolbarGroup label="SPORT">
           {props.sportList.map(s => (
             <ToolbarPill key={s} active={s === props.activeSport} onClick={() => props.setActiveSport(s)}>{s}</ToolbarPill>
@@ -526,7 +446,13 @@ function Toolbar(props: {
         <ToolbarGroup label="QUERY">
           <div className="flex items-center gap-2 px-3.5 py-2 bg-[#0e0e0e] border border-white/[0.06] min-w-[200px]">
             <Search className="w-3 h-3 text-zinc-600" />
-            <input value={props.searchQuery} onChange={e => props.setSearchQuery(e.target.value)} placeholder="college name..." className="bg-transparent border-none outline-none text-[10px] font-bold uppercase text-zinc-200 placeholder:text-zinc-600 w-full" style={{ letterSpacing: "0.2em" }} />
+            <input
+              value={props.searchQuery}
+              onChange={e => props.setSearchQuery(e.target.value)}
+              placeholder="college name..."
+              className="bg-transparent border-none outline-none text-[10px] font-bold uppercase text-zinc-200 placeholder:text-zinc-600 w-full"
+              style={{ letterSpacing: "0.2em" }}
+            />
           </div>
         </ToolbarGroup>
       </div>
@@ -584,19 +510,12 @@ function CollegeLogo({ code, accent, size = 64, ring = false }: { code: string; 
         boxShadow: ring
           ? `0 0 0 3px ${GOLD}, 0 0 0 5px #050505, 0 0 0 6px rgba(255,255,255,.06)`
           : "none",
-        // background shown through transparent parts of the image / as fallback
         background: `linear-gradient(135deg, ${accent} 0%, #0a0a0a 130%)`,
       }}
     >
       {logoSrc ? (
-        // Real college logo image — fills the circular clip
-        <img
-          src={logoSrc}
-          alt={code}
-          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-        />
+        <img src={logoSrc} alt={code} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
       ) : (
-        // Fallback for unknown codes: gradient disc + code text
         <div className="w-full h-full relative flex items-center justify-center font-bebas text-white" style={{ fontSize: size * 0.42, letterSpacing: "0.04em" }}>
           <div className="absolute inset-0" style={{ background: "repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,0,0,.18) 6px 7px)", mixBlendMode: "overlay" }} />
           <span className="relative z-10">{code}</span>
@@ -637,7 +556,6 @@ function PodiumBoard({ podium, heights }: { podium: (Standing | undefined)[]; he
           return (
             <div key={c.code} className="flex flex-col items-center transition-transform duration-300" style={{ flex: "0 1 320px", transform: `translateY(${isWin ? -20 : 0}px)` }}>
               <div className="w-full px-6 py-7 backdrop-blur-md flex flex-col items-center relative" style={{ background: "rgba(10,10,10,0.85)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                {/* Medal badge */}
                 <div className="absolute -top-3.5 -right-3.5 w-11 h-11 rounded-full font-bebas italic font-black flex items-center justify-center" style={{ background: rank === 1 ? GOLD : rank === 2 ? SILVER : BRONZE, color: "#0a0a0a", fontSize: 18, boxShadow: "0 8px 24px rgba(0,0,0,0.4)", border: "2px solid #050505" }}>
                   {rank === 1 ? "01" : rank === 2 ? "02" : "03"}
                 </div>
@@ -655,7 +573,6 @@ function PodiumBoard({ podium, heights }: { podium: (Standing | undefined)[]; he
                   <FinishPill n={c.finishes[3]} label="4th" color="#555"   />
                 </div>
               </div>
-              {/* Tier block */}
               <div className="w-[90%] relative flex flex-col justify-center items-center overflow-hidden" style={{ height: heights[i], background: "linear-gradient(180deg, #1a1c20 0%, #0a0a0a 100%)", border: "1px solid rgba(255,255,255,0.06)", borderTop: "none" }}>
                 <div className="absolute top-0 left-0 right-0 h-1.5" style={{ background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />
                 <div className="font-bebas italic absolute top-1/2 -translate-y-1/2 leading-none" style={{ fontSize: 96, color: "rgba(255,255,255,0.04)" }}>0{rank}</div>
@@ -673,6 +590,123 @@ function PodiumBoard({ podium, heights }: { podium: (Standing | undefined)[]; he
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+//  MATCH CARDS CAROUSEL — Embla-powered horizontal slider
+//  Drag, swipe (touch), or use the prev/next nav buttons to browse cards.
+//  Layout: 1 card per slide on mobile, 2 cards per slide on md+ screens.
+// ─────────────────────────────────────────────────────────────────────────
+function MatchCardsCarousel({
+  visibleEvents,
+  records,
+}: {
+  visibleEvents: Array<[string, [string, string, string, string]]>;
+  records: Record<string, Record<string, string>>;
+}) {
+  // Embla setup — drag is enabled by default. align:start anchors slides to the
+  // left edge; skipSnaps:false ensures every card is reachable via arrows.
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop:       false,
+    align:      "start",
+    skipSnaps:  false,
+    dragFree:   false, // snap to nearest card after drag
+  });
+
+  // Track whether the carousel can scroll in either direction so we can grey
+  // out the nav buttons when there's nothing further to scroll to.
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    const update = () => {
+      setCanScrollPrev(emblaApi.canScrollPrev());
+      setCanScrollNext(emblaApi.canScrollNext());
+    };
+    update();
+    emblaApi.on("select", update);
+    emblaApi.on("reInit", update);
+    return () => {
+      emblaApi.off("select", update);
+      emblaApi.off("reInit", update);
+    };
+  }, [emblaApi]);
+
+  // Re-init Embla when the data changes (sport filter toggle, new matches).
+  useEffect(() => {
+    if (emblaApi) emblaApi.reInit();
+  }, [emblaApi, visibleEvents.length]);
+
+  if (visibleEvents.length === 0) {
+    return (
+      <div className="text-center py-20 font-mono text-[11px] text-zinc-600 uppercase tracking-widest">
+        No matches found for this sport
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {/* Top-right nav row — sits above the carousel, broadcast-bar style.
+          Shows current card index out of total + prev/next buttons. */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="font-mono text-[10px] font-bold uppercase text-zinc-500" style={{ letterSpacing: "0.3em" }}>
+          {visibleEvents.length} {visibleEvents.length === 1 ? "EVENT" : "EVENTS"}
+        </div>
+        <div className="flex items-center gap-2">
+          <CarouselNavButton onClick={() => emblaApi?.scrollPrev()} disabled={!canScrollPrev} dir="prev" />
+          <CarouselNavButton onClick={() => emblaApi?.scrollNext()} disabled={!canScrollNext} dir="next" />
+        </div>
+      </div>
+
+      {/* Embla viewport — overflow-hidden clips the slides; ref drives the slider.
+          cursor-grab/active:cursor-grabbing communicates draggability to mouse users. */}
+      <div className="overflow-hidden cursor-grab active:cursor-grabbing" ref={emblaRef}>
+        {/* Slide container — flex row with gap; each slide is a fixed-width child. */}
+        <div className="flex gap-6">
+          {visibleEvents.map(([event, places]) => (
+            // flex-[0_0_100%] = full viewport width on mobile (one card visible)
+            // md:flex-[0_0_calc(50%-12px)] = 50% minus half the 24px gap on desktop (two cards)
+            <div
+              key={event}
+              className="flex-[0_0_100%] md:flex-[0_0_calc(50%-12px)] min-w-0"
+            >
+              <MatchCard event={event} places={places} records={records[event] ?? {}} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Drag hint — subtle below-the-carousel cue.
+          Hidden when there's nothing to scroll (1 or 2 cards on desktop). */}
+      {(canScrollPrev || canScrollNext) && (
+        <div className="mt-5 text-center font-mono text-[9px] uppercase text-zinc-700" style={{ letterSpacing: "0.3em" }}>
+          ← Drag or use arrows to browse all events →
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Carousel prev/next button — square, sharp corners, gold-on-hover broadcast feel.
+function CarouselNavButton({ onClick, disabled, dir }: { onClick: () => void; disabled: boolean; dir: "prev" | "next" }) {
+  const Icon = dir === "prev" ? ChevronLeft : ChevronRight;
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={dir === "prev" ? "Previous match cards" : "Next match cards"}
+      className="w-9 h-9 flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed enabled:cursor-pointer enabled:hover:bg-[#A91D3A]/15 enabled:hover:border-[#A91D3A]/40 enabled:hover:text-[#C5A059]"
+      style={{
+        background: "transparent",
+        border: "1px solid rgba(255,255,255,0.08)",
+        color: disabled ? "#3a3a3a" : "#9a9a9a",
+      }}
+    >
+      <Icon className="w-4 h-4" />
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 //  MATCH CARD — one per sport event
 // ─────────────────────────────────────────────────────────────────────────
 function MatchCard({ event, places, records }: {
@@ -680,10 +714,9 @@ function MatchCard({ event, places, records }: {
   places:  [string, string, string, string];
   records: Record<string, string>;
 }) {
-  // event key format: "Basketball · M" (with category) or "Chess" (without)
   const parts    = event.split("·").map(s => s.trim());
-  const name     = parts[0];           // sport display name
-  const division = parts[1] ?? null;   // category abbreviation or null
+  const name     = parts[0];
+  const division = parts[1] ?? null;
 
   const champCode   = places[0];
   const champAccent = COLLEGE_ACCENT[champCode] ?? "#444";
@@ -691,13 +724,11 @@ function MatchCard({ event, places, records }: {
   const sportIcon   = SPORT_ICON_BY_SPORT[name] ?? "◇";
 
   return (
-    <article aria-labelledby={`matchcard-${event.replace(/[\s·]/g, "")}`} className="bg-[#0a0a0a] border border-white/[0.06] p-6 relative">
-      {/* Card header: icon + name + optional division + status chip */}
+    <article aria-labelledby={`matchcard-${event.replace(/[\s·]/g, "")}`} className="bg-[#0a0a0a] border border-white/[0.06] p-6 relative h-full">
       <div className="flex items-center gap-3.5 pb-4 border-b border-white/[0.05]">
         <div className="text-3xl leading-none" style={{ color: GOLD, fontFamily: "serif" }} aria-hidden="true">{sportIcon}</div>
         <div className="flex-1 min-w-0">
           <div id={`matchcard-${event.replace(/[\s·]/g, "")}`} className="font-bebas italic text-2xl text-[#f3f1ec] leading-none">{name}</div>
-          {/* Division label shown only when the event has a category (e.g. "M BRACKET") */}
           {division && (
             <div className="text-[10px] font-black uppercase text-zinc-600 mt-1" style={{ letterSpacing: "0.3em" }}>{division} BRACKET</div>
           )}
@@ -707,7 +738,6 @@ function MatchCard({ event, places, records }: {
         </div>
       </div>
 
-      {/* Champion spotlight */}
       <div className="flex items-center gap-4 py-4 border-b border-white/[0.05]">
         {hasData ? (
           <>
@@ -727,7 +757,6 @@ function MatchCard({ event, places, records }: {
         )}
       </div>
 
-      {/* Runners-up rows (2nd–4th) */}
       <div className="flex flex-col mt-3">
         {places.slice(1).map((code, i) => {
           const rank    = i + 2;
@@ -737,7 +766,6 @@ function MatchCard({ event, places, records }: {
           return (
             <div key={`${code}-${i}`} className="flex items-center gap-3.5 py-3 border-b border-white/[0.04] last:border-b-0">
               <span className="font-mono text-[11px] text-zinc-500 w-6">0{rank}</span>
-              {/* Small logo chip — uses real image when available */}
               <div className="w-7 h-7 rounded-full flex-shrink-0 overflow-hidden" style={{ background: isReal ? `linear-gradient(135deg, ${accent}, #0a0a0a 130%)` : "#1a1a1a", border: "1px solid rgba(255,255,255,0.1)" }}>
                 {logoSrc ? (
                   <img src={logoSrc} alt={code} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
