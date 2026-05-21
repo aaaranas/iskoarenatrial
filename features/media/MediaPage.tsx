@@ -1210,7 +1210,9 @@ function PostDetailModal({ item, onClose, onEdit, onDelete, onShare, isAdmin }: 
               </div>
             </div>
             {item.caption && (
-              <p className="text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap border-t border-zinc-800/60 pt-2 mt-2">{item.caption}</p>
+              <div className="border-t border-zinc-800/60 pt-2 mt-2 max-h-32 overflow-y-auto">
+                <p className="text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap">{item.caption}</p>
+              </div>
             )}
           </div>
 
