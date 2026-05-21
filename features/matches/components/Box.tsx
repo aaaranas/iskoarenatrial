@@ -27,9 +27,9 @@ import { DeleteMatchModal } from "./DeleteMatchModal";
 import { EditMatchModal } from "./EditMatchModal";
 
 const FILTER_OPTIONS = {
-  category: ["Men's", "Women's", "Men's Singles", "Men's Doubles", "Women's Singles", "Women's Doubles", "Mixed Singles", "Mixed Doubles"],
+  category: ["Men", "Women", "Men Singles", "Men Doubles", "Women Singles", "Women Doubles", "Mixed Doubles"],
   location: ["UP High School Gymnasium", "AS Hall", "Admin Field", "SOM Court", "PAH"],
-  college: ["CCAD Phoenix", "SOM Tycoons", "COS Scions", "CSS Stallions"],
+  college: ["CCAD", "SOM", "COS", "CSS"],
   sport: ["Badminton", "Basketball", "Volleyball", "Table Tennis", "Larong Pinoy", "Pickleball", "Petanque", "Mobile Legends (ESPORTS)", "DOTA 2 (ESPORTS)", "Valorant (ESPORTS)", "Football"],
   status: ["Live", "Upcoming", "Completed"]
 };
@@ -60,31 +60,53 @@ export const Box = ({ onSelectMatch }: { onSelectMatch: (m: Match) => void }) =>
   const STATUS_ORDER: Record<string, number> = { live: 0, upcoming: 1, completed: 2 };
 
   const filteredMatches = useMemo(() => {
-    const filtered = matches.filter((m) => {
-      const searchStr = search.toLowerCase();
-      const matchesSearch =
-        (m.league ?? '').toLowerCase().includes(searchStr) ||
-        (m.homeTeam ?? '').toLowerCase().includes(searchStr) ||
-        (m.awayTeam ?? '').toLowerCase().includes(searchStr);
-      const matchesSport = filters.sport === "Sport" || m.league === filters.sport;
-      const matchesStatus = filters.status === "Status" || m.statusType === filters.status.toLowerCase();
-      const matchesCollege = filters.college === "College" || m.homeTeam === filters.college || m.awayTeam === filters.college;
-      return matchesSearch && matchesSport && matchesStatus && matchesCollege;
-    });
+  const filtered = matches.filter((m) => {
+    const searchStr = search.toLowerCase();
 
-    return filtered.sort((a, b) => {
-      // Primary sort: Live → Upcoming → Completed
-      const statusDiff = (STATUS_ORDER[a.statusType] ?? 3) - (STATUS_ORDER[b.statusType] ?? 3);
-      if (statusDiff !== 0) return statusDiff;
+    const matchesSearch =
+      (m.league ?? '').toLowerCase().includes(searchStr) ||
+      (m.homeTeam ?? '').toLowerCase().includes(searchStr) ||
+      (m.awayTeam ?? '').toLowerCase().includes(searchStr);
 
-      // Secondary sort: within each group sort by date.
-      // Upcoming: ascending (soonest first).
-      // Live / Completed: descending (most recent first).
-      const aTime = a.rawDate ? new Date(a.rawDate).getTime() : 0;
-      const bTime = b.rawDate ? new Date(b.rawDate).getTime() : 0;
-      return a.statusType === "upcoming" ? aTime - bTime : bTime - aTime;
-    });
-  }, [matches, search, filters]);
+    const matchesSport =
+      filters.sport === "Sport" || m.league === filters.sport;
+
+    // Normalize both sides to lowercase for a reliable comparison
+    const matchesStatus =
+      filters.status === "Status" ||
+      m.statusType === filters.status.toLowerCase();
+
+    const matchesCollege =
+      filters.college === "College" ||
+      m.homeTeam === filters.college ||
+      m.awayTeam === filters.college;
+
+    // category and location were collected but never filtered — wire them in
+    const matchesCategory = filters.category === "Category" || m.category === filters.category;
+
+    const matchesLocation = filters.location === "Location" || m.venue === filters.location;
+
+    return (
+      matchesSearch &&
+      matchesSport &&
+      matchesStatus &&
+      matchesCollege &&
+      matchesCategory &&
+      matchesLocation
+    );
+  });
+
+  return filtered.sort((a, b) => {
+    const statusDiff =
+      (STATUS_ORDER[a.statusType] ?? 3) - (STATUS_ORDER[b.statusType] ?? 3);
+    if (statusDiff !== 0) return statusDiff;
+
+    const aTime = a.rawDate ? new Date(a.rawDate).getTime() : 0;
+    const bTime = b.rawDate ? new Date(b.rawDate).getTime() : 0;
+    return a.statusType === "upcoming" ? aTime - bTime : bTime - aTime;
+  });
+}, [matches, search, filters]);
+    
 
   const totalPages = Math.ceil(filteredMatches.length / ITEMS_PER_PAGE);
   const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
