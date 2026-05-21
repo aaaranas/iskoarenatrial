@@ -4,6 +4,7 @@ import { College } from "./CollegeRow";
 import { supabase } from "@/lib/supabase/client";
 import { useRole } from "@/providers/RoleProvider";
 import { toast } from "sonner";
+import { PlayerProfilePage, type PlayerForProfile } from "./PlayerProfilePage";
 
 // ─── College identity ─────────────────────────────────────────────────────────
 const COLLEGE_IDENTITY: Record<string, {
@@ -246,6 +247,8 @@ export function CollegeProfilePage({
   const [showAddPlayer, setShowAddPlayer] = useState(false);
   const [addForm, setAddForm] = useState({ name: "", position: "", jersey_number: "", photo_url: "" });
   const [isSaving, setIsSaving] = useState(false);
+  // When set, the page renders <PlayerProfilePage> instead of the roster grid.
+  const [viewingPlayer, setViewingPlayer] = useState<PlayerForProfile | null>(null);
 
   const org = college.org ?? "";
   const identity = COLLEGE_IDENTITY[org] ?? { mascot: college.name.toUpperCase(), color: "#A91D3A", tagline: "", photo: "", logo: "" };
@@ -412,6 +415,29 @@ export function CollegeProfilePage({
   };
 
   const totalPlayers = Object.values(playerCounts).reduce((a, b) => a + b, 0);
+
+  // ── Player profile sub-view ──────────────────────────────────────────
+  // When a card is clicked, viewingPlayer is set and we render the dedicated
+  // PlayerProfilePage. onBack returns to the roster grid; onPlayerUpdate
+  // patches the local players[] so the grid reflects edits immediately.
+  if (viewingPlayer) {
+    return (
+      <PlayerProfilePage
+        player={viewingPlayer}
+        college={college}
+        sportName={activeSportTab?.name ?? ""}
+        collegeColor={color}
+        textOnColor={textOnColor}
+        onBack={() => setViewingPlayer(null)}
+        onPlayerUpdate={(updated) => {
+          // Sync local roster grid + the active viewingPlayer state so the
+          // header reflects edits without needing a re-open.
+          setPlayers((arr) => arr.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
+          setViewingPlayer(updated);
+        }}
+      />
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: "#050505", color: "#f0f0f0" }}>
@@ -706,17 +732,19 @@ export function CollegeProfilePage({
       </div>
 
       {/* ── Magazine stats strip ───────────────────────────────────────────── */}
+      {/* Stats strip — 3 columns now (Active Teams removed; it was always 0 and
+          redundant since teams.id ≡ college.id 1:1). Active Players is the
+          meaningful headline metric. */}
       <div style={{
         padding: "32px 64px",
         borderBottom: "1px solid rgba(255,255,255,0.07)",
         display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
+        gridTemplateColumns: "repeat(3, 1fr)",
         gap: 0,
         background: "#0a0a0a",
       }}>
         {[
           { label: "Active Players", value: totalPlayers || "—", accent: color },
-          { label: "Active Teams",   value: college.activeTeams },
           { label: "Sports",         value: sports.length, accent: color },
           { label: "Status",         value: college.status },
         ].map((s, i) => (
@@ -942,7 +970,17 @@ export function CollegeProfilePage({
                 return (
                   <div
                     key={p.id}
-                    className="group"
+                    className="group transition-transform hover:-translate-y-0.5"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`View ${p.name}'s profile`}
+                    onClick={() => setViewingPlayer(p)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setViewingPlayer(p);
+                      }
+                    }}
                     style={{
                       position: "relative",
                       overflow: "hidden",
@@ -950,7 +988,7 @@ export function CollegeProfilePage({
                       border: "1px solid rgba(255,255,255,0.07)",
                       borderRadius: 12,
                       aspectRatio: "4 / 5",
-                      cursor: "default",
+                      cursor: "pointer",
                     }}
                   >
                     {/* Full-bleed photo — falls back to brand-color gradient + initials */}
@@ -1014,10 +1052,15 @@ export function CollegeProfilePage({
                       </div>
                     )}
 
-                    {/* Delete — admin only, top-left, hover-reveal */}
+                    {/* Delete — admin only, top-left, hover-reveal.
+                        stopPropagation prevents the click from bubbling up to
+                        the card's onClick and opening the player profile. */}
                     {isAdmin && (
                       <button
-                        onClick={() => handleDeletePlayer(p.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeletePlayer(p.id);
+                        }}
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
                         style={{
                           position: "absolute", top: 14, left: 22,

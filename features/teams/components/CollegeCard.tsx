@@ -148,7 +148,7 @@ export function CollegeCard({
               letterSpacing: "0.3em",
               textTransform: "uppercase",
             }}>
-              {org} · {college.activeTeams} TEAMS · {college.sports.length} SPORTS
+              {org} · {college.playerCount ?? 0} PLAYERS · {college.sports.length} SPORTS
             </span>
           </div>
 
@@ -196,9 +196,9 @@ export function CollegeCard({
           {/* Stats row */}
           <div style={{ marginTop: 26, display: "flex", gap: 28, alignItems: "flex-end" }}>
             {[
-              { label: "Teams",  value: college.activeTeams, accent: "#ffffff" },
-              { label: "Sports", value: college.sports.length, accent: color },
-              { label: "Est.",   value: college.established, accent: "rgba(255,255,255,0.45)" },
+              { label: "Players", value: college.playerCount ?? 0, accent: "#ffffff" },
+              { label: "Sports",  value: college.sports.length, accent: color },
+              { label: "Est.",    value: college.established, accent: "rgba(255,255,255,0.45)" },
             ].map((s) => (
               <div key={s.label}>
                 <div style={{

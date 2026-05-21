@@ -10,6 +10,8 @@ export interface College {
   org?: string;           // canonical college code: COS | CSS | CCAD | SOM
   established: string;
   activeTeams: number;
+  /** Total players registered to this college (across all sports). */
+  playerCount?: number;
   sports: string[];
   status: "Active" | "Pending" | "Inactive";
   logoUrl?: string | null;

@@ -24,8 +24,10 @@ export default function TeamsPage() {
 
   useEffect(() => {
     async function loadColleges() {
-      // Fetch teams and the full sports list in parallel
-      const [teamsResult, sportsResult] = await Promise.all([
+      // Fetch teams, sports list, and player roster in parallel.
+      // The players query only needs college_id so we can count per college without
+      // pulling the entire player row.
+      const [teamsResult, sportsResult, playersResult] = await Promise.all([
         (supabase as any)
           .from("teams")
           .select("*")
@@ -35,6 +37,9 @@ export default function TeamsPage() {
           .from("sports")
           .select("name")
           .order("name", { ascending: true }),
+        (supabase as any)
+          .from("players")
+          .select("college_id"),
       ]);
 
       if (teamsResult.error) {
@@ -43,6 +48,17 @@ export default function TeamsPage() {
         // Use the real sports list from DB; fall back to the teams row value if unavailable
         const sportNames: string[] = sportsResult.data?.map((s: { name: string }) => s.name) ?? [];
 
+        // Tally player count per college_id — keyed by the team's UUID since
+        // players.college_id stores the teams.id UUID (teams ≡ colleges 1:1).
+        const playerCountByCollege: Record<string, number> = {};
+        if (playersResult.data) {
+          for (const p of playersResult.data as Array<{ college_id: string | null }>) {
+            if (p.college_id) {
+              playerCountByCollege[p.college_id] = (playerCountByCollege[p.college_id] ?? 0) + 1;
+            }
+          }
+        }
+
         setColleges(
           teamsResult.data.map((t: any) => ({
             id: t.id,
@@ -50,6 +66,7 @@ export default function TeamsPage() {
             org: t.org,
             established: t.established ?? "N/A",
             activeTeams: t.active_teams ?? 0,
+            playerCount: playerCountByCollege[t.id] ?? 0,
             sports: sportNames.length > 0 ? sportNames : (t.sports ?? []),
             status: t.status ?? "Active",
             logoUrl: t.logo_url ?? null,
