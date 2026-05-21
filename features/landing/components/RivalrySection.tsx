@@ -1,27 +1,129 @@
-﻿"use client";
+"use client";
 
-// Rivalry — animated horizontal bars showing cumulative season points per
-// college. Bars animate from 0 → percentage when the section scrolls into view
-// (via IntersectionObserver). Leader (rank 1) gets gold accents + a glow.
+// Rivalry — animated horizontal bars showing cumulative season points per college.
 //
-// V1 STATUS: COLLEGES.points is mock in components/landing/_data.ts. The bar
-// width is computed as (points / leader.points) * 100, so the leader is always
-// at 100%. TODO: derive points from real match results once the standings
-// computation is wired (see _data.ts STANDINGS comment).
+// DATA SOURCE (now live)
+//   Fetches from trpc.match.getAll and computes the same aggregate standings shown
+//   on the /dashboard/leaderboards podium:
+//     • For each (sport, category) event with at least one completed match,
+//       colleges are ranked by win-pct descending (1st → 20 pts, 2nd → 15,
+//       3rd → 10, 4th → 5).
+//     • Totals are summed across all events.
+//
+// FALLBACK
+//   While loading (or if no completed matches exist yet), the section stays
+//   hidden to avoid showing misleading zeros. Once data is ready and at least
+//   one college has a non-zero total it becomes visible.
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import { trpc } from "@/lib/trpc";
 import { COLLEGES } from "./data";
 import SectionLabel from "./SectionLabel";
 
-export default function RivalrySection() {
-  // Sort descending so the top of the list is the season leader.
-  const sorted = [...COLLEGES].sort((a, b) => b.points - a.points);
-  const max = sorted[0].points;
-  const total = COLLEGES.reduce((s, c) => s + c.points, 0);
+// ─── Standings computation (mirrors StatsPage logic) ──────────────────────
+const POINTS_BY_RANK = [20, 15, 10, 5] as const;
 
-  // `animated` flips to true once the section enters the viewport (40% threshold).
-  // The bar widths transition from 0% → percentage on this flip.
+function computeCollegeTotals(matchesData: any[] | undefined): Record<string, number> {
+  const totals: Record<string, number> = { COS: 0, CSS: 0, CCAD: 0, SOM: 0 };
+  if (!matchesData?.length) return totals;
+
+  // Collect unique (sport, category) event keys from all matches.
+  const events = new Map<string, { sport: string; category: string | null }>();
+  for (const m of matchesData) {
+    const key = m.category ? `${m.league}·${m.category}` : m.league;
+    if (!events.has(key)) events.set(key, { sport: m.league, category: m.category ?? null });
+  }
+
+  // For each event, tally W/L per college, rank by win-pct, award points.
+  for (const { sport, category } of events.values()) {
+    const eventMatches = matchesData.filter(
+      (m) =>
+        m.statusType === "completed" &&
+        m.league === sport &&
+        (category === null ? !m.category : m.category === category)
+    );
+    if (!eventMatches.length) continue;
+
+    const tally: Record<string, { w: number; l: number }> = {
+      COS: { w: 0, l: 0 }, CSS: { w: 0, l: 0 },
+      CCAD: { w: 0, l: 0 }, SOM: { w: 0, l: 0 },
+    };
+
+    for (const m of eventMatches) {
+      const home = (m.homeTeamOrg ?? "").toUpperCase();
+      const away = (m.awayTeamOrg ?? "").toUpperCase();
+      if (!tally[home] || !tally[away]) continue;
+      const hs = m.homeScore ?? 0;
+      const as_ = m.awayScore ?? 0;
+      if (hs === as_) continue; // ties ignored
+      if (hs > as_) { tally[home].w++; tally[away].l++; }
+      else           { tally[away].w++; tally[home].l++; }
+    }
+
+    // Only award points when at least one game was actually played.
+    const anyGame = Object.values(tally).some((t) => t.w + t.l > 0);
+    if (!anyGame) continue;
+
+    // Sort: win-pct descending, then wins descending (same tiebreak as leaderboard).
+    const ranked = Object.entries(tally)
+      .map(([code, { w, l }]) => ({ code, pct: (w + l) === 0 ? 0 : w / (w + l), w }))
+      .sort((a, b) => b.pct - a.pct || b.w - a.w);
+
+    ranked.forEach(({ code }, idx) => {
+      if (idx < 4 && totals[code] !== undefined) {
+        totals[code] += POINTS_BY_RANK[idx];
+      }
+    });
+  }
+
+  return totals;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────
+export default function RivalrySection() {
+  const { data: matchesData, isLoading } = trpc.match.getAll.useQuery(undefined, {
+    staleTime: 60_000, // refresh at most once per minute
+  });
+
+  // Merge live points into the static COLLEGES display data (logo, color, mascot).
+  const collegeTotals = useMemo(
+    () => computeCollegeTotals(matchesData),
+    [matchesData]
+  );
+
+  const enrichedColleges = useMemo(
+    () => COLLEGES.map((c) => ({ ...c, points: collegeTotals[c.code] ?? 0 })),
+    [collegeTotals]
+  );
+
+  // Hide the section while loading or when no completed matches exist yet —
+  // showing all-zero bars would look broken on a public-facing page.
+  const hasData = !isLoading && enrichedColleges.some((c) => c.points > 0);
+  if (!hasData) return null;
+
+  const sorted = [...enrichedColleges].sort((a, b) => b.points - a.points);
+  const max    = sorted[0].points;
+  const total  = enrichedColleges.reduce((s, c) => s + c.points, 0);
+  const gap    = sorted[0].points - sorted[1].points;
+
+  return <RivalrySectionInner sorted={sorted} max={max} total={total} gap={gap} />;
+}
+
+// ─── Inner component ──────────────────────────────────────────────────────
+// Separated so the IntersectionObserver + animation state lives close to the
+// DOM node that was just mounted (parent conditionally renders this).
+function RivalrySectionInner({
+  sorted,
+  max,
+  total,
+  gap,
+}: {
+  sorted: typeof COLLEGES;
+  max: number;
+  total: number;
+  gap: number;
+}) {
   const [animated, setAnimated] = useState(false);
   const ref = useRef<HTMLElement>(null);
 
@@ -29,10 +131,8 @@ export default function RivalrySection() {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setAnimated(true);
-      },
-      { threshold: 0.4 },
+      ([entry]) => { if (entry.isIntersecting) setAnimated(true); },
+      { threshold: 0.4 }
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -44,7 +144,7 @@ export default function RivalrySection() {
       ref={ref}
       className="relative overflow-hidden border-y border-white/[0.05] bg-ia-bg-alt px-6 py-28"
     >
-      {/* Two soft radial glows behind the content — adds depth without competing with bars */}
+      {/* Decorative radial glows */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-40"
@@ -55,7 +155,7 @@ export default function RivalrySection() {
       />
 
       <div className="relative z-[1] mx-auto max-w-[1280px]">
-        {/* Heading block */}
+        {/* Heading */}
         <div className="mb-14 text-center">
           <SectionLabel>Overall Standings</SectionLabel>
           <h2 className="mb-3.5 inline-block font-bebas text-[clamp(56px,9vw,140px)] leading-[0.9] tracking-[2px] text-[#f0f0f0]">
@@ -67,17 +167,14 @@ export default function RivalrySection() {
           </p>
         </div>
 
-        {/* Rivalry rows — rank + crest + code + bar + points */}
+        {/* Rivalry rows */}
         <div className="mx-auto flex max-w-[880px] flex-col gap-[18px]">
           {sorted.map((c, i) => {
-            const pct = (c.points / max) * 100;
+            const pct      = (c.points / max) * 100;
             const isLeader = i === 0;
             return (
-              <div
-                key={c.code}
-                className="grid grid-cols-[auto_1fr_auto] items-center gap-5"
-              >
-                {/* Left cluster: rank, crest, code + mascot */}
+              <div key={c.code} className="grid grid-cols-[auto_1fr_auto] items-center gap-5">
+                {/* Left: rank + crest + code + mascot */}
                 <div className="flex min-w-[200px] items-center gap-3.5">
                   <span
                     className={`w-9 font-bebas text-[42px] leading-none tracking-[1px] ${
@@ -92,20 +189,10 @@ export default function RivalrySection() {
                     }`}
                     style={!isLeader ? { borderColor: `${c.color}66` } : undefined}
                   >
-                    <Image
-                      src={c.logo}
-                      alt=""
-                      fill
-                      // Wrapper is a fixed 42px square at every breakpoint
-                      sizes="42px"
-                      className="object-cover"
-                    />
+                    <Image src={c.logo} alt="" fill sizes="42px" className="object-cover" />
                   </div>
                   <div>
-                    <div
-                      className="font-bebas text-[22px] tracking-[1.5px]"
-                      style={{ color: c.color }}
-                    >
+                    <div className="font-bebas text-[22px] tracking-[1.5px]" style={{ color: c.color }}>
                       {c.code}
                     </div>
                     <div className="text-[10px] tracking-[1px] text-white/40">
@@ -114,7 +201,7 @@ export default function RivalrySection() {
                   </div>
                 </div>
 
-                {/* Bar — outer track + inner fill that animates width */}
+                {/* Bar */}
                 <div className="relative h-[30px] overflow-hidden rounded-md border border-white/[0.06] bg-white/[0.04]">
                   <div
                     className="relative h-full overflow-hidden transition-[width] duration-[1500ms] ease-[cubic-bezier(.2,.7,.3,1)]"
@@ -124,7 +211,6 @@ export default function RivalrySection() {
                       boxShadow: isLeader ? `0 0 22px ${c.color}88` : "none",
                     }}
                   >
-                    {/* Diagonal hairline texture overlay */}
                     <div
                       className="absolute inset-0"
                       style={{
@@ -135,21 +221,19 @@ export default function RivalrySection() {
                   </div>
                 </div>
 
-                {/* Points cell — large mono number + PTS caption */}
+                {/* Points */}
                 <div className="min-w-[90px] text-right">
                   <div className="font-mono text-2xl font-bold leading-none tabular-nums text-[#f0f0f0]">
                     {c.points}
                   </div>
-                  <div className="mt-0.5 text-[9px] tracking-[1.5px] text-white/40">
-                    PTS
-                  </div>
+                  <div className="mt-0.5 text-[9px] tracking-[1.5px] text-white/40">PTS</div>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Stat trio at the bottom — total / sports tracked / point gap */}
+        {/* Stat trio */}
         <div className="mt-12 flex flex-wrap justify-center gap-12 text-center">
           <div>
             <div className="font-bebas text-[42px] tracking-[2px] text-ia-gold">{total}</div>
@@ -160,9 +244,7 @@ export default function RivalrySection() {
             <div className="text-[10px] tracking-[2.5px] text-white/40">SPORTS TRACKED</div>
           </div>
           <div>
-            <div className="font-bebas text-[42px] tracking-[2px] text-ia-accent">
-              {sorted[0].points - sorted[1].points}
-            </div>
+            <div className="font-bebas text-[42px] tracking-[2px] text-ia-accent">{gap}</div>
             <div className="text-[10px] tracking-[2.5px] text-white/40">POINT GAP (TOP 2)</div>
           </div>
         </div>
