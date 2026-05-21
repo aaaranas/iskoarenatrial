@@ -172,12 +172,15 @@ function CommentsSection({ mediaId, isAdmin }: { mediaId: string; isAdmin: boole
           setUserName((profile as any)?.full_name || data.user?.email?.split("@")[0] || "User");
         }
       })
-      .catch(() => { /* auth fetch failed — stay signed-out state */ });
+      .catch((e) => console.error("[CommentsSection] auth fetch failed", e));
 
     supabase.from("media_comments").select("id, user_id, user_name, content, created_at")
       .eq("media_id", mediaId).order("created_at", { ascending: true })
-      .then(({ data, error }) => { if (!error && Array.isArray(data)) setComments(data as CommentRow[]); })
-      .catch(() => { /* comments unavailable — show empty state */ });
+      .then(({ data, error }) => {
+        if (error) { console.error("[CommentsSection] comments fetch error", error); return; }
+        if (Array.isArray(data)) setComments(data as CommentRow[]);
+      })
+      .catch((e) => console.error("[CommentsSection] comments fetch failed", e));
 
     const channel = supabase.channel(`media_comments:${mediaId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "media_comments", filter: `media_id=eq.${mediaId}` },
@@ -1109,9 +1112,10 @@ function PostDetailModal({ item, onClose, onEdit, onDelete, onShare, isAdmin }: 
   const [saved,  setSaved]  = useState(false);
   const [imgIdx, setImgIdx] = useState(0);
   const cfg    = sportConfig(item.sport);
+  // images may be null/non-array from older rows — fall back to the top-level url only if it exists
   const images = Array.isArray(item.images) && item.images.length > 0
     ? item.images
-    : [{ url: item.url ?? "", fileName: item.fileName ?? "" }];
+    : item.url ? [{ url: item.url, fileName: item.fileName ?? "" }] : [];
   const currentUrl = images[imgIdx]?.url ?? item.url;
 
   return (
@@ -1323,9 +1327,10 @@ function PostCard({ item, onClick, onEdit, onDelete, onShare, featured, isAdmin 
 }) {
   const [imgIdx, setImgIdx] = useState(0);
   const cfg    = sportConfig(item.sport);
+  // images may be null/non-array from older rows — fall back to the top-level url only if it exists
   const images = Array.isArray(item.images) && item.images.length > 0
     ? item.images
-    : [{ url: item.url ?? "", fileName: item.fileName ?? "" }];
+    : item.url ? [{ url: item.url, fileName: item.fileName ?? "" }] : [];
 
   return (
     <article
@@ -1468,9 +1473,10 @@ function FacebookFeedCard({ item, onClick, onEdit, onDelete, onShare, isAdmin }:
   item: MediaItem; onClick: () => void; onEdit: () => void; onDelete: () => void; onShare: () => void; isAdmin: boolean;
 }) {
   const cfg    = sportConfig(item.sport);
+  // images may be null/non-array from older rows — fall back to the top-level url only if it exists
   const images = Array.isArray(item.images) && item.images.length > 0
     ? item.images
-    : [{ url: item.url ?? "", fileName: item.fileName ?? "" }];
+    : item.url ? [{ url: item.url, fileName: item.fileName ?? "" }] : [];
 
   return (
     <article className="bg-zinc-900 rounded-2xl border border-zinc-800/60 overflow-hidden hover:border-zinc-700 transition-all duration-300">
