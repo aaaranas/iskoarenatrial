@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { User, LogOut, Menu, ChevronRight } from "lucide-react";
+import { User, LogOut, Menu, ChevronRight, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,6 +14,12 @@ import {
   SheetTrigger,
   SheetClose,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 interface TopBarProps {
   onLogout: () => void;
@@ -21,12 +27,23 @@ interface TopBarProps {
   displayName?: string;
 }
 
-const allNavItems = [
+type NavChild = { label: string; url: string };
+type NavItem =
+  | { label: string; url: string; children?: undefined }
+  | { label: string; url?: undefined; children: NavChild[] };
+
+const allNavItems: NavItem[] = [
   { label: "Dashboard",    url: "/dashboard" },
   { label: "Matches",      url: "/dashboard/matches" },
   { label: "Leaderboards", url: "/dashboard/leaderboards" },
   { label: "Media",        url: "/dashboard/media" },
-  { label: "Teams",        url: "/dashboard/teams" },
+  {
+    label: "Teams",
+    children: [
+      { label: "Colleges", url: "/dashboard/teams" },
+      { label: "Players",  url: "/dashboard/players" },
+    ],
+  },
 ];
 
 function AvatarBubble({ avatarUrl, displayName }: { avatarUrl?: string | null; displayName?: string }) {
@@ -95,6 +112,32 @@ export function TopBar({ onLogout, avatarUrl, displayName }: TopBarProps) {
       {/* ── Desktop + Tablet nav (md+) ── */}
       <nav className="hidden md:flex flex-1 items-center justify-center gap-6 lg:gap-8 px-4">
         {allNavItems.map((item) => {
+          if (item.children) {
+            const active = item.children.some((c) => pathname === c.url);
+            return (
+              <DropdownMenu key={item.label}>
+                <DropdownMenuTrigger
+                  className="flex items-center gap-1 transition-colors text-xs font-semibold uppercase tracking-wider py-1.5 whitespace-nowrap outline-none"
+                  style={{
+                    color: active
+                      ? "var(--topbar-active)"
+                      : "hsl(var(--topbar-text))",
+                  }}
+                >
+                  {item.label}
+                  <ChevronDown className="size-3 opacity-70" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center">
+                  {item.children.map((child) => (
+                    <DropdownMenuItem key={child.label} asChild>
+                      <Link href={child.url}>{child.label}</Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            );
+          }
+
           const active = pathname === item.url;
           return (
             <Link
@@ -189,6 +232,65 @@ export function TopBar({ onLogout, avatarUrl, displayName }: TopBarProps) {
             </div>
             <nav className="flex flex-col py-2">
               {allNavItems.map((item) => {
+                if (item.children) {
+                  const active = item.children.some((c) => pathname === c.url);
+                  return (
+                    <div key={item.label}>
+                      {/* Section header — not a link */}
+                      <div
+                        className="flex items-center px-6 py-2 text-[10px] font-bold uppercase tracking-[0.2em] border-l-2"
+                        style={{
+                          color: active
+                            ? "var(--topbar-active)"
+                            : "hsl(var(--topbar-text))",
+                          borderLeftColor: active
+                            ? "var(--topbar-active)"
+                            : "transparent",
+                          opacity: active ? 1 : 0.5,
+                        }}
+                      >
+                        {item.label}
+                      </div>
+                      {/* Sub-items */}
+                      {item.children.map((child) => {
+                        const childActive = pathname === child.url;
+                        return (
+                          <SheetClose asChild key={child.label}>
+                            <Link
+                              href={child.url}
+                              className={cn(
+                                "flex items-center justify-between pl-10 pr-6 py-3 text-sm font-semibold uppercase tracking-widest transition-colors border-l-2",
+                                childActive ? "border-l-2" : "border-transparent"
+                              )}
+                              style={{
+                                color: childActive
+                                  ? "var(--topbar-active)"
+                                  : "hsl(var(--topbar-text))",
+                                borderLeftColor: childActive
+                                  ? "var(--topbar-active)"
+                                  : "transparent",
+                                backgroundColor: childActive
+                                  ? "var(--border-ghost)"
+                                  : "transparent",
+                              }}
+                            >
+                              {child.label}
+                              <ChevronRight
+                                className="size-3.5"
+                                style={{
+                                  color: childActive
+                                    ? "var(--topbar-active)"
+                                    : "var(--text)",
+                                }}
+                              />
+                            </Link>
+                          </SheetClose>
+                        );
+                      })}
+                    </div>
+                  );
+                }
+
                 const active = pathname === item.url;
                 return (
                   <SheetClose asChild key={item.label}>
